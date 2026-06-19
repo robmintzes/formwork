@@ -19,7 +19,11 @@ pyrevit-toolbar-template/
 │        └─ SKILL.md                     # Agentic playbook for pyRevit script authoring
 ├─ docs/
 │  ├─ onboarding/
-│  │  └─ README.md                       # Human onboarding & branch policy
+│  │  ├─ README.md                       # Human onboarding & branch policy
+│  │  ├─ DOCUMENTATION_GUIDE.md           # Tool documentation lifecycle standard
+│  │  └─ MCP_GUIDE.md                     # Local Model Context Protocol bridge guide
+│  ├─ templates/
+│  │  └─ tool-guide-template.md           # Reusable markdown template for new tools
 │  ├─ design/
 │  │  ├─ DESIGN.md                       # Editorial tokens (color, type, margins)
 │  │  ├─ xaml-recipes.md                 # WPF/XAML copy-pasteable component recipes
@@ -36,6 +40,8 @@ pyrevit-toolbar-template/
 │  ├─ check_bundle_structure.py          # Script-and-manifest static validator
 │  ├─ check_safety_rules.py              # Revit API transaction & risk validator
 │  └─ validate_toolbar_spec.py           # Ribbon coverage & spec validator
+├─ servers/
+│  └─ revit-mcp/                         # FastMCP-to-Revit bridge service
 ├─ scripts/
 │  ├─ bootstrap.ps1                      # Rebrands this template to your firm
 │  ├─ install-extension.ps1              # Hooks extension path into local pyRevit
