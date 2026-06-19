@@ -1,0 +1,7 @@
+{
+  "name": "Placeholder",
+  "description": "Template Extension for pyRevit Toolbar Scaffold",
+  "version": "1.0.0",
+  "author": "Template Author",
+  "min_pyrevit_version": "4.8.10"
+}

@@ -1,0 +1,19 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+.logs/
+*.zip
+
+# Operating System Files
+.DS_Store
+Thumbs.db
+
+# User-specific config
+*.suo
+*.user
+*.userprefs

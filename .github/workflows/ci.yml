@@ -1,0 +1,29 @@
+name: Static Validation Pipeline
+
+on:
+  push:
+    branches: [ main, stable ]
+  pull_request:
+    branches: [ main, stable ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+
+    - name: Verify Bundle Structures
+      run: python validators/check_bundle_structure.py
+
+    - name: Verify Transaction Safety
+      run: python validators/check_safety_rules.py
+
+    - name: Verify Toolbar Spec Coverage
+      run: python validators/validate_toolbar_spec.py
