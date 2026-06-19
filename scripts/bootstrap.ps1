@@ -57,10 +57,15 @@ $FilesToUpdate = @(
     "README.md",
     "AGENTS.md",
     "docs\toolbar\toolbar_spec.md",
+    "docs\onboarding\MCP_GUIDE.md",
     "extensions\Placeholder.extension\extension.json",
     "extensions\Placeholder.extension\startup.py",
     "extensions\Placeholder.extension\PlaceholderTab.tab\PlaceholderPanel.panel\HelloButton.pushbutton\script.py",
-    "extensions\Placeholder.extension\PlaceholderTab.tab\PlaceholderPanel.panel\HelloButton.pushbutton\bundle.yaml"
+    "extensions\Placeholder.extension\PlaceholderTab.tab\PlaceholderPanel.panel\HelloButton.pushbutton\bundle.yaml",
+    "extensions\Placeholder.extension\lib\mcp\routes_health.py",
+    "extensions\Placeholder.extension\lib\mcp\routes_project.py",
+    "extensions\Placeholder.extension\lib\mcp\routes_dispatch.py",
+    "servers\revit-mcp\mcp-server\settings.py"
 )
 
 foreach ($RelPath in $FilesToUpdate) {
@@ -75,6 +80,7 @@ foreach ($RelPath in $FilesToUpdate) {
         $Text = $Text.Replace("PlaceholderPanel", "${ExtensionName}Panel")
         $Text = $Text.Replace("PlaceholderTab", "${ExtensionName}Tab")
         $Text = $Text.Replace("Template Author", "$FirmName Design Technology")
+        $Text = $Text.Replace("placeholder", $ExtensionName.ToLower())
         
         Set-Content -Path $Path -Value $Text -NoNewline
         Write-Host "  Updated: $RelPath" -ForegroundColor Green
