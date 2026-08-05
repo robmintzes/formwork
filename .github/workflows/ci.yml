@@ -11,6 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11']
 
     steps:
     - name: Checkout code
@@ -19,7 +23,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v6
       with:
-        python-version: '3.11'
+        python-version: ${{ matrix.python-version }}
         cache: pip
         cache-dependency-path: servers/revit-mcp/mcp-server/requirements.txt
 
@@ -27,7 +31,14 @@ jobs:
       run: python -m unittest discover -s tests -v
 
     - name: Test pyRevit runtime compatibility helpers
-      run: python -m unittest discover -s extensions/Placeholder.extension/tests -v
+      shell: bash
+      run: |
+        mapfile -t extension_tests < <(find extensions -mindepth 2 -maxdepth 2 -type d -name tests | sort)
+        if [ "${#extension_tests[@]}" -ne 1 ]; then
+          echo "Expected one extension test directory; found ${#extension_tests[@]}." >&2
+          exit 1
+        fi
+        python -m unittest discover -s "${extension_tests[0]}" -v
 
     - name: Run static repository validators
       run: |
@@ -40,3 +51,173 @@ jobs:
 
     - name: Test MCP server
       run: python -m pytest servers/revit-mcp/mcp-server/tests -q
+
+  windows-smoke:
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v5
+
+    - name: Set up Python
+      uses: actions/setup-python@v6
+      with:
+        python-version: '3.11'
+        cache: pip
+        cache-dependency-path: servers/revit-mcp/mcp-server/requirements.txt
+
+    - name: Run portable and PowerShell source tests
+      run: python -m unittest discover -s tests -v
+
+    - name: Detect template source repository
+      id: template-source
+      shell: pwsh
+      run: |
+        $IsTemplate = Test-Path -LiteralPath ".toolkit-template" -PathType Leaf
+        "is_template=$($IsTemplate.ToString().ToLowerInvariant())" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+    - name: Exercise bootstrap under Windows PowerShell and PowerShell 7
+      if: steps.template-source.outputs.is_template == 'true'
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = "Stop"
+        $PowerShell51Root = Join-Path $env:RUNNER_TEMP "Generated Toolkit PS51 With Spaces"
+        $PowerShell7Root = Join-Path $env:RUNNER_TEMP "Generated Toolkit PS7 With Spaces"
+
+        foreach ($Target in @($PowerShell51Root, $PowerShell7Root)) {
+          New-Item -ItemType Directory -Path $Target | Out-Null
+          Get-ChildItem -LiteralPath $env:GITHUB_WORKSPACE -Force |
+            Copy-Item -Destination $Target -Recurse -Force
+        }
+
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass `
+          -File (Join-Path $PowerShell51Root "scripts\bootstrap.ps1") `
+          -FirmName "Example Firm" `
+          -ExtensionName "BIM-Tools"
+        if ($LASTEXITCODE -ne 0) {
+          throw "Windows PowerShell bootstrap failed with exit $LASTEXITCODE."
+        }
+
+        & pwsh.exe -NoProfile `
+          -File (Join-Path $PowerShell7Root "scripts\bootstrap.ps1") `
+          -FirmName "Example Firm" `
+          -ExtensionName "BIM-Tools"
+        if ($LASTEXITCODE -ne 0) {
+          throw "PowerShell 7 bootstrap failed with exit $LASTEXITCODE."
+        }
+
+        foreach ($Target in @($PowerShell51Root, $PowerShell7Root)) {
+          Push-Location $Target
+          try {
+            python validators/check_bundle_structure.py
+            if ($LASTEXITCODE -ne 0) { throw "Bundle validation failed." }
+            python validators/check_safety_rules.py
+            if ($LASTEXITCODE -ne 0) { throw "Safety validation failed." }
+            python validators/validate_toolbar_spec.py
+            if ($LASTEXITCODE -ne 0) { throw "Toolbar validation failed." }
+          }
+          finally {
+            Pop-Location
+          }
+        }
+
+        "POWERSHELL51_ROOT=$PowerShell51Root" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+    - name: Select generated repository for Windows validation
+      if: steps.template-source.outputs.is_template != 'true'
+      shell: pwsh
+      run: |
+        "POWERSHELL51_ROOT=$env:GITHUB_WORKSPACE" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+    - name: Validate the generated Windows repository
+      shell: pwsh
+      run: |
+        Push-Location $env:POWERSHELL51_ROOT
+        try {
+          python -m unittest discover -s tests -v
+          if ($LASTEXITCODE -ne 0) { throw "Generated root tests failed." }
+          $ExtensionRoots = @(Get-ChildItem -LiteralPath "extensions" -Directory -Filter "*.extension")
+          if ($ExtensionRoots.Count -ne 1) {
+            throw "Expected exactly one generated extension; found $($ExtensionRoots.Count)."
+          }
+          $ExtensionTests = Join-Path $ExtensionRoots[0].FullName "tests"
+          python -m unittest discover -s $ExtensionTests -v
+          if ($LASTEXITCODE -ne 0) { throw "Generated pyRevit tests failed." }
+        }
+        finally {
+          Pop-Location
+        }
+
+    - name: Exercise pyRevit registration with a stub CLI
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = "Stop"
+        $FakeBin = Join-Path $env:RUNNER_TEMP "Fake pyRevit CLI With Spaces"
+        New-Item -ItemType Directory -Path $FakeBin | Out-Null
+        $FakeCli = Join-Path $FakeBin "pyrevit.cmd"
+        $FakeCliSource = @'
+        @echo off
+        if /I "%1"=="extensions" if /I "%2"=="paths" if /I "%3"=="add" (
+          >"%FAKE_PYREVIT_STATE%" echo %~4
+          exit /b 0
+        )
+        if /I "%1"=="extensions" if /I "%2"=="paths" (
+          echo ==^> Extension Search Paths
+          if exist "%FAKE_PYREVIT_STATE%" type "%FAKE_PYREVIT_STATE%"
+          exit /b 0
+        )
+        exit /b 9
+        '@
+        [System.IO.File]::WriteAllText($FakeCli, $FakeCliSource, [System.Text.Encoding]::ASCII)
+        $env:PATH = "$FakeBin;$env:PATH"
+        $Installer = Join-Path $env:POWERSHELL51_ROOT "scripts\install-extension.ps1"
+        $ExpectedPath = (Resolve-Path (Join-Path $env:POWERSHELL51_ROOT "extensions")).Path
+
+        foreach ($Shell in @("powershell.exe", "pwsh.exe")) {
+          $env:FAKE_PYREVIT_STATE = Join-Path $env:RUNNER_TEMP ("pyrevit-state-" + $Shell + ".txt")
+          foreach ($Attempt in 1..2) {
+            & $Shell -NoProfile -ExecutionPolicy Bypass -File $Installer
+            if ($LASTEXITCODE -ne 0) {
+              throw "$Shell installer attempt $Attempt failed with exit $LASTEXITCODE."
+            }
+          }
+          $RecordedPath = (Get-Content -LiteralPath $env:FAKE_PYREVIT_STATE -Raw).Trim()
+          if (-not [string]::Equals($RecordedPath, $ExpectedPath, [System.StringComparison]::OrdinalIgnoreCase)) {
+            throw "$Shell recorded the wrong extension path."
+          }
+        }
+
+    - name: Enforce the live Routes reset gate in both PowerShell runtimes
+      shell: pwsh
+      run: |
+        $Verifier = Join-Path $env:POWERSHELL51_ROOT "scripts\verify-windows.ps1"
+        foreach ($Shell in @("powershell.exe", "pwsh.exe")) {
+          & $Shell -NoProfile -ExecutionPolicy Bypass -File $Verifier -Mode Live
+          if ($LASTEXITCODE -ne 2) {
+            throw "$Shell live verifier bypassed the reset gate (exit $LASTEXITCODE)."
+          }
+        }
+
+    - name: Exercise Windows MCP environment setup
+      shell: powershell
+      run: |
+        Set-Location $env:POWERSHELL51_ROOT
+        .\servers\revit-mcp\scripts\setup-mcp-server.ps1
+        if ($LASTEXITCODE -ne 0) { throw "MCP setup failed." }
+        $McpPython = Join-Path $env:POWERSHELL51_ROOT "servers\revit-mcp\mcp-server\.venv\Scripts\python.exe"
+        & $McpPython -m pip check
+        if ($LASTEXITCODE -ne 0) { throw "MCP pip check failed." }
+        & $McpPython -m pytest servers/revit-mcp/mcp-server/tests -q
+        if ($LASTEXITCODE -ne 0) { throw "MCP tests failed." }
+
+    - name: Exercise incomplete Windows-host preflight honestly
+      shell: pwsh
+      run: |
+        $Verifier = Join-Path $env:POWERSHELL51_ROOT "scripts\verify-windows.ps1"
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $Verifier -Mode Preflight
+        $VerifierExitCode = $LASTEXITCODE
+        if ($VerifierExitCode -ne 2) {
+          throw "Expected an incomplete preflight (2) without Revit/pyRevit; got $VerifierExitCode."
+        }

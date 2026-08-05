@@ -18,8 +18,10 @@ AI coding assistants often confuse these details, leading to scripts that use de
 ## Structure of this Directory
 
 - `revit-2024.md`: Specific considerations for Revit 2024 and .NET Framework 4.8 compatibility.
-- `revit-2025.md`: Details about .NET 8 conversion, including the deprecation of legacy transaction parameters and coordinate system changes.
-- `revit-2027.md`: Guidance on .NET 10, signed add-in policies, and strict deployment folder requirements.
+- `revit-2025.md`: .NET 8 targeting, dependency-loading cautions, current unit
+  APIs, and the Revit 2024 transition from legacy topography to Toposolid.
+- `revit-2027.md`: .NET 10 targeting and Autodesk's documented all-users add-in
+  and application-plugin folder relocations.
 
 ---
 

@@ -23,3 +23,6 @@ Thumbs.db
 *.suo
 *.user
 *.userprefs
+.env
+.env.*
+!.env.example

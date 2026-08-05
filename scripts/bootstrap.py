@@ -121,11 +121,14 @@ def main() -> None:
     files_to_update = [
         "README.md",
         "AGENTS.md",
-        ".github/workflows/ci.yml",
         "docs/toolbar/toolbar_spec.md",
         "docs/toolbar/tools/hello-button.md",
         "docs/onboarding/MCP_GUIDE.md",
+        "docs/verification/README.md",
         "docs/handoffs/mcp-bridge-onboarding-2026-06-19.md",
+        "scripts/verify-windows.ps1",
+        "toolkit_cli/cli.py",
+        "toolkit_cli/doctor.py",
         "extensions/Placeholder.extension/extension.json",
         "extensions/Placeholder.extension/startup.py",
         "extensions/Placeholder.extension/PlaceholderTab.tab/PlaceholderPanel.panel/HelloButton.pushbutton/script.py",
@@ -144,6 +147,7 @@ def main() -> None:
         "extensions/Placeholder.extension/lib/revit_mcp_bridge/startup.py",
         "extensions/Placeholder.extension/tests/test_runtime_stabilization.py",
         "servers/revit-mcp/mcp-server/settings.py",
+        "servers/revit-mcp/mcp-server/tests/test_settings.py",
     ]
 
     old_tab = placeholder_ext_path / "PlaceholderTab.tab"
@@ -151,6 +155,8 @@ def main() -> None:
     new_tab = placeholder_ext_path / tab_folder
     new_panel = old_tab / panel_folder
     new_ext_path = ROOT / "extensions" / ext_folder
+    template_marker = ROOT / ".toolkit-template"
+    generated_marker = ROOT / ".toolkit-generated"
 
     missing_paths = [
         rel_path for rel_path in files_to_update if not (ROOT / rel_path).is_file()
@@ -159,6 +165,8 @@ def main() -> None:
         missing_paths.append(old_tab.relative_to(ROOT).as_posix())
     if not old_panel.is_dir():
         missing_paths.append(old_panel.relative_to(ROOT).as_posix())
+    if not template_marker.is_file():
+        missing_paths.append(template_marker.relative_to(ROOT).as_posix())
     if missing_paths:
         print(
             "\nERROR: Bootstrap source paths are missing:\n  - "
@@ -166,7 +174,7 @@ def main() -> None:
             file=sys.stderr,
         )
         sys.exit(1)
-    for destination in (new_panel, new_tab, new_ext_path):
+    for destination in (new_panel, new_tab, new_ext_path, generated_marker):
         if destination.exists():
             print(
                 "\nERROR: Bootstrap destination already exists: {}".format(destination),
@@ -199,6 +207,10 @@ def main() -> None:
         # Rename extension
         placeholder_ext_path.rename(new_ext_path)
         print("  Renamed Extension root folder.")
+
+        # Mark this checkout as generated so CI never bootstraps it again.
+        template_marker.rename(generated_marker)
+        print("  Recorded generated-workspace marker.")
 
     except Exception as e:
         print(f"ERROR: Failed to rename directories: {e}")

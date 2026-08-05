@@ -73,11 +73,14 @@ Write-Host "`nUpdating text references across repository files..." -ForegroundCo
 $FilesToUpdate = @(
     "README.md",
     "AGENTS.md",
-    ".github\workflows\ci.yml",
     "docs\toolbar\toolbar_spec.md",
     "docs\toolbar\tools\hello-button.md",
     "docs\onboarding\MCP_GUIDE.md",
+    "docs\verification\README.md",
     "docs\handoffs\mcp-bridge-onboarding-2026-06-19.md",
+    "scripts\verify-windows.ps1",
+    "toolkit_cli\cli.py",
+    "toolkit_cli\doctor.py",
     "extensions\Placeholder.extension\extension.json",
     "extensions\Placeholder.extension\startup.py",
     "extensions\Placeholder.extension\PlaceholderTab.tab\PlaceholderPanel.panel\HelloButton.pushbutton\script.py",
@@ -95,7 +98,8 @@ $FilesToUpdate = @(
     "extensions\Placeholder.extension\lib\revit_mcp_bridge\routes_dispatch.py",
     "extensions\Placeholder.extension\lib\revit_mcp_bridge\startup.py",
     "extensions\Placeholder.extension\tests\test_runtime_stabilization.py",
-    "servers\revit-mcp\mcp-server\settings.py"
+    "servers\revit-mcp\mcp-server\settings.py",
+    "servers\revit-mcp\mcp-server\tests\test_settings.py"
 )
 
 $MissingPaths = @(
@@ -108,18 +112,23 @@ $OldPanelPath = Join-Path $OldTabPath "PlaceholderPanel.panel"
 $NewTabPath = Join-Path $PlaceholderExtPath $TabFolder
 $NewPanelPath = Join-Path $OldTabPath $PanelFolder
 $NewExtPath = Join-Path $RepoRoot "extensions\$ExtFolder"
+$TemplateMarker = Join-Path $RepoRoot ".toolkit-template"
+$GeneratedMarker = Join-Path $RepoRoot ".toolkit-generated"
 
 foreach ($RequiredDirectory in @($OldTabPath, $OldPanelPath)) {
     if (-not (Test-Path $RequiredDirectory -PathType Container)) {
         $MissingPaths += $RequiredDirectory
     }
 }
+if (-not (Test-Path $TemplateMarker -PathType Leaf)) {
+    $MissingPaths += $TemplateMarker
+}
 if ($MissingPaths.Count -gt 0) {
     Write-Host "ERROR: Bootstrap source paths are missing:" -ForegroundColor Red
     $MissingPaths | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
     exit 1
 }
-foreach ($Destination in @($NewPanelPath, $NewTabPath, $NewExtPath)) {
+foreach ($Destination in @($NewPanelPath, $NewTabPath, $NewExtPath, $GeneratedMarker)) {
     if (Test-Path $Destination) {
         Write-Host "ERROR: Bootstrap destination already exists: $Destination" -ForegroundColor Red
         exit 1
@@ -161,6 +170,10 @@ Write-Host "  Renamed Panel folder." -ForegroundColor Green
 # Rename Extension
 Rename-Item -Path $PlaceholderExtPath -NewName $ExtFolder
 Write-Host "  Renamed Extension root folder." -ForegroundColor Green
+
+# Mark this checkout as generated so CI never bootstraps it again.
+Rename-Item -Path $TemplateMarker -NewName ".toolkit-generated"
+Write-Host "  Recorded generated-workspace marker." -ForegroundColor Green
 
 # 5. Output next steps
 Write-Host "`n==========================================" -ForegroundColor Cyan

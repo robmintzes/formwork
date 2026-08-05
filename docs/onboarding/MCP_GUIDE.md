@@ -76,9 +76,9 @@ In Revit, click **pyRevit -> Reload** to refresh the toolbar. Then fully restart
 Revit, or toggle Routes off and on, before sending the first MCP/HTTP request.
 
 ### Step 3: Setup the MCP Server Virtual Environment
-Install CPython 3.10 or newer and make `python` available on `PATH`. The external
-server does not use Revit's embedded Python runtime. Then build the local virtual
-environment and install dependencies:
+Install CPython 3.10 or newer. The setup script tries `python` first and then the
+Windows launcher (`py -3`); the external server does not use Revit's embedded
+Python runtime. Then build the local virtual environment and install dependencies:
 ```powershell
 .\servers\revit-mcp\scripts\setup-mcp-server.ps1
 ```

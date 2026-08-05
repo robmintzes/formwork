@@ -18,7 +18,9 @@ The repository currently provides:
 - standard-library validators for bundle structure, metadata, icons, safety
   patterns, toolbar coverage, and spec-to-bundle alignment;
 - CI coverage for validator regressions, generated structure, and the MCP server;
-- PowerShell packaging and local pyRevit registration helpers.
+- PowerShell packaging and verified local pyRevit registration helpers;
+- cross-platform environment diagnostics and a redacted live Revit verification
+  harness.
 
 It does **not** yet provide an update-safe setup wizard, managed firm-wide
 deployment, authenticated remote MCP access, or completed live Revit
@@ -71,6 +73,12 @@ python -m pip install -r servers/revit-mcp/mcp-server/requirements.txt
 python -m pytest servers/revit-mcp/mcp-server/tests -q
 ```
 
+Run the portable authoring diagnostic on macOS, Linux, or Windows:
+
+```bash
+python -m toolkit_cli doctor --profile authoring
+```
+
 ### 2. Rebrand a working copy
 
 The current bootstrap scripts mutate the checkout in place. Run one of them
@@ -84,9 +92,12 @@ python scripts/bootstrap.py --firm "Example Firm" --extension "ExampleTools"
 .\scripts\bootstrap.ps1 -FirmName "Example Firm" -ExtensionName "ExampleTools"
 ```
 
-The two implementations declare the same replacement surfaces. Automated tests
-exercise the Python-generated checkout; the PowerShell execution path still
-needs a Windows smoke test. Neither script is an update-safe project generator.
+The two implementations declare the same replacement surfaces. CI exercises
+the Python generator plus both Windows PowerShell 5.1 and PowerShell 7 in paths
+containing spaces. Neither script is an update-safe project generator, and live
+workstation onboarding remains a separate verification gate. A bootstrap error
+can leave its working copy partially changed; discard that copy or restore the
+feature branch before retrying instead of running the script again in place.
 
 ### 3. Register the extension with pyRevit
 
@@ -102,6 +113,20 @@ settings.
 
 If you are also using the MCP bridge, read the mandatory Routes reload rule in
 the [MCP guide](docs/onboarding/MCP_GUIDE.md) before making a request.
+
+### 4. Produce live Windows/Revit evidence
+
+The guarded Windows runner checks prerequisites and exercises every documented
+read-only Routes endpoint and MCP tool while retaining no raw project data:
+
+```powershell
+.\scripts\verify-windows.ps1 -Mode Preflight
+.\scripts\verify-windows.ps1 -Mode Live -ExpectedContext project -RoutesResetConfirmed
+```
+
+Read the [Windows and live Revit verification guide](docs/verification/README.md)
+before using live mode. The required Routes-reset confirmation exists to
+prevent the known unsafe call sequence after pyRevit Reload.
 
 ## Development model
 
@@ -119,8 +144,9 @@ the [MCP guide](docs/onboarding/MCP_GUIDE.md) before making a request.
 ## Verification status
 
 Automated tests exercise the Python validators, bootstrap structure, and MCP
-server contract. Static checks cannot prove Revit API behavior, pyRevit ribbon
-loading, Routes lifecycle behavior, or transaction safety at runtime.
+server contract. The verification harness can record live results, but static
+checks cannot prove Revit API behavior, pyRevit ribbon loading, Routes lifecycle
+behavior, or transaction safety at runtime.
 
 No live Revit/pyRevit verification has been completed for this stabilization
 slice. The active checklist and blockers are recorded in

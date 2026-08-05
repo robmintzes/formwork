@@ -63,4 +63,6 @@ Always remember the golden rules of Revit scripting:
 Run all repository validators and automated tests before opening Revit. Then
 perform a separate live test against each supported Revit/pyRevit combination,
 including ribbon load, cancel paths, read/write behavior, and Routes lifecycle.
-That live matrix has not yet been completed for this repository.
+Use the evidence-producing [Windows and live Revit verification
+procedure](../verification/README.md). That live matrix has not yet been
+completed for this repository.

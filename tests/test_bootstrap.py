@@ -149,6 +149,8 @@ class BootstrapSmokeTests(unittest.TestCase):
             any("Placeholder" in path.name for path in generated_root.rglob("*")),
             "Generated path names still contain Placeholder.",
         )
+        self.assertFalse((generated_root / ".toolkit-template").exists())
+        self.assertTrue((generated_root / ".toolkit-generated").is_file())
 
         manifest = json.loads(
             (generated_root / "extensions" / "TestTools.extension" / "extension.json")
@@ -233,6 +235,27 @@ class BootstrapSmokeTests(unittest.TestCase):
                     " ".join(command), result.stdout, result.stderr
                 ),
             )
+
+    def test_generated_ci_does_not_unconditionally_bootstrap_again(self) -> None:
+        temporary_directory, generated_root = self._generate()
+        self.addCleanup(temporary_directory.cleanup)
+
+        workflow = (generated_root / ".github/workflows/ci.yml").read_text(
+            encoding="utf-8"
+        )
+
+        self.assertIn("Detect template source repository", workflow)
+        self.assertIn('Test-Path -LiteralPath ".toolkit-template"', workflow)
+        self.assertIn(
+            "if: steps.template-source.outputs.is_template == 'true'", workflow
+        )
+        self.assertIn('Get-ChildItem -LiteralPath "extensions"', workflow)
+        self.assertNotIn(
+            "extensions/BIM-Tools.extension/tests",
+            workflow,
+            "Generated CI must discover the configured extension instead of "
+            "assuming the maintainer smoke-test name.",
+        )
 
 
 if __name__ == "__main__":

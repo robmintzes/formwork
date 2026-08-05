@@ -76,6 +76,11 @@ premature repository sprawl creates governance work without creating value.
 - Add generated-project, runtime-compatibility, and contract tests.
 - Complete a documented live Revit/pyRevit verification matrix.
 
+The portable `toolkit doctor` command and redacted live-verification runner are
+now implemented. Phase 0 remains open until their required checks pass in the
+declared Windows/Revit/pyRevit combinations; authoring the harness on macOS is
+not itself live-host evidence.
+
 ### Phase 1 - Configuration and generator core
 
 - Define the project configuration schema and migration policy.
