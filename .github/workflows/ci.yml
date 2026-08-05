@@ -195,10 +195,13 @@ jobs:
         $Verifier = Join-Path $env:POWERSHELL51_ROOT "scripts\verify-windows.ps1"
         foreach ($Shell in @("powershell.exe", "pwsh.exe")) {
           & $Shell -NoProfile -ExecutionPolicy Bypass -File $Verifier -Mode Live
-          if ($LASTEXITCODE -ne 2) {
-            throw "$Shell live verifier bypassed the reset gate (exit $LASTEXITCODE)."
+          $VerifierExitCode = $LASTEXITCODE
+          if ($VerifierExitCode -ne 2) {
+            throw "$Shell live verifier bypassed the reset gate (exit $VerifierExitCode)."
           }
         }
+        # The Actions pwsh wrapper otherwise propagates the final expected 2.
+        exit 0
 
     - name: Exercise Windows MCP environment setup
       shell: powershell
@@ -221,3 +224,4 @@ jobs:
         if ($VerifierExitCode -ne 2) {
           throw "Expected an incomplete preflight (2) without Revit/pyRevit; got $VerifierExitCode."
         }
+        exit 0
