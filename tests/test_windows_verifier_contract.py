@@ -122,6 +122,12 @@ class WindowsVerifierContractTests(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertNotIn(command, self.source)
 
+    def test_expected_exit_two_paths_do_not_emit_powershell_error_records(self) -> None:
+        # A parent PowerShell with ErrorActionPreference=Stop treats child
+        # Write-Error records as terminating before it can inspect LASTEXITCODE.
+        self.assertNotIn("Write-Error", self.source)
+        self.assertIn("Write-Warning", self.source)
+
 
 if __name__ == "__main__":
     unittest.main()

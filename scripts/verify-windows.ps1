@@ -212,8 +212,9 @@ if ($Mode -in @("Live", "All")) {
         $EffectiveManualData = Get-SanitizedManualChecklist -Path $ManualSource
     }
     catch {
-        Write-Error ("Manual checklist validation failed: " + $_.Exception.Message) `
-            -ErrorAction Continue
+        Write-Host `
+            ("Manual checklist validation failed: " + $_.Exception.Message) `
+            -ForegroundColor Red
         exit 2
     }
 }
@@ -267,13 +268,13 @@ try {
         # Refuse before any verifier process starts unless the human confirms a
         # full Revit restart or an explicit Routes off/on reset occurred.
         if (-not $RoutesResetConfirmed) {
-            Write-Error "Live verification refused. Restart Revit or toggle Routes off/on after pyRevit Reload, then pass -RoutesResetConfirmed." -ErrorAction Continue
+            Write-Warning "Live verification refused. Restart Revit or toggle Routes off/on after pyRevit Reload, then pass -RoutesResetConfirmed."
             exit 2
         }
 
         $McpPython = Join-Path $RepoRoot "servers\revit-mcp\mcp-server\.venv\Scripts\python.exe"
         if (-not (Test-Path -LiteralPath $McpPython -PathType Leaf)) {
-            Write-Error "MCP virtual environment is missing. Run servers\revit-mcp\scripts\setup-mcp-server.ps1 first." -ErrorAction Continue
+            Write-Warning "MCP virtual environment is missing. Run servers\revit-mcp\scripts\setup-mcp-server.ps1 first."
             exit 2
         }
 
