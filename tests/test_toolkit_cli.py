@@ -77,7 +77,9 @@ class ToolkitCliTests(unittest.TestCase):
 
         self.assertEqual(2, exit_code)
         self.assertEqual("http://127.0.0.1:48884/placeholder", verify.call_args.args[0])
-        self.assertEqual("C:/MCP/python.exe", verify.call_args.args[1])
+        self.assertEqual(
+            Path("C:/MCP/python.exe"), Path(verify.call_args.args[1])
+        )
         self.assertEqual("family", verify.call_args.kwargs["expected_context"])
 
     def test_invalid_timeout_returns_usage_style_exit_code(self) -> None:
