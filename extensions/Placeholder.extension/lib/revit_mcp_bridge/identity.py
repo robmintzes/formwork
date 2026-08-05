@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Extension-side build identity + staleness for pyRevit MCP."""
 
+__author__ = "Template Author"
+
 import os
 import time
 
@@ -80,7 +82,7 @@ def git_identity(root):
 
 
 def extension_root():
-    # identity.py is at <ext_root>/lib/mcp/identity.py
+    # identity.py is at <ext_root>/lib/revit_mcp_bridge/identity.py
     return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
@@ -103,7 +105,7 @@ def staleness():
         stale = False
         try:
             cur = os.path.getmtime(rec["file"])
-            stale = cur > rec["loaded_mtime"]
+            stale = cur != rec["loaded_mtime"]
         except Exception:
             pass
         out.append({

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """pyRevit Routes - Project details endpoint handlers for MCP."""
 
+__author__ = "Template Author"
+
 from pyrevit import script
 import clr
 clr.AddReference("RevitAPI")
@@ -15,7 +17,8 @@ from Autodesk.Revit.DB import (
     ModelPathUtils,
 )
 
-from mcp.response import make_ok, make_error
+from revit_mcp_bridge.compat import element_id_value
+from revit_mcp_bridge.response import make_ok, make_error
 
 logger = script.get_logger()
 
@@ -29,6 +32,30 @@ def _require_doc(tool, doc):
             checks=[
                 "Open a Revit project (.rvt) before calling this tool.",
                 "Call revit_health_ping to check document state.",
+            ],
+        )
+    try:
+        is_family_document = bool(doc.IsFamilyDocument)
+    except Exception as exc:
+        return make_error(
+            tool,
+            "document_context_error",
+            "Could not verify the active Revit document context: " + str(exc),
+            doc=doc,
+            checks=[
+                "Confirm that a valid Revit project document is active.",
+                "Call revit_health_ping, then retry the project tool.",
+            ],
+        )
+    if is_family_document:
+        return make_error(
+            tool,
+            "family_document_not_supported",
+            "This tool requires a Revit project document, not a family document.",
+            doc=doc,
+            checks=[
+                "Open or switch to a Revit project (.rvt) document.",
+                "Call revit_health_ping, then retry the project tool.",
             ],
         )
     return None
@@ -87,7 +114,7 @@ def get_project_levels(doc, request):
             levels.append({
                 "name": lvl.Name,
                 "elevation_feet": lvl.Elevation,
-                "id": lvl.Id.IntegerValue,
+                "id": element_id_value(lvl.Id),
             })
         levels.sort(key=lambda x: x["elevation_feet"])
 
@@ -129,7 +156,7 @@ def get_project_worksets(doc, request):
         for ws in collector:
             worksets.append({
                 "name": ws.Name,
-                "id": ws.Id.IntegerValue,
+                "id": element_id_value(ws.Id),
                 "is_open": bool(ws.IsOpen),
                 "owner": _safe_str(ws.Owner) if ws.Owner else None,
             })
@@ -179,7 +206,7 @@ def get_project_links(doc, request):
 
             links.append({
                 "name": inst.Name,
-                "id": inst.Id.IntegerValue,
+                "id": element_id_value(inst.Id),
                 "type": "revit",
                 "loaded": link_doc is not None or load_state == "loaded",
                 "load_state": load_state,
@@ -200,7 +227,7 @@ def get_project_links(doc, request):
                 cad_load_state = "unknown"
             links.append({
                 "name": cad.Name,
-                "id": cad.Id.IntegerValue,
+                "id": element_id_value(cad.Id),
                 "type": "cad",
                 "loaded": cad_load_state == "loaded",
                 "load_state": cad_load_state,

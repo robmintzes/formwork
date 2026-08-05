@@ -1,17 +1,19 @@
 # -*- coding: utf-8 -*-
 """Allowlist registry for the pyRevit MCP generic dispatch route."""
 
+__author__ = "Template Author"
+
 _NO_SPEC = "none"
 _OPTIONAL_SPEC = "optional"
 _REQUIRED_SPEC = "required"
 
 # op: (tool, module, function, spec_mode)
 _REGISTRY = {
-    "health": ("revit_health_ping", "mcp.handlers_health", "get_health", _NO_SPEC),
-    "project/info": ("revit_project_info", "mcp.handlers_project", "get_project_info", _NO_SPEC),
-    "project/levels": ("revit_project_levels", "mcp.handlers_project", "get_project_levels", _NO_SPEC),
-    "project/worksets": ("revit_project_worksets", "mcp.handlers_project", "get_project_worksets", _NO_SPEC),
-    "project/links": ("revit_project_links", "mcp.handlers_project", "get_project_links", _NO_SPEC),
+    "health": ("revit_health_ping", "revit_mcp_bridge.handlers_health", "get_health", _NO_SPEC),
+    "project/info": ("revit_project_info", "revit_mcp_bridge.handlers_project", "get_project_info", _NO_SPEC),
+    "project/levels": ("revit_project_levels", "revit_mcp_bridge.handlers_project", "get_project_levels", _NO_SPEC),
+    "project/worksets": ("revit_project_worksets", "revit_mcp_bridge.handlers_project", "get_project_worksets", _NO_SPEC),
+    "project/links": ("revit_project_links", "revit_mcp_bridge.handlers_project", "get_project_links", _NO_SPEC),
 }
 
 

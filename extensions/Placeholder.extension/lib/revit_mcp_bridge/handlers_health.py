@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """pyRevit Routes - Health endpoint handler for MCP."""
 
+__author__ = "Template Author"
+
 from pyrevit import HOST_APP
 from pyrevit import script
 
-from mcp.response import make_ok, make_error
-from mcp import identity as _identity
+from revit_mcp_bridge.response import make_ok, make_error
+from revit_mcp_bridge import identity as _identity
 
 logger = script.get_logger()
 

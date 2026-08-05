@@ -17,7 +17,7 @@ This repository uses a structured memory layer to govern human and AI developmen
 
 ## 2. Core Conventions & Branch Policy
 
-- **Author Attributions:** When authoring a tool or library, set `__author__` in Python files and the `author:` metadata field in `bundle.yaml` to the default Firm Name placeholder or the rebranded target. Avoid personal developer attributions on shared tools.
+- **Author Attributions:** When authoring a tool or library, set `__author__` in Python files and the `author:` metadata field in `bundle.yaml` to the configured firm author value. Avoid personal developer attributions on shared tools.
 - **Branch Ownership:** Branches must be named for the accountable human developer prefix (e.g., `robmintzes/feature-name`). Do not name branches after the AI agent itself.
 - **Preflight Check:** Before modifying or creating code files, verify you are not working directly on `main`. Create or switch to the correct branch named with the owner's prefix. Edits directly to `main` are restricted to trivial documentation fixes.
 - **Spec Integrity:** Do not write code or create folder structures for a new ribbon button unless a matching entry has been registered in `docs/toolbar/toolbar_spec.md`.

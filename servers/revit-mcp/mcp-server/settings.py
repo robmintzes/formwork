@@ -55,14 +55,12 @@ MCP_PORT: int = _env_int("MCP_PORT", 3001)
 MCP_STREAMABLE_HTTP_PATH: str = os.environ.get("MCP_STREAMABLE_HTTP_PATH", "/mcp")
 MCP_JSON_RESPONSE: bool = _env_bool("MCP_JSON_RESPONSE")
 MCP_STATELESS_HTTP: bool = _env_bool("MCP_STATELESS_HTTP")
-ALLOW_NONLOCAL_BIND: bool = _env_bool("ALLOW_NONLOCAL_BIND")
 
 _LOCAL_BIND_HOSTS = {"127.0.0.1", "localhost", "::1"}
-if MCP_HOST not in _LOCAL_BIND_HOSTS and not ALLOW_NONLOCAL_BIND:
+if MCP_HOST not in _LOCAL_BIND_HOSTS:
     raise RuntimeError(
         "Refusing to bind MCP server to non-local host "
-        f"{MCP_HOST!r}. Use 127.0.0.1 for local read-only phases, or set "
-        "ALLOW_NONLOCAL_BIND=true only after adding auth and origin policy."
+        f"{MCP_HOST!r}. This unauthenticated foundation supports loopback only."
     )
 
 # ---------------------------------------------------------------------------
