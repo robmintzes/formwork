@@ -18,12 +18,28 @@ To link this repository's extension folder directly to your Revit environment:
 
 ## 2. Git Branch Policy
 
-We protect our production branch and require structured contribution workflows:
-- **No commits directly to `main`:** All edits (except minor typos in markdown documentation) must occur on feature/bugfix branches.
-- **Branch Naming Standard:** Prefixes must carry the human owner's username or prefix. For example:
-  - `rmintzes/add-purge-button`
-  - `jdoe/fix-selection-bug`
-- **Owner Resolution:** When collaborating with AI agents, ensure the active branch prefix corresponds to your human handler name. AI agents are instructed to check this and refuse commits on detached HEADs or wrong prefixes.
+Follow [BRANCH_POLICY.md](BRANCH_POLICY.md) for the canonical policy and setup.
+All contributions use a human-owned development branch and a pull request into
+`main` (or a future `stable` integration branch), including documentation edits.
+This repository's maintenance prefix is `robmintzes`, for example
+`robmintzes/add-purge-button`; another developer uses their own human prefix.
+
+Install the local commit/push guards once per clone:
+
+```powershell
+.\scripts\install-git-hooks.ps1 -Owner robmintzes
+```
+
+Before editing, check the working tree and branch:
+
+```powershell
+git status --short --branch
+py -3.11 validators/check_branch_policy.py
+```
+
+GitHub enforces the pull-request and CI gates independently of local hooks.
+Passing static checks does not establish live Revit compatibility or production
+readiness.
 
 ---
 
