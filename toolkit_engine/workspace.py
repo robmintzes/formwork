@@ -12,6 +12,7 @@ from toolkit_engine.apply import Writer, apply_plan, atomic_write
 from toolkit_engine.checks import check_outputs
 from toolkit_engine.diagnostics import Diagnostics
 from toolkit_engine.jsonio import JsonInputError, dumps_canonical, load_strict
+from toolkit_engine.overrides import apply_overrides, collect_overrides
 from toolkit_engine.planner import CONFLICT_REASONS, ManifestError, load_manifest, plan_changes, render_manifest
 from toolkit_engine.profile import load_profile
 from toolkit_engine.paths import UnsafePathError, check_workspace_root, guard_target
@@ -69,7 +70,8 @@ def validate_firm(firm_dir: Path) -> dict[str, Any]:
         # Rendering in memory surfaces adapter-level diagnostics (unsupported choices).
         rendered = render_all(profile)
         diags.extend(rendered.diagnostics)
-        check_outputs(rendered.files, diags)
+        desired, _ = apply_overrides(rendered.files, collect_overrides(firm_dir, diags), {}, diags)
+        check_outputs(desired, diags)
     return _report(
         "toolkit-config-validation",
         diags,
@@ -200,12 +202,17 @@ def render_workspace(
 
     rendered = render_all(profile)
     diags.extend(rendered.diagnostics)
-    check_outputs(rendered.files, diags)
+    # Overrides are workspace inputs: always read them from the workspace's own
+    # firm/, even when a draft supplies the rest of the inputs (wizard plans).
+    desired, generated_hashes = apply_overrides(
+        rendered.files, collect_overrides(root / FIRM_DIR, diags), previous_files, diags
+    )
+    check_outputs(desired, diags)
     if diags.has_errors:
         return blocked()
 
     try:
-        plan = plan_changes(root, rendered.files, previous_files)
+        plan = plan_changes(root, desired, previous_files)
     except UnsafePathError as exc:
         raise EngineError(exc.code, str(exc)) from exc
     if on_planned is not None:
@@ -214,6 +221,8 @@ def render_workspace(
         message, hint = CONFLICT_REASONS[conflict.reason]
         diags.error("conflict." + conflict.reason, conflict.path, message, hint)
 
+    for rel, generated_sha in generated_hashes.items():
+        plan.manifest_files[rel].update({"override": True, "generated_sha256": generated_sha})
     manifest_text = render_manifest(
         foundation_version=__version__,
         workspace_id=workspace_id,
@@ -247,7 +256,7 @@ def render_workspace(
     if summary["changes"] == 0:
         return report
     try:
-        emptied = apply_plan(root, plan, rendered.files, manifest_text, write=write)
+        emptied = apply_plan(root, plan, desired, manifest_text, write=write)
     except UnsafePathError as exc:
         raise EngineError(exc.code, str(exc)) from exc
     summary["written"] = True
