@@ -204,28 +204,34 @@ class BootstrapSmokeTests(unittest.TestCase):
         temporary_directory, generated_root = self._generate()
         self.addCleanup(temporary_directory.cleanup)
 
+        # Nested full-suite runs grow with the suite (and run slower on hosted
+        # Windows runners); the budget only needs to catch a hang.
+        suite_timeout = 300
         commands = [
-            [sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"],
-            [
-                sys.executable,
-                "-m",
-                "unittest",
-                "discover",
-                "-s",
-                "extensions/TestTools.extension/tests",
-                "-v",
-            ],
-            [sys.executable, "validators/check_bundle_structure.py"],
-            [sys.executable, "validators/check_safety_rules.py"],
-            [sys.executable, "validators/validate_toolbar_spec.py"],
+            ([sys.executable, "-m", "unittest", "discover", "-s", "tests", "-v"], suite_timeout),
+            (
+                [
+                    sys.executable,
+                    "-m",
+                    "unittest",
+                    "discover",
+                    "-s",
+                    "extensions/TestTools.extension/tests",
+                    "-v",
+                ],
+                suite_timeout,
+            ),
+            ([sys.executable, "validators/check_bundle_structure.py"], 30),
+            ([sys.executable, "validators/check_safety_rules.py"], 30),
+            ([sys.executable, "validators/validate_toolbar_spec.py"], 30),
         ]
-        for command in commands:
+        for command, timeout in commands:
             result = subprocess.run(
                 command,
                 cwd=generated_root,
                 capture_output=True,
                 text=True,
-                timeout=30,
+                timeout=timeout,
                 check=False,
             )
             self.assertEqual(
