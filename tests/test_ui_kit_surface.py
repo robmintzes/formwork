@@ -227,7 +227,14 @@ class XamlResolutionTests(UiKitCase):
             self.assertNotIn("MinHeight", window.attrib)
             self.assertEqual(window.attrib["TextOptions.TextRenderingMode"], "Grayscale", name)
         selector = ElementTree.parse(package / "SelectionDialog.xaml").getroot()
-        self.assertEqual((selector.attrib["MinWidth"], selector.attrib["MinHeight"]), ("560", "440"))
+        self.assertEqual((selector.attrib["Width"], selector.attrib["Height"]), ("640", "560"))
+        # Every kit window uses the same WPF-drawn frame: a resizable WindowStyle=None
+        # window showed a system resize strip over the titlebar in Revit 2026.
+        for name in ("ResultDialog.xaml", "ChooserDialog.xaml", "SelectionDialog.xaml"):
+            window = ElementTree.parse(package / name).getroot()
+            self.assertEqual(window.attrib["ResizeMode"], "NoResize", name)
+            self.assertEqual(window.attrib["AllowsTransparency"], "True", name)
+            self.assertEqual(window.attrib["Background"], "Transparent", name)
         result = ElementTree.parse(package / "ResultDialog.xaml").getroot()
         buttons = {b.attrib.get("{http://schemas.microsoft.com/winfx/2006/xaml}Name"): b for b in result.iter(presentation + "Button")}
         self.assertNotIn("MinimizeBtn", buttons)  # a modal dialog gets no minimize

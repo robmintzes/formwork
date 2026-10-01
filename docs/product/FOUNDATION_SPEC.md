@@ -561,7 +561,7 @@ sample panel. All outputs are `managed`.
 | --- | --- |
 | `extensions/<Extension>.extension/lib/<namespace>_ui/` | IronPython 2.7 package: `bootstrap`, `result_model` (ToolResult), `result_dialog` (M1), `chooser_dialog` (M0), `selection_dialog` (M2-lite). Importing the package loads no WPF, so `result_model` runs under plain CPython. |
 | `.../<namespace>_ui/Theme.xaml`, `Controls.xaml`, `Icons.xaml` | `Theme.xaml` is the specimen's token dictionary (same `<Ns>.Color.Surface.Default` key scheme, shared logic in `wpf_common`). `Controls.xaml` is the specimen's styles plus field, check, radio, callout, progress, output log, titlebar, step, caption, hairline, section, stat-tile and list-box styles. `Icons.xaml` holds Lucide-derived line geometry (`<Ns>.Icon.*`). |
-| `.../<namespace>_ui/ResultDialog.xaml`, `ChooserDialog.xaml`, `SelectionDialog.xaml` | Inverse-surface titlebar with the firm symbol, tool title, usage badge, close; no minimize on modal dialogs. Sizes: compact 560 wide for M0/M1, selector 640 x 560 with a 560 x 440 minimum. |
+| `.../<namespace>_ui/ResultDialog.xaml`, `ChooserDialog.xaml`, `SelectionDialog.xaml` | Inverse-surface titlebar with the firm symbol, tool title, usage badge, close; no minimize on modal dialogs. Sizes: compact 560 wide for M0/M1, selector a fixed 640 x 560. All three use the same WPF-drawn frame (transparent, not resizable): a resizable borderless window showed a system resize strip in Revit 2026. |
 | `.../<namespace>_ui/fonts/<family>/`, `assets/symbol-inverse.png` | Packaged fonts (with their OFL texts) and the brand symbol, copied **into** the extension: pyRevit loads the extension folder, so extension code never reaches into the workspace's top-level `assets/`. |
 | `extensions/<Extension>.extension/tests/test_ui_kit_contract.py` | Generated CPython test: parses every kit XAML file, resolves every `{DynamicResource}`/`{StaticResource}` key and every key named in kit Python, checks the `x:Name` elements the code uses, and exercises `ToolResult`, `normalize_options` and the selector filter. |
 | `.../<Panel>.panel/UIKitDemo.pushbutton/`, `docs/toolbar/tools/ui-kit-demo.md` | Read-only demo: validate context, chooser, selector over up to 50 view names, result dialog. No transactions. Its entry appears in `docs/toolbar/spec.d/foundation-sample.md` only when the surface is enabled; without it that fragment is unchanged. |
@@ -823,8 +823,8 @@ attached before navigation), runs `bridge.js` and `tool-ui.js` against stubs in 
 it is present and, on a machine with Revit installed, finds Core, Wpf and a native
 loader in every installed Revit 2024 or later. The page was also viewed in a browser
 with a stub bridge. **Not verified**: any WebView2 window opened in Revit; the
-IronPython delegate conversions (`System.Action[Task]`, `ContinueWith`), event attach through `__iadd__`, and the
-`EnsureCoreWebView2Async` overload under IronPython 2.7; the `.test` mapping, the `Deny`
+`EnsureCoreWebView2Async` overload under IronPython; the polled environment task and
+event attach through `+=` inside Revit. the `.test` mapping, the `Deny`
 and `Allow` access kinds, the CSP and clipboard writes inside WebView2; Escape handling
 with browser accelerator keys off; the Wpf assemblies of Revit 2025 and later; behavior
 next to other add-ins' Core versions; the per-Core-version data folder. Every render

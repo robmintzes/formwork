@@ -500,6 +500,39 @@ class HostDesignTests(WebHostCase):
                 self.assertNotIn("DLL_DIR", host)
                 self.assertFalse(list(package.rglob("*.dll")))
 
+    def test_assemblies_revit_already_loaded_are_referenced_for_import(self) -> None:
+        # Live Revit 2026 (2026-10-01): Revit preloads both WebView2 assemblies, and
+        # skipping clr.AddReference made the Core import fail with "No module named Web".
+        root = self.workspace(BIMXBERT, "preloaded")
+        host = self.host_source(root, "BIMxBert", "bimxbert")
+        tree = ast.parse(host)
+        ensure = next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == "ensure_webview2_assemblies")
+        calls = [
+            n for n in ast.walk(ensure)
+            if isinstance(n, ast.Call) and isinstance(n.func, ast.Attribute) and n.func.attr == "AddReference"
+        ]
+        self.assertTrue(
+            any(len(c.args) == 1 and isinstance(c.args[0], ast.Name) and c.args[0].id == "loaded" for c in calls),
+            "an assembly Revit already loaded must be passed to clr.AddReference",
+        )
+        self.assertIn("except ImportError as exc:", host)  # an import failure is not reported as a missing runtime
+
+    def test_host_avoids_ironpython_calls_that_failed_or_are_unproven_in_revit(self) -> None:
+        # Live Revit 2026 (2026-10-01): ContinueWith(Action[Task]) on Task<T> was an
+        # ambiguous overload. Environment creation is polled on the UI thread instead,
+        # and events attach with += (the form Revit tools rely on), not __iadd__ calls.
+        root = self.workspace(BIMXBERT, "ironpython calls")
+        host = self.host_source(root, "BIMxBert", "bimxbert")
+        code_only = "\n".join(line for line in host.splitlines() if not line.lstrip().startswith("#"))
+        for unproven in ("ContinueWith", ".__iadd__(", ".__isub__(", "System.Action[Task]"):
+            self.assertNotIn(unproven, code_only)
+        self.assertIn("self._env_poll.Tick += self._on_env_poll", host)
+        self.assertIn("if not task.IsCompleted:", host)
+        for stopper in ("def _fail", "def _cleanup"):
+            body = host[host.index(stopper):]
+            body = body[: body.index("\n    def ", 1)]
+            self.assertIn("self._stop_env_poll()", body, stopper)
+
     def test_environment_is_created_by_the_host_never_through_creation_properties(self) -> None:
         root = self.workspace(QUILLMOOR, "environment")
         host = self.host_source(root, "Quillmoor", "quillmoor")

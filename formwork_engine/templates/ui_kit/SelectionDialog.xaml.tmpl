@@ -3,21 +3,25 @@
         Title="Select"
         Width="640"
         Height="560"
-        MinWidth="560"
-        MinHeight="440"
-        MaxHeight="720"
         WindowStyle="None"
-        ResizeMode="CanResizeWithGrip"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
         WindowStartupLocation="CenterScreen"
-        Background="{DynamicResource {{ ns }}.Color.Surface.Default}"
+        Background="Transparent"
         TextOptions.TextFormattingMode="Display"
-        TextOptions.TextRenderingMode="ClearType"
+        TextOptions.TextRenderingMode="Grayscale"
+        TextOptions.TextHintingMode="Fixed"
         UseLayoutRounding="True">
 
   <!-- M2-lite selector (generated, managed): searchable single or multiple
-       choice. Opaque and resizable (no transparency), so ClearType text is
-       available here. The window minimum is the compact size class. -->
-  <Border Style="{DynamicResource {{ ns }}.Window.Frame}">
+       choice. Same chrome as the chooser and result dialogs. Not resizable: a
+       resizable WindowStyle=None window gets a system-drawn resize frame that
+       showed as a light strip over the titlebar in Revit 2026 (2026-10-01), and
+       WindowChrome does not survive pyRevit's window load. -->
+  <Border Margin="12" Style="{DynamicResource {{ ns }}.Window.Frame}">
+    <Border.Effect>
+      <DropShadowEffect Color="#000000" BlurRadius="18" ShadowDepth="3" Direction="270" Opacity="0.30"/>
+    </Border.Effect>
     <Grid>
       <Grid.RowDefinitions>
         <RowDefinition Height="Auto"/>
