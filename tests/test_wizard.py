@@ -34,6 +34,11 @@ class SessionTests(unittest.TestCase):
     def put_config(self, data: dict) -> None:
         self.session.put_files({"firm.json": {"text": json.dumps(data, indent=2)}}, [])
 
+    def test_fresh_session_state_is_empty_not_an_error(self) -> None:
+        self.assertEqual(self.session.state(), {"source": None, "files": {}})
+        with self.assertRaises(WizardError):
+            self.session.validate()
+
     def test_starters_list_shipped_profiles(self) -> None:
         ids = {s["id"]: s for s in self.session.starters()}
         self.assertIn("bimxbert", ids)

@@ -57,18 +57,42 @@ is merged; this branch's eventual PR is stacked on both.
    with the human `--routes-reset-confirmed` assertion.
 3. **Unverified host claims to check live:** pyRevit honours `help_url` in
    `bundle.yaml`; `icon.dark.png` at 96x96 displays in dark theme.
-4. **Next engineering:** `toolkit validate
-   --workspace`; retire `scripts/bootstrap.*` and update CI windows-smoke
-   (B15); wizard per ADR 0006 (B14).
-5. **Pending human decisions:** permanent product name (B17); engine
-   distribution to adopters (B16).
+4. **Next engineering:** see the overnight build log below and the backlog.
+   Candidates:
+   - a C# Revit add-in starter (net8 for 2025/2026, net10 for 2027; the
+     targeting packs and Revit API DLLs are local, so it builds offline;
+     Revit 2024 / net48 needs reference assemblies that are not installed);
+   - a WebView2 HTML tool host port (its DLLs must come from NuGet);
+   - `config migrate` / template overrides (B13).
+5. **Pending human decisions:**
+   - permanent product name (B17);
+   - engine distribution to adopters (B16);
+   - whether NuGet/PyPI downloads are acceptable for local verification of
+     the vendored MCP server suite and WebView2 (CI covers the MCP suite).
+6. **Workstation constraint:** Cylance Script Control blocks some PowerShell
+   scripts here (`verify-generated-workspace.ps1`; probably
+   `verify-windows.ps1`). The Python CLI paths are the supported route.
 
 ### Rejected paths
 
-- In-place fork rebranding (ADR 0002); region markers in shared files and
-  partial apply on conflict (ADR 0004); copying Rockwell files or fonts
-  (ADR 0005); React/CDN wizard stack (ADR 0006); `rem` tokens and silent
-  WPF size offsets (ADR 0003).
+- In-place fork rebranding (ADR 0002).
+- Region markers in shared files, and partial apply on conflict (ADR 0004).
+- Copying licensed fonts, third-party binaries, or Rockwell marks (ADR 0005).
+  Rob-authored Rockwell code is now permitted.
+- React/CDN wizard stack (ADR 0006).
+- `rem` tokens and silent WPF size offsets (ADR 0003).
+
+## Overnight build log (2026-09-30 to 10-01)
+
+Rob granted free rein at about 11:30 PM to keep building. Lead: Opus.
+Well-specified chunks went to Sonnet subagents, and the lead reviewed every
+change before committing.
+
+| Commit | Item |
+| --- | --- |
+| `8798b52` | `toolkit validate --workspace`; bootstrap scripts retired; Windows CI generates and validates both profiles |
+| `25b1a20` | Wizard backend (`toolkit serve`): loopback-only, token, Host/Origin checks, cookie-scoped preview, plan-before-apply |
+| `776bb63` | `mcp-bridge` surface (Sonnet), and CI running the vendored MCP server tests in a generated workspace |
 
 ## Incremental Edit Log
 

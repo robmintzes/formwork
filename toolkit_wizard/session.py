@@ -106,7 +106,8 @@ class WizardSession:
             raise WizardError("draft.missing", "Start from a profile or workspace first.")
 
     def state(self) -> dict[str, Any]:
-        self._require_draft()
+        if self.source is None:
+            return {"source": None, "files": {}}
         listing = {}
         for path, content in sorted(self.files.items()):
             entry: dict[str, Any] = {"size": len(content), "sha256": hashlib.sha256(content).hexdigest()}
