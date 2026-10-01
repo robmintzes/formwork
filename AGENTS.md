@@ -17,7 +17,7 @@ This repository uses a structured memory layer to govern human and AI developmen
 
 ## 2. Core Conventions & Branch Policy
 
-- **Author Attributions:** When authoring a tool or library, set `__author__` in Python files and the `author:` metadata field in `bundle.yaml` to the default Firm Name placeholder or the rebranded target. Avoid personal developer attributions on shared tools.
+- **Author Attributions:** When authoring a tool or library, set `__author__` in Python files and the `author:` metadata field in `bundle.yaml` to the configured firm author value. Avoid personal developer attributions on shared tools.
 - **Branch Ownership:** Use `<human-owner>/<lowercase-task-slug>` (e.g., `robmintzes/feature-name`). The owner of this repository's maintenance work is `robmintzes`; other contributors use their accountable human prefix. Do not name branches after an AI agent. Local guards check the configured owner; CI checks the naming convention, which is not proof of identity.
 - **Preflight Check:** Before any development edit, run `git status --short --branch` and `python validators/check_branch_policy.py`. Preserve existing work. Switch from `main`, `stable`, detached HEAD, or an incorrectly owned branch before editing. Create task branches from an up-to-date `origin/main` unless deliberately continuing an existing task. All contributions, including documentation, go through a pull request.
 - **Install Local Guards:** Run `./scripts/install-git-hooks.ps1 -Owner robmintzes` once per clone (use the accountable human prefix for another developer). This installs tracked pre-commit and pre-push guards without replacing another hooks configuration. Do not bypass guards to perform development on an integration branch.

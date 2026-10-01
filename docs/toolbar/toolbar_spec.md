@@ -14,6 +14,7 @@ tab:
   audience: general_users
   lifecycle_stage: sandbox
   repo_extension_path: extensions/Placeholder.extension
+  source_path: extensions/Placeholder.extension/PlaceholderTab.tab
 ```
 
 > The default sandbox tab for template tools.
@@ -28,6 +29,6 @@ tools:
     category: utility
     risk: Low
     lifecycle_stage: sandbox
-    description: A simple template pushbutton that displays a greeting message and lists project views.
+    description: Displays a read-only greeting with the active project, active view, and non-template view count.
     source_path: extensions/Placeholder.extension/PlaceholderTab.tab/PlaceholderPanel.panel/HelloButton.pushbutton
 ```

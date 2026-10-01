@@ -2,6 +2,12 @@
 __pycache__/
 *.py[cod]
 *$py.class
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
 
 # Distribution / packaging
 dist/
@@ -17,3 +23,6 @@ Thumbs.db
 *.suo
 *.user
 *.userprefs
+.env
+.env.*
+!.env.example

@@ -1,5 +1,5 @@
 # main.py
-# Revit MCP - FastMCP server entry point.
+# Revit MCP - MCPServer entry point.
 #
 # Transport modes:
 #   stdio (default)            - for Claude Desktop, Cursor, and similar local clients
@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import argparse
+import asyncio
 import logging
 import sys
 
@@ -40,6 +41,28 @@ else:
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
+def run_server(transport: str) -> None:
+    """Run the configured server using one of the supported local transports."""
+    if transport == "streamable-http":
+        logger.info(
+            "Starting Revit MCP server (streamable-http) on %s:%s%s",
+            settings.MCP_HOST,
+            settings.MCP_PORT,
+            settings.MCP_STREAMABLE_HTTP_PATH,
+        )
+        mcp.run(
+            transport="streamable-http",
+            host=settings.MCP_HOST,
+            port=settings.MCP_PORT,
+            streamable_http_path=settings.MCP_STREAMABLE_HTTP_PATH,
+            json_response=settings.MCP_JSON_RESPONSE,
+            stateless_http=settings.MCP_STATELESS_HTTP,
+        )
+    else:
+        logger.info("Starting Revit MCP server (stdio).")
+        mcp.run(transport="stdio")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Revit MCP server - AI-to-Revit bridge (read-only)"
@@ -52,22 +75,13 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    if args.transport == "streamable-http":
-        logger.info(
-            "Starting Revit MCP server (streamable-http) on %s:%s%s",
-            settings.MCP_HOST,
-            settings.MCP_PORT,
-            settings.MCP_STREAMABLE_HTTP_PATH,
-        )
-        mcp.run(transport="streamable-http")
-    else:
-        logger.info("Starting Revit MCP server (stdio).")
-        mcp.run(transport="stdio")
-
-
-if __name__ == "__main__":
-    tool_names = registered_tool_names()
+    tool_names = asyncio.run(registered_tool_names())
     if not tool_names:
         raise RuntimeError("No MCP tools are registered; refusing to start an empty server.")
     logger.info("Registered MCP tools: %s", ", ".join(sorted(tool_names)))
+
+    run_server(args.transport)
+
+
+if __name__ == "__main__":
     main()

@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """Hot-reload dispatcher for pyRevit MCP route shims."""
 
+__author__ = "Template Author"
+
 import os
 import sys
 
-from mcp.response import make_error
-from mcp import identity
+from revit_mcp_bridge.response import make_error
+from revit_mcp_bridge import identity
 
 try:
     reload
@@ -41,12 +43,53 @@ def call(tool, module_name, function_name, *args):
         )
 
 
+def call_registered(op, doc, request, registry_module_name=None):
+    """Resolve an operation through the hot-reloadable allowlist registry.
+
+    Request data never becomes a Python module or function name. Only literal
+    mappings returned by ``handlers_registry.resolve`` can reach ``call``.
+    """
+    if registry_module_name is None:
+        registry_module_name = "revit_mcp_bridge.handlers_registry"
+
+    try:
+        registry = _load_handler(registry_module_name)
+        resolved = registry.resolve(op)
+    except Exception as exc:
+        return make_error(
+            "revit_dispatch",
+            "handler_reload_error",
+            "Could not load the generic dispatch registry: {}".format(exc),
+            doc=doc,
+            checks=[
+                "Check the pyRevit console log for the registry import traceback.",
+                "Fix the registry module, then call this route again.",
+                "Restart Revit if a stable route shim changed.",
+            ],
+        )
+
+    if resolved is None:
+        return make_error(
+            "revit_dispatch",
+            "operation_not_allowed",
+            "Generic dispatch operation is not registered: {}".format(op),
+            doc=doc,
+            checks=[
+                "Use an operation returned by handlers_registry.registered_ops().",
+                "Register new read-only operations before calling them.",
+                "Never pass module or function names in the route path.",
+            ],
+        )
+
+    tool, module_name, function_name, extra_args = resolved
+    args = [doc, request]
+    args.extend(extra_args)
+    return call(tool, module_name, function_name, *args)
+
+
 def preload(module_name):
     """Import and record a handler so it is tracked from boot."""
-    try:
-        _load_handler(module_name)
-    except Exception:
-        pass
+    _load_handler(module_name)
 
 
 def _load_handler(module_name):
@@ -65,7 +108,7 @@ def _load_handler(module_name):
 
     current = _module_mtime(module)
     loaded = _LOADED_MTIMES.get(module_name)
-    if current is not None and (loaded is None or current > loaded):
+    if current is not None and current != loaded:
         module = reload(module)
         _record(module_name, module)
     return module
