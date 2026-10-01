@@ -1,0 +1,131 @@
+# -*- coding: utf-8 -*-
+"""Window bootstrap for the generated UI kit (managed file: regenerate, do not edit).
+
+Every kit window calls ``prepare_window`` right after ``forms.WPFWindow.__init__``.
+pyRevit does not create a WPF Application before the first window exists, so
+resources are merged into the window itself rather than into the application.
+
+Fonts, one mechanism: Theme.xaml names packaged fonts by relative URI
+(``fonts/<family>/#<Family>``). ``apply_theme`` parses it with a ParserContext
+whose BaseUri is this package folder, so those URIs resolve to the copies that
+ship inside the extension. There is no separate font registration step. If a
+packaged family is missing, WPF falls back along the token's font stack.
+
+IronPython 2.7 and CPython 3 both parse this file; only the ``clr`` import needs
+a .NET host, so import it from a tool, not from a unit test.
+"""
+from __future__ import absolute_import, print_function
+
+import io
+import os
+
+import clr
+
+clr.AddReference("PresentationFramework")
+clr.AddReference("PresentationCore")
+clr.AddReference("WindowsBase")
+clr.AddReference("System.Xaml")
+
+from System import Uri, UriKind
+from System.Windows import Visibility, Window
+from System.Windows.Markup import ParserContext, XamlReader
+from System.Windows.Media.Imaging import BitmapCacheOption, BitmapImage
+from System.Windows.Shapes import Path as ShapePath
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+RESOURCE_FILES = ("Theme.xaml", "Controls.xaml", "Icons.xaml")
+BRAND_MARK_PATH = os.path.join(HERE, "assets", "symbol-inverse.png")
+
+# WPF has no text-transform: labels follow the firm's case choices here.
+BUTTON_UPPERCASE = {{ button_uppercase }}
+BADGE_UPPERCASE = {{ badge_uppercase }}
+
+USAGE = {
+    "reusable": ({{ usage_reusable_label }}, "{{ ns }}.Icon.UsageReusable", "Run it again to adjust. Changes update in place."),
+    "setup": ({{ usage_setup_label }}, "{{ ns }}.Icon.UsageSetup", "Run once when setting up a project."),
+    "one-time": ({{ usage_one_time_label }}, "{{ ns }}.Icon.UsageOneTime", "Makes a single change, then closes."),
+}
+
+
+def button_text(text):
+    """Button caption in the firm's label case."""
+    text = u"{0}".format(text)
+    return text.upper() if BUTTON_UPPERCASE else text
+
+
+def badge_text(text):
+    """Badge caption in the firm's label case."""
+    text = u"{0}".format(text)
+    return text.upper() if BADGE_UPPERCASE else text
+
+
+def _load_dictionary(file_name):
+    context = ParserContext()
+    context.BaseUri = Uri(HERE.rstrip(os.sep) + os.sep, UriKind.Absolute)
+    with io.open(os.path.join(HERE, file_name), "r", encoding="utf-8") as handle:
+        return XamlReader.Parse(handle.read(), context)
+
+
+def apply_theme(scope):
+    """Merge Theme, Controls and Icons into ``scope.Resources``. Safe to repeat.
+
+    The merged dictionaries are replaced, so a kit window must not merge
+    dictionaries of its own.
+    """
+    if scope is None:
+        raise ValueError("apply_theme needs the window to merge resources into: apply_theme(self)")
+    merged = scope.Resources.MergedDictionaries
+    merged.Clear()
+    for file_name in RESOURCE_FILES:
+        merged.Add(_load_dictionary(file_name))
+
+
+def set_brand_mark(window):
+    """Show the firm symbol in the titlebar when the window has a BrandMark image."""
+    mark = getattr(window, "BrandMark", None)
+    if mark is None or not os.path.isfile(BRAND_MARK_PATH):
+        return
+    image = BitmapImage()
+    image.BeginInit()
+    image.UriSource = Uri(BRAND_MARK_PATH, UriKind.Absolute)
+    image.CacheOption = BitmapCacheOption.OnLoad
+    image.EndInit()
+    mark.Source = image
+
+
+def set_usage_badge(window, usage):
+    """Fill the titlebar usage badge: 'reusable', 'setup' or 'one-time' (None hides it)."""
+    if usage is None:
+        return
+    if usage not in USAGE:
+        raise ValueError("Unknown usage mode: {0}".format(usage))
+    label, icon_key, tooltip = USAGE[usage]
+    window.UsageLabel.Text = label
+    window.UsageIcon.SetResourceReference(ShapePath.DataProperty, icon_key)
+    window.UsageBadgePanel.ToolTip = tooltip
+    window.UsageBadgePanel.Visibility = Visibility.Visible
+
+
+def show_text(block, text):
+    """Set a collapsed-by-default TextBlock and reveal it when there is text."""
+    if text:
+        block.Text = u"{0}".format(text)
+        block.Visibility = Visibility.Visible
+
+
+def _on_titlebar_drag(sender, args):
+    try:
+        Window.GetWindow(sender).DragMove()
+    except Exception:
+        pass
+
+
+def prepare_window(window, tool_name, usage=None):
+    """Theme, title, brand mark, usage badge and drag handling for a kit window."""
+    apply_theme(window)
+    title = u"{0}".format(tool_name)
+    window.Title = title
+    window.TitlebarTextBlock.Text = title
+    set_brand_mark(window)
+    set_usage_badge(window, usage)
+    window.TitlebarBorder.MouseLeftButtonDown += _on_titlebar_drag

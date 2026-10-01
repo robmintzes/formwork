@@ -1,0 +1,60 @@
+/* Report console: metric strip and table. */
+main { max-width: 1120px; }
+footer { max-width: 1120px; flex-wrap: wrap; }
+.source { font-family: {{ font_code }}; font-size: {{ font_size_code }}; }
+.metrics {
+  display: flex; flex-wrap: wrap;
+  margin: {{ space_md }} 0 {{ space_lg }};
+  background: {{ color_surface_card }};
+  border-top: {{ stroke_control }} solid {{ color_line_strong }};
+  border-bottom: {{ stroke_hairline }} solid {{ color_line_subtle }};
+}
+.metric {
+  flex: 1 1 140px;
+  padding: {{ space_sm }} {{ space_md }};
+  border-right: {{ stroke_hairline }} solid {{ color_line_subtle }};
+}
+.metric:last-child { border-right: 0; }
+.metric__value {
+  font-family: {{ font_display }};
+  font-weight: {{ font_weight_display }};
+  font-size: {{ font_size_title }};
+  line-height: 1.1;
+}
+.metric__label {
+  font-family: {{ font_label }};
+  font-size: {{ font_size_label }};
+  font-weight: {{ font_weight_label }};
+  letter-spacing: calc({{ tracking_label }} * 1em);
+  text-transform: uppercase;
+  color: {{ color_text_secondary }};
+}
+.table-wrap {
+  overflow-x: auto;
+  background: {{ color_surface_card }};
+  border: {{ stroke_control }} solid {{ color_line_subtle }};
+}
+table.report { font-size: {{ font_size_small }}; }
+table.report th {
+  position: sticky; top: 0;
+  white-space: nowrap;
+  background: {{ color_surface_sunken }};
+  border-bottom: {{ stroke_control }} solid {{ color_line_strong }};
+  font-family: {{ font_label }};
+  font-size: {{ font_size_label }};
+  font-weight: {{ font_weight_label }};
+  letter-spacing: calc({{ tracking_label }} * 1em);
+  text-transform: uppercase;
+}
+table.report th::after { content: "\2195"; margin-left: {{ space_xs }}; color: {{ color_text_secondary }}; opacity: 0.6; }
+table.report tbody tr:nth-child(even) { background: {{ color_surface_default }}; }
+table.report td.num { font-family: {{ font_code }}; font-size: {{ font_size_code }}; text-align: right; white-space: nowrap; }
+table.report th.num { text-align: right; }
+table.report .badge { margin-right: 0; white-space: nowrap; }
+.empty { padding: {{ space_md }}; color: {{ color_text_secondary }}; }
+@media print {
+  .masthead { background: none; color: {{ color_text_primary }}; border-bottom: {{ stroke_control }} solid {{ color_line_strong }}; }
+  .masthead img { display: none; }
+  table.report th { position: static; }
+  table.report th::after { content: none; }
+}

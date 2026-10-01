@@ -1,0 +1,24 @@
+# pyRevit Toolbar Specification
+
+This is the firm-owned toolbar registry. Register every tool you add here
+before creating its folder, using the same fenced `yaml` blocks as the
+generated sample in `docs/toolbar/spec.d/` (managed; do not edit).
+
+Validators read this file together with every `docs/toolbar/spec.d/*.md`
+fragment. Each tool also needs a guide at `docs/toolbar/tools/<id>.md`.
+
+Example (remove the leading `#` characters to activate it):
+
+```text
+# ```yaml
+# tools:
+#   - id: room-renumber
+#     display_name: Room Renumber
+#     type: PushButton
+#     category: annotation
+#     risk: Medium
+#     lifecycle_stage: sandbox
+#     description: Renumbers rooms along a picked path.
+#     source_path: extensions/<Extension>.extension/<Tab>.tab/Studio.panel/RoomRenumber.pushbutton
+# ```
+```

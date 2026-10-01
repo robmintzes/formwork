@@ -1,0 +1,15 @@
+  <Style x:Key="{{ ns }}.Badge.{{ status }}" TargetType="Border">
+    <Setter Property="Background" Value="{{ fill }}"/>
+    <Setter Property="BorderBrush" Value="{{ border }}"/>
+    <Setter Property="BorderThickness" Value="{{ stroke }}"/>
+    <Setter Property="CornerRadius" Value="{{ radius }}"/>
+    <Setter Property="Padding" Value="8,2"/>
+    <Setter Property="Margin" Value="0,0,8,0"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+  <Style x:Key="{{ ns }}.Badge.{{ status }}.Text" TargetType="TextBlock">
+    <Setter Property="Foreground" Value="{{ text }}"/>
+    <Setter Property="FontFamily" Value="{DynamicResource {{ font_label }}}"/>
+    <Setter Property="FontSize" Value="{DynamicResource {{ size_label }}}"/>
+    <Setter Property="FontWeight" Value="{DynamicResource {{ weight_label }}}"/>
+  </Style>

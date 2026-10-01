@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Workspace wizard</title>
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <header class="band">
+    <div class="band-inner">
+      <h1 class="band-title">Workspace wizard</h1>
+      <p class="band-sub">Local only &middot; nothing is written until Generate</p>
+    </div>
+  </header>
+
+  <div id="status" class="status" role="status" aria-live="polite" data-kind="info"></div>
+
+  <div class="shell">
+    <aside class="rail" aria-label="Wizard progress">
+      <nav aria-label="Steps">
+        <ol id="steps" class="steps"></ol>
+      </nav>
+      <section class="live" aria-labelledby="live-title">
+        <h2 id="live-title" class="label">Draft diagnostics</h2>
+        <p id="live-state" class="live-state">No draft</p>
+        <dl class="counts">
+          <div><dt>Errors</dt><dd id="count-error">0</dd></div>
+          <div><dt>Warnings</dt><dd id="count-warning">0</dd></div>
+          <div><dt>Info</dt><dd id="count-info">0</dd></div>
+        </dl>
+      </section>
+      <button type="button" id="shutdown" class="btn secondary block">Shut down wizard</button>
+    </aside>
+
+    <main id="main" class="panel" tabindex="-1">
+      <noscript><p>This wizard needs JavaScript. It only talks to the local server that served this page.</p></noscript>
+    </main>
+  </div>
+
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>

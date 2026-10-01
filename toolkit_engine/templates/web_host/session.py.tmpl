@@ -1,0 +1,116 @@
+# -*- coding: utf-8 -*-
+"""ToolSession: the standard tool lifecycle over the bridge (generated, managed file).
+
+A mixin for ``WebToolWindow`` subclasses. A tool exposes the lifecycle verbs
+(``init_data``, ``validate``, ``execute``, ``cancel``) with ``@expose``; this
+mixin supplies the cancel flag and ``run_chunked``, the canonical chunked loop
+with progress events, cooperative cancellation and the standard result shape:
+
+    {status: success|partial|failed|cancelled, summary, counts: {ok, warn, fail},
+     log: [..], items: [{id, label, status, note}]}
+
+WebMessageReceived is dispatched serially on Revit's UI thread, and WebView2
+events are not reentrant: while one handler is on the stack the control will not
+deliver a second message, however thoroughly the message loop is pumped.
+Pumping flushes OUTBOUND progress events only; it can never receive a cancel.
+(https://learn.microsoft.com/microsoft-edge/webview2/concepts/threading-model)
+
+So ``run_chunked`` honours ``cancel`` only for a caller that returns to the
+message loop between chunks. A tool whose whole run sits inside one ``execute``
+call cannot be cancelled by construction; such a tool should step itself with
+``Dispatcher.BeginInvoke`` and publish its result as an event instead.
+
+A tool that changes the model wraps each chunk (or batch) in one short
+transaction and never holds one open across user input. This package ships no
+write tools; the demo is read-only.
+
+IronPython 2.7 and CPython 3 both parse this file. Only ``_pump_dispatcher``
+touches WPF, and it does nothing outside a .NET host.
+"""
+from __future__ import absolute_import, print_function
+
+
+class ToolSession(object):
+
+    def __init__(self):
+        self._cancel_requested = False
+
+    def cancel(self):
+        """Set the cooperative cancellation flag. A subclass exposes this (or an
+        exposed wrapper that calls it) with ``@expose``."""
+        self._cancel_requested = True
+        return {"ok": True}
+
+    def run_chunked(self, items, work, label="Working"):
+        """Run ``work(item)`` per item; emit progress; honour cancellation.
+
+        ``work(item)`` returns ``{"id", "status": "ok"|"warn"|"fail", ...}`` or
+        raises (recorded as a failure; the loop continues). The host class
+        provides ``post_event``.
+        """
+        self._cancel_requested = False
+        out = []
+        log = []
+        counts = {"ok": 0, "warn": 0, "fail": 0}
+        total = len(items)
+        for index, item in enumerate(items):
+            if self._cancel_requested:
+                return self._result(
+                    "cancelled", out, log, counts,
+                    "Cancelled after {0} of {1}".format(index, total))
+            try:
+                rec = work(item)
+            except Exception as exc:
+                # str() the fallback id: a raw ElementId (or any .NET object)
+                # would later fail json.dumps in the bridge response and turn
+                # one item's failure into the whole call's failure.
+                rec = {"id": str(getattr(item, "Id", item)), "status": "fail",
+                       "note": str(exc)}
+                log.append("FAIL {0}: {1}".format(rec["id"], exc))
+            status = rec.get("status", "ok")
+            counts[status] = counts.get(status, 0) + 1
+            out.append(rec)
+            self.post_event("progress", {
+                "done": index + 1, "total": total,
+                "label": "{0} {1} / {2}".format(label, index + 1, total)})
+            self._pump_dispatcher()
+        if counts["fail"] and (counts["ok"] or counts["warn"]):
+            return self._result(
+                "partial", out, log, counts,
+                "{0} ok, {1} failed".format(counts["ok"], counts["fail"]))
+        if counts["fail"]:
+            return self._result("failed", out, log, counts, "All items failed")
+        return self._result(
+            "success", out, log, counts,
+            "{0} item(s) processed".format(counts["ok"] + counts["warn"]))
+
+    @staticmethod
+    def _result(status, items, log, counts, summary):
+        return {"status": status, "summary": summary, "counts": counts,
+                "log": log, "items": items}
+
+    def _pump_dispatcher(self):
+        """Flush queued outbound dispatcher work so posted progress events reach
+        the page. A no-op outside WPF.
+
+        The .NET delegate interop below (``System.Func[object, object]``) is a
+        best-effort IronPython idiom that cannot be tested under CPython: the
+        ImportError branch returns at once. Validate it inside Revit; it may
+        need ``System.Action`` instead.
+        """
+        try:
+            import System
+            from System.Windows.Threading import (Dispatcher, DispatcherFrame,
+                                                  DispatcherPriority)
+        except ImportError:
+            return
+        frame = DispatcherFrame()
+
+        def _exit(arg):
+            frame.Continue = False
+            return None
+
+        Dispatcher.CurrentDispatcher.BeginInvoke(
+            DispatcherPriority.Background,
+            System.Func[object, object](_exit), None)
+        Dispatcher.PushFrame(frame)

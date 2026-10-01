@@ -28,10 +28,11 @@ thing to build. The correct sequence is:
 4. Put an optional graphical wizard over the same commands only after the
    workflow is stable.
 
-The current bootstrap scripts are explicitly transitional. They mutate one
-checkout through string replacement and are unsuitable as an update mechanism.
-The replacement generator should create or reconcile a separate firm-owned
-workspace, show its proposed changes before writing, and be safe to run again.
+The transitional bootstrap scripts, which mutated one checkout through string
+replacement, were retired on 2026-09-30. `toolkit init` and `toolkit render`
+now create and reconcile a separate firm-owned workspace, show proposed
+changes before writing, and are safe to run again. See
+[FOUNDATION_SPEC.md](product/FOUNDATION_SPEC.md).
 
 ## Intended onboarding flow
 
@@ -85,7 +86,7 @@ not itself live-host evidence.
 
 - Define the project configuration schema and migration policy.
 - Replace destructive bootstrap behavior with `doctor`, `init`, `render`, and
-  `validate` commands.
+  `validate` commands. (Done 2026-09-30; bootstrap retired.)
 - Support dry runs, deterministic output, actionable errors, and repeat runs.
 - Generate neutral sample content plus optional firm-owned branding layers.
 

@@ -61,7 +61,7 @@ python validators/validate_toolbar_spec.py
 ```
 
 These checks require each pushbutton to have `script.py`, `bundle.yaml`, and a
-valid 32x32 `icon.png`; require non-empty title, tooltip, and author metadata;
+valid `icon.png` (32x32 or 96x96); require non-empty title, tooltip, and author metadata;
 and cross-check risk/lifecycle values, source paths, bundle titles, ribbon
 coverage, tab-to-extension paths, and non-empty guides. They are static
 guardrails, not a substitute for testing the tool in each supported

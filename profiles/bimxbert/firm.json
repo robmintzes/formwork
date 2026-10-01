@@ -1,0 +1,142 @@
+{
+  "appearance": {
+    "badge": {
+      "label_case": "uppercase",
+      "shape": "square",
+      "style": "soft"
+    },
+    "button": {
+      "label_case": "as-written",
+      "primary": "solid",
+      "secondary": "outline",
+      "shape": "square"
+    },
+    "decorations": {
+      "registration_marks": true
+    }
+  },
+  "brand": {
+    "assets": {
+      "symbol": {
+        "inverse": {
+          "png": "assets/symbol-inverse.png",
+          "svg": "assets/symbol-inverse.svg"
+        },
+        "light": {
+          "png": "assets/symbol-light.png",
+          "svg": "assets/symbol-light.svg"
+        }
+      },
+      "wordmark": {
+        "inverse": {
+          "png": "assets/wordmark-inverse.png",
+          "svg": "assets/wordmark-inverse.svg"
+        },
+        "light": {
+          "png": "assets/wordmark-light.png",
+          "svg": "assets/wordmark-light.svg"
+        }
+      }
+    },
+    "fonts": [
+      {
+        "family": "Barlow Condensed",
+        "files": [
+          {
+            "path": "fonts/barlow-condensed/BarlowCondensed-Medium.ttf",
+            "weight": 500
+          },
+          {
+            "path": "fonts/barlow-condensed/BarlowCondensed-SemiBold.ttf",
+            "weight": 600
+          }
+        ],
+        "license": "OFL-1.1",
+        "license_file": "fonts/barlow-condensed/OFL.txt",
+        "source": "https://github.com/google/fonts/tree/main/ofl/barlowcondensed"
+      },
+      {
+        "family": "Geist",
+        "files": [
+          {
+            "path": "fonts/geist/Geist-Regular.ttf",
+            "weight": 400
+          },
+          {
+            "path": "fonts/geist/Geist-Medium.ttf",
+            "weight": 500
+          },
+          {
+            "path": "fonts/geist/Geist-SemiBold.ttf",
+            "weight": 600
+          }
+        ],
+        "license": "OFL-1.1",
+        "license_file": "fonts/geist/OFL.txt",
+        "source": "https://github.com/vercel/geist-font"
+      },
+      {
+        "family": "Geist Mono",
+        "files": [
+          {
+            "path": "fonts/geist-mono/GeistMono-Regular.ttf",
+            "weight": 400
+          },
+          {
+            "path": "fonts/geist-mono/GeistMono-Medium.ttf",
+            "weight": 500
+          }
+        ],
+        "license": "OFL-1.1",
+        "license_file": "fonts/geist-mono/OFL.txt",
+        "source": "https://github.com/vercel/geist-font"
+      }
+    ],
+    "notices": [
+      "NOTICE-brand.md"
+    ],
+    "tokens": "tokens.tokens.json"
+  },
+  "identity": {
+    "author": "BIMxBert",
+    "display_name": "BIMxBert",
+    "links": {
+      "documentation": "https://github.com/robmintzes/pyrevit-toolbar-template",
+      "support": "https://github.com/robmintzes/pyrevit-toolbar-template/issues"
+    },
+    "logo_alt": "BIMxBert",
+    "short_name": "BIMxBert"
+  },
+  "maintainers": [
+    {
+      "branch_prefix": "robmintzes",
+      "name": "Rob Mintzes"
+    }
+  ],
+  "profile": {
+    "description": "BIMxBert default profile for the design technology foundation. The BIMxBert name and marks are not MIT-licensed; replace this profile with your own.",
+    "id": "bimxbert"
+  },
+  "schema_version": 1,
+  "surfaces": [
+    "pyrevit-sample",
+    "wpf-specimen",
+    "html-guide",
+    "governance",
+    "mcp-bridge",
+    "ui-kit",
+    "web-host",
+    "revit-addin",
+    "python-app",
+    "web-app"
+  ],
+  "technical": {
+    "namespace": "bimxbert",
+    "pyrevit": {
+      "extension": "BIMxBert",
+      "sample_panel": "Foundation",
+      "tab": "BIMxBert"
+    },
+    "workspace_id": "bimxbert-design-technology"
+  }
+}

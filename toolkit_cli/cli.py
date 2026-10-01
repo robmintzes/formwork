@@ -19,6 +19,7 @@ from toolkit_cli.doctor import (
     run_doctor,
     write_json,
 )
+from toolkit_cli.generate import add_generation_commands, run_generation_command
 from toolkit_cli.results import report_exit_code
 from toolkit_cli.verify import verify_and_write
 
@@ -41,7 +42,7 @@ def _default_evidence_dir(repo_root: Path) -> Path:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="toolkit",
-        description="Firm-neutral diagnostics and live verification tooling.",
+        description="Firm-neutral diagnostics, workspace generation, and live verification tooling.",
     )
     parser.add_argument("--version", action="version", version=__version__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -105,6 +106,18 @@ def build_parser() -> argparse.ArgumentParser:
             "the most recent pyRevit Reload."
         ),
     )
+    workspace = verify_targets.add_parser(
+        "workspace",
+        help="Record live-host evidence for a generated firm workspace.",
+    )
+    workspace.add_argument("--workspace", type=Path, required=True)
+    workspace.add_argument("--manual-checks", type=Path, help="Filled checklist (see docs/verification).")
+    workspace.add_argument("--revit-version", help="Revit year tested, for example 2026.")
+    workspace.add_argument("--output-dir", type=Path)
+    add_generation_commands(commands)
+    serve = commands.add_parser("serve", help="Run the local onboarding wizard (loopback only).")
+    serve.add_argument("--port", type=int, default=0, help="Port on 127.0.0.1 (default: a free port).")
+    serve.add_argument("--no-open", action="store_true", help="Print the URL without opening a browser.")
     return parser
 
 
@@ -140,6 +153,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
+    if args.command == "serve":
+        from toolkit_wizard.server import serve as serve_wizard
+
+        serve_wizard(args.port, open_browser=not args.no_open)
+        return 0
+
+    if args.command in ("config", "init", "render", "validate"):
+        return run_generation_command(args)
+
     try:
         if args.command == "doctor":
             report = run_doctor(
@@ -155,6 +177,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             else:
                 print(format_doctor_text(report))
             return report_exit_code(report)
+
+        if args.command == "verify" and args.verify_target == "workspace":
+            from toolkit_cli.verify_workspace import format_text, run_workspace_verification, write_workspace_evidence
+
+            repo_root = Path(__file__).resolve().parents[1]
+            output_dir = args.output_dir or (
+                repo_root / ".logs" / "workspace-verification" / datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+            )
+            report = run_workspace_verification(
+                args.workspace, manual_checks_path=args.manual_checks, revit_version=args.revit_version
+            )
+            paths = write_workspace_evidence(report, output_dir)
+            print(format_text(report, paths))
+            return report["exit_code"]
 
         if args.command == "verify" and args.verify_target == "revit":
             if not args.routes_reset_confirmed:

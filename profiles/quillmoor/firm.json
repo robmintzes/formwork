@@ -1,0 +1,86 @@
+{
+  "appearance": {
+    "badge": {
+      "label_case": "as-written",
+      "shape": "rounded",
+      "style": "solid"
+    },
+    "button": {
+      "label_case": "as-written",
+      "primary": "solid",
+      "secondary": "tonal",
+      "shape": "pill"
+    },
+    "decorations": {
+      "registration_marks": false
+    }
+  },
+  "brand": {
+    "assets": {
+      "symbol": {
+        "inverse": {
+          "png": "assets/symbol-inverse.png",
+          "svg": "assets/symbol-inverse.svg"
+        },
+        "light": {
+          "png": "assets/symbol-light.png",
+          "svg": "assets/symbol-light.svg"
+        }
+      },
+      "wordmark": {
+        "inverse": {
+          "png": "assets/wordmark-inverse.png",
+          "svg": "assets/wordmark-inverse.svg"
+        },
+        "light": {
+          "png": "assets/wordmark-light.png",
+          "svg": "assets/wordmark-light.svg"
+        }
+      }
+    },
+    "fonts": [],
+    "tokens": "tokens.tokens.json"
+  },
+  "identity": {
+    "author": "Quillmoor Studio Design Technology",
+    "display_name": "Quillmoor Studio",
+    "links": {
+      "support": "https://support.quillmoor.example/design-technology"
+    },
+    "logo_alt": "Quillmoor Studio",
+    "short_name": "Quillmoor"
+  },
+  "maintainers": [
+    {
+      "branch_prefix": "aquill",
+      "name": "Avery Quill (fictional)"
+    }
+  ],
+  "profile": {
+    "description": "Quillmoor Studio is a fictional firm. It exists to prove that identity, colour, typography, and component treatments are data rather than code.",
+    "fictional": true,
+    "id": "quillmoor"
+  },
+  "schema_version": 1,
+  "surfaces": [
+    "pyrevit-sample",
+    "wpf-specimen",
+    "html-guide",
+    "governance",
+    "mcp-bridge",
+    "ui-kit",
+    "web-host",
+    "revit-addin",
+    "python-app",
+    "web-app"
+  ],
+  "technical": {
+    "namespace": "quillmoor",
+    "pyrevit": {
+      "extension": "Quillmoor",
+      "sample_panel": "Starter",
+      "tab": "Quillmoor"
+    },
+    "workspace_id": "quillmoor-design-technology"
+  }
+}

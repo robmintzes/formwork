@@ -1,0 +1,91 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Choose"
+        Width="560"
+        SizeToContent="Height"
+        MaxHeight="640"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="Grayscale"
+        TextOptions.TextHintingMode="Fixed"
+        UseLayoutRounding="True">
+
+  <!-- M0 chooser (generated, managed): one question, one answer. Same chrome as
+       the result dialog so the two read as one product. -->
+  <Border Margin="12" Style="{DynamicResource {{ ns }}.Window.Frame}">
+    <Border.Effect>
+      <DropShadowEffect Color="#000000" BlurRadius="18" ShadowDepth="3" Direction="270" Opacity="0.30"/>
+    </Border.Effect>
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+      </Grid.RowDefinitions>
+
+      <Border Grid.Row="0" x:Name="TitlebarBorder" Style="{DynamicResource {{ ns }}.Titlebar}">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <TextBlock x:Name="TitlebarTextBlock" Grid.Column="0" Style="{DynamicResource {{ ns }}.Titlebar.Label}"
+                     Text="Tool" AutomationProperties.Name="Window title"/>
+          <StackPanel x:Name="UsageBadgePanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
+                      Visibility="Collapsed" Margin="12,0,0,0">
+            <Path x:Name="UsageIcon" Style="{DynamicResource {{ ns }}.Usage.Icon}"/>
+            <TextBlock x:Name="UsageLabel" Style="{DynamicResource {{ ns }}.Usage.Label}" Margin="4,0,0,0"/>
+          </StackPanel>
+          <Border Grid.Column="2" Style="{DynamicResource {{ ns }}.Titlebar.Divider}"/>
+          <Image x:Name="BrandMark" Grid.Column="3" Height="20" Margin="12,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"
+                 AutomationProperties.Name="{{ logo_alt }}"/>
+          <Button x:Name="CloseXBtn" Grid.Column="4" Style="{DynamicResource {{ ns }}.Titlebar.CloseButton}"
+                  Content="&#xD7;" AutomationProperties.Name="Close window"/>
+        </Grid>
+      </Border>
+
+      <Border Grid.Row="1" Style="{DynamicResource {{ ns }}.Pane.Main}">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+
+          <TextBlock x:Name="EyebrowBlock" Grid.Row="0" Style="{DynamicResource {{ ns }}.Text.Eyebrow}"
+                     Margin="0,0,0,8" Visibility="Collapsed" AutomationProperties.Name="Workflow family"/>
+          <TextBlock x:Name="HeadingBlock" Grid.Row="1" Style="{DynamicResource {{ ns }}.Text.Title}"
+                     Margin="0,0,0,8" TextWrapping="Wrap" Text="Choose one" AutomationProperties.Name="Chooser heading"/>
+          <TextBlock x:Name="PromptBlock" Grid.Row="2" Style="{DynamicResource {{ ns }}.Text.Small}"
+                     Margin="0,0,0,16" Visibility="Collapsed" AutomationProperties.Name="Chooser prompt"/>
+
+          <!-- One radio per option rather than a list: the choice is small and
+               singular, and a radio group says so in the control itself. -->
+          <ScrollViewer Grid.Row="3" x:Name="OptionScroller" MaxHeight="320"
+                        VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="OptionPanel" Margin="0,0,0,8" AutomationProperties.Name="Options"/>
+          </ScrollViewer>
+
+          <Border Grid.Row="4" Style="{DynamicResource {{ ns }}.Hairline}"/>
+
+          <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="CancelBtn" Style="{DynamicResource {{ ns }}.Button.Secondary}"
+                    Content="{{ label_cancel }}" MinWidth="96" Margin="0,0,8,0" AutomationProperties.Name="Cancel"/>
+            <Button x:Name="ConfirmBtn" Style="{DynamicResource {{ ns }}.Button.Primary}"
+                    Content="{{ label_continue }}" MinWidth="96" Margin="0" IsDefault="True"
+                    AutomationProperties.Name="Confirm choice"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Grid>
+  </Border>
+</Window>

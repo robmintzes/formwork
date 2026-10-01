@@ -1,0 +1,165 @@
+# -*- coding: utf-8 -*-
+"""M0 chooser dialog (generated, managed file: regenerate, do not edit).
+
+Ask one question with a short list of answers when a tool has no surface of its
+own to fold the question into. Prefer folding the question into an existing
+review surface; use this when nothing exists yet (a filter has to precede the
+pick it filters).
+
+IronPython 2.7 conventions: no f-strings or annotations, named handler methods,
+package-qualified imports, ASCII source.
+"""
+from __future__ import absolute_import, print_function
+
+import os
+
+import clr
+
+clr.AddReference("PresentationFramework")
+clr.AddReference("PresentationCore")
+clr.AddReference("WindowsBase")
+
+from System.Windows import Thickness
+from System.Windows.Controls import RadioButton, TextBlock
+from System.Windows.Input import Key
+from pyrevit import forms
+
+from {{ package }} import bootstrap
+
+RADIO_STYLE = "{{ ns }}.Radio"
+DETAIL_STYLE = "{{ ns }}.Text.Small"
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_XAML_PATH = os.path.join(_HERE, "ChooserDialog.xaml")
+
+
+def normalize_options(options):
+    """Return [(key, label, detail)] from several convenient shapes.
+
+    Accepts plain strings, (key, label) pairs, (key, label, detail) triples, or
+    dicts with key, label and detail. Entries without a key are dropped. Kept
+    free of WPF so the shapes can be tested anywhere.
+    """
+    normalized = []
+    for option in options or []:
+        if isinstance(option, dict):
+            key = option.get("key")
+            label = option.get("label", key)
+            detail = option.get("detail", "")
+        elif isinstance(option, (list, tuple)):
+            key = option[0]
+            label = option[1] if len(option) > 1 else option[0]
+            detail = option[2] if len(option) > 2 else ""
+        else:
+            key = label = option
+            detail = ""
+        if key is None:
+            continue
+        normalized.append((key, u"{0}".format(label), u"{0}".format(detail or "")))
+    return normalized
+
+
+class ChooserDialog(forms.WPFWindow):
+    """Ask for one choice.
+
+    options       Anything normalize_options accepts.
+    tool_name     Title strip text.
+    heading       The question, in plain language.
+    prompt        One line of context under the heading (optional).
+    eyebrow       Workflow family (optional; never the tool name).
+    action_label  The primary button: name the outcome, not the mechanism.
+    selected      Key that starts selected; defaults to the first option.
+    usage         "reusable", "setup" or "one-time" for the titlebar badge.
+    """
+
+    def __init__(self, options, tool_name, heading, prompt=None, eyebrow=None,
+                 action_label="Continue", selected=None, usage=None):
+        forms.WPFWindow.__init__(self, _XAML_PATH)
+        bootstrap.prepare_window(self, tool_name, usage)
+
+        self._options = normalize_options(options)
+        self._buttons = []
+        self.chosen = None
+
+        self.CloseXBtn.Click += self._on_cancel
+        self.CancelBtn.Click += self._on_cancel
+        self.ConfirmBtn.Click += self._on_confirm
+        self.ConfirmBtn.Content = bootstrap.button_text(action_label)
+        self.PreviewKeyDown += self._on_preview_key_down
+
+        self.HeadingBlock.Text = u"{0}".format(heading)
+        bootstrap.show_text(self.EyebrowBlock, eyebrow)
+        bootstrap.show_text(self.PromptBlock, prompt)
+        self._build_options(selected)
+
+    def _build_options(self, selected):
+        radio_style = self.TryFindResource(RADIO_STYLE)
+        detail_style = self.TryFindResource(DETAIL_STYLE)
+        for key, label, detail in self._options:
+            button = RadioButton()
+            button.GroupName = "{{ ns }}Chooser"
+            button.Margin = Thickness(0, 0, 0, 10)
+            button.Tag = key
+            if radio_style is not None:
+                button.Style = radio_style
+            caption = TextBlock()
+            caption.Text = label
+            button.Content = caption
+            self.OptionPanel.Children.Add(button)
+            self._buttons.append(button)
+            if selected is not None and key == selected:
+                button.IsChecked = True
+
+            if detail:
+                note = TextBlock()
+                note.Text = detail
+                note.Margin = Thickness(24, -6, 0, 12)
+                if detail_style is not None:
+                    note.Style = detail_style
+                self.OptionPanel.Children.Add(note)
+
+        # Something is always selected, so the primary button never does nothing.
+        if self._buttons and not any(bool(b.IsChecked) for b in self._buttons):
+            self._buttons[0].IsChecked = True
+        for button in self._buttons:
+            if bool(button.IsChecked):
+                button.Focus()
+                break
+
+    def _on_preview_key_down(self, sender, args):
+        if args.Key == Key.Escape:
+            args.Handled = True
+            self._on_cancel(sender, args)
+
+    def _on_cancel(self, sender, args):
+        self.chosen = None
+        self.Close()
+
+    def _on_confirm(self, sender, args):
+        for button in self._buttons:
+            if bool(button.IsChecked):
+                self.chosen = button.Tag
+                break
+        self.Close()
+
+    @classmethod
+    def ask(cls, options, tool_name, heading, prompt=None, eyebrow=None,
+            action_label="Continue", selected=None, usage=None):
+        """Show modally; return the chosen key, or None if cancelled."""
+        dialog = cls(
+            options,
+            tool_name,
+            heading,
+            prompt=prompt,
+            eyebrow=eyebrow,
+            action_label=action_label,
+            selected=selected,
+            usage=usage,
+        )
+        dialog.ShowDialog()
+        return dialog.chosen
+
+
+def ask(*args, **kwargs):
+    """Module-level shortcut for ChooserDialog.ask."""
+    return ChooserDialog.ask(*args, **kwargs)

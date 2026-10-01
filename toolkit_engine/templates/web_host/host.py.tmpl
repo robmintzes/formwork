@@ -1,0 +1,597 @@
+# -*- coding: utf-8 -*-
+"""WebToolWindow: the base class for pyRevit tools whose interface is HTML.
+
+Generated, managed file: regenerate, do not edit. A tool subclasses
+``WebToolWindow``, sets ``html_file`` and ``title``, and decorates methods with
+``@expose`` (from ``{{ package }}.bridge``). The base class provides:
+
+  - a minimal WPF shell (``ShellWindow.xaml``) around a WebView2 control;
+  - WebView2 assemblies taken from the RUNNING Revit installation (see below);
+  - one virtual host per folder: the tool's own folder at
+    ``https://{{ tool_host }}/`` and this package's ``assets`` folder at
+    ``https://{{ assets_host }}/``;
+  - a locked-down page: navigation outside those two hosts, new windows,
+    downloads and permission prompts are all refused;
+  - bridge wiring from ``WebMessageReceived`` to ``Bridge.dispatch_json``;
+  - an initialization watchdog with a plain-language timeout message;
+  - a modeless window pumped by a ``DispatcherFrame``.
+
+Where WebView2 comes from. Revit 2024 and later ship the WebView2 Core and Wpf
+assemblies beside ``Revit.exe`` and load them in-process, so this host uses those
+and ships no WebView2 binaries of its own. The folder is derived from the running
+process at run time. ``webview2_support`` explains the one residual case (a Revit
+release that ships none) and the environment variable that handles it.
+
+Why the host creates the WebView2 environment itself. Revit 2024 bundles WebView2
+SDK 1.0.1343.22, whose Wpf assembly calls a ``CoreWebView2EnvironmentOptions``
+constructor that its own Core lacks. That call sits in
+``CoreWebView2CreationProperties.CreateEnvironmentAsync``, which the control runs
+only when ``CreationProperties`` is set and no environment is passed to
+``EnsureCoreWebView2Async``. This host never sets ``CreationProperties``: it calls
+``CoreWebView2Environment.CreateAsync`` (a Core method that is present in every
+shipped version), then passes the environment to ``EnsureCoreWebView2Async``.
+
+Threading. ``WebMessageReceived`` fires on the window's dispatcher thread, which
+for pyRevit-hosted windows is Revit's main thread, one event at a time. Exposed
+methods may call the Revit API directly. A tool that starts its own worker thread
+must marshal back to the UI thread itself.
+
+Message protocol. Responses carry ``id``:
+    {"id": "req-N", "ok": true, "result": ...}
+    {"id": "req-N", "ok": false, "error": "message"}
+Events carry ``event`` and no ``id``: {"event": "progress", "data": {...}}.
+The page uses ``window.{{ ns }}.call(name, args)``, ``.on(name, fn)`` and ``.off``.
+
+Nothing here has been run inside Revit; see the foundation specification.
+"""
+from __future__ import absolute_import, print_function
+
+import os
+
+import clr
+
+clr.AddReference("PresentationFramework")
+clr.AddReference("PresentationCore")
+clr.AddReference("WindowsBase")
+clr.AddReference("System.Xaml")
+
+import System
+from System import TimeSpan, Uri
+from System.Diagnostics import Process
+from System.Threading.Tasks import Task
+from System.Windows.Input import Key
+from System.Windows.Threading import Dispatcher, DispatcherFrame, DispatcherTimer
+from pyrevit import forms
+
+from {{ package }} import webview2_support as support
+from {{ package }}.bridge import Bridge, dumps, expose
+from {{ package }}.log import log, show_output
+
+try:
+    from urllib import quote
+except ImportError:  # CPython 3
+    from urllib.parse import quote
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+SHELL_XAML = os.path.join(HERE, "ShellWindow.xaml")
+ASSETS_DIR = os.path.join(HERE, "assets")
+INIT_TIMEOUT_SECONDS = 20
+
+# WebView2 needs a writable user data folder; the default (beside the host
+# executable) is read-only under Revit's install folder. A sub-folder per Core
+# version keeps Revit releases that run side by side from sharing one data
+# folder with different environment options, which WebView2 rejects.
+USER_DATA_ROOT = os.path.join(
+    os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
+    "{{ ns }}", "WebView2",
+)
+
+
+class WebView2HostError(Exception):
+    """The WebView2 assemblies could not be loaded; the message says what to do."""
+
+
+def _loaded_assembly(simple_name):
+    for assembly in System.AppDomain.CurrentDomain.GetAssemblies():
+        try:
+            if assembly.GetName().Name == simple_name:
+                return assembly
+        except Exception:
+            pass
+    return None
+
+
+def _process_path():
+    """Path of the running host executable (Revit.exe), or None."""
+    try:
+        return Process.GetCurrentProcess().MainModule.FileName
+    except Exception:
+        return None
+
+
+def _assembly_location(assembly):
+    try:
+        return assembly.Location
+    except Exception:
+        return "(no location)"
+
+
+def ensure_webview2_assemblies(tool_title="This tool"):
+    """Make the Core and Wpf assemblies available; return the Core version string.
+
+    Prefers assemblies Revit already loaded, otherwise loads them from the
+    running Revit folder (then from the override folder). Raises
+    ``WebView2HostError`` with an actionable message when they cannot be found
+    or loaded.
+    """
+    directories = support.search_directories(_process_path(), os.environ)
+    missing = []
+    for simple_name in support.WEBVIEW2_ASSEMBLIES:
+        if _loaded_assembly(simple_name) is not None:
+            continue
+        path = support.find_assembly(simple_name, directories)
+        if path is None:
+            missing.append(simple_name + ".dll")
+            continue
+        try:
+            clr.AddReferenceToFileAndPath(path)
+        except Exception as exc:
+            raise WebView2HostError(
+                "{0} could not load {1}: {2}".format(tool_title, path, exc))
+        if _loaded_assembly(simple_name) is None:
+            raise WebView2HostError(
+                "{0} loaded {1} but the assembly {2} is still unavailable.".format(
+                    tool_title, path, simple_name))
+    if missing:
+        log("WebView2 assemblies missing: {0}; searched {1}", missing, directories)
+        raise WebView2HostError(support.missing_message(tool_title, missing, directories))
+    return _log_runtime_state(directories)
+
+
+def _log_runtime_state(directories):
+    """Log what actually loaded; return the Core version string."""
+    core_version = "unknown"
+    versions = {}
+    for simple_name in support.WEBVIEW2_ASSEMBLIES:
+        assembly = _loaded_assembly(simple_name)
+        if assembly is None:
+            continue
+        version = str(assembly.GetName().Version)
+        versions[simple_name] = version
+        log("WV2 assembly: {0} v{1} <- {2}", simple_name, version, _assembly_location(assembly))
+    core_version = versions.get(support.CORE_ASSEMBLY, core_version)
+    if len(set(versions.values())) > 1:
+        log("WV2 WARNING: Core and Wpf versions differ: {0}. A mixed pair can fail "
+            "with MissingMethodException.", versions)
+    core = _loaded_assembly(support.CORE_ASSEMBLY)
+    if core is not None:
+        core_dir = os.path.dirname(_assembly_location(core))
+        loader = support.find_native_loader(core_dir)
+        log("WV2 native loader for the Core folder: {0}", loader or "not found beside the Core")
+    log("WV2 process: {0}", _process_path())
+    log("WV2 WEBVIEW2_BROWSER_EXECUTABLE_FOLDER = {0}",
+        os.environ.get("WEBVIEW2_BROWSER_EXECUTABLE_FOLDER", "(unset)"))
+    return core_version
+
+
+def _enum_value(enum_type, name):
+    return System.Enum.Parse(enum_type, name)
+
+
+class WebToolWindow(forms.WPFWindow):
+    """Subclass, set ``html_file`` and ``title``, decorate methods with ``@expose``.
+
+    ``html_file`` is the absolute path of the tool's HTML. Its folder becomes the
+    tool virtual host, so scripts and stylesheets beside it load by relative URL.
+    The framework method ``close_window`` is exposed to the page.
+    """
+
+    html_file = None    # required: absolute path to the tool's .html
+    title = "Web tool"
+    allow_devtools = False  # a developer may set True in a subclass
+
+    def __init__(self):
+        show_output()
+        log("=" * 60)
+        log("Tool starting: {0} (class={1})", self.title, type(self).__name__)
+        if not self.html_file or not os.path.isfile(self.html_file):
+            raise ValueError("html_file must name an existing file: {0!r}".format(self.html_file))
+        log("HTML file: {0}", self.html_file)
+
+        self._core_version = ensure_webview2_assemblies(self.title)
+
+        # Own Escape: pyRevit's default handler is registered during WPFWindow
+        # initialization and would close the window before ours could run.
+        forms.WPFWindow.__init__(self, SHELL_XAML, handle_esc=False)
+        self.Title = self.title
+
+        self._bridge = Bridge(self, on_error=self._log_bridge_error)
+        log("Bridge: exposed methods = {0}", sorted(self._bridge.methods.keys()))
+
+        self._pre_init_queue = []
+        self._init_started = False
+        self._init_done = False
+        self._disposed = False
+        self._init_watchdog = None
+        self._env_task = None
+        self._process_recovery_attempted = False
+        self._core_handlers = []
+
+        self.PreviewKeyDown += self._on_preview_key_down
+        self.Loaded += self._on_window_loaded
+        self.Closed += self._on_window_closed
+
+    # ------------------------------------------------------------ Init
+
+    def _user_data_folder(self):
+        folder = os.path.join(USER_DATA_ROOT, self._core_version)
+        if not os.path.isdir(folder):
+            try:
+                os.makedirs(folder)
+            except Exception as exc:
+                log("WARN: could not create the WebView2 data folder {0}: {1}", folder, exc)
+        return folder
+
+    def _start_webview_init(self):
+        """Create the WebView2 environment, then initialize the control with it."""
+        if self._init_started or self._disposed:
+            return
+        self._init_started = True
+        log("WebView2 init starting (async)...")
+        try:
+            self.WebView.CoreWebView2InitializationCompleted += self._on_init
+            self.WebView.WebMessageReceived += self._on_message
+        except Exception as exc:
+            self._fail("Could not attach WebView2 handlers: {0}".format(exc))
+            return
+
+        try:
+            self._init_watchdog = DispatcherTimer()
+            self._init_watchdog.Interval = TimeSpan.FromSeconds(INIT_TIMEOUT_SECONDS)
+            self._init_watchdog.Tick += self._on_init_timeout
+            self._init_watchdog.Start()
+            log("WebView2 init watchdog started ({0}s timeout)", INIT_TIMEOUT_SECONDS)
+        except Exception as exc:
+            log("WARN: could not start the init watchdog: {0}", exc)
+
+        folder = self._user_data_folder()
+        log("WebView2 user data folder: {0}", folder)
+        try:
+            from Microsoft.Web.WebView2.Core import CoreWebView2Environment
+
+            task = CoreWebView2Environment.CreateAsync(None, folder, None)
+            self._env_task = task
+            task.ContinueWith(System.Action[Task](self._on_environment_task))
+        except Exception as exc:
+            self._fail("WebView2 initialization failed: {0}\n\n{1}".format(exc, support.runtime_hint()))
+
+    def _on_environment_task(self, task):
+        """Runs on a pool thread when environment creation ends; hop to the UI thread."""
+        try:
+            self.Dispatcher.BeginInvoke(System.Action(self._on_environment_ready))
+        except Exception as exc:
+            log("ERROR: could not marshal the environment result to the UI thread: {0}", exc)
+
+    def _on_environment_ready(self):
+        if self._disposed:
+            return
+        task = self._env_task
+        if task.IsFaulted or task.IsCanceled:
+            detail = "cancelled"
+            try:
+                detail = task.Exception.GetBaseException().Message
+            except Exception:
+                pass
+            self._fail("WebView2 could not create its browser environment: {0}\n\n{1}".format(
+                detail, support.runtime_hint()))
+            return
+        environment = task.Result
+        log("WebView2 environment created; initializing the control")
+        try:
+            try:
+                self.WebView.EnsureCoreWebView2Async(environment, None)
+            except TypeError:
+                self.WebView.EnsureCoreWebView2Async(environment)
+            log("EnsureCoreWebView2Async returned (task pending)")
+        except Exception as exc:
+            self._fail("WebView2 initialization failed: {0}\n\n{1}".format(exc, support.runtime_hint()))
+
+    def _fail(self, message):
+        """Stop, tell the user plainly, and close: a window without a browser is unusable."""
+        self._stop_watchdog()
+        log("ERROR: {0}", message)
+        try:
+            forms.alert(message, title=self.title)
+        except Exception:
+            pass
+        try:
+            self.Close()
+        except Exception:
+            pass
+
+    def _stop_watchdog(self):
+        if self._init_watchdog is not None:
+            try:
+                self._init_watchdog.Stop()
+            except Exception:
+                pass
+            self._init_watchdog = None
+
+    def _on_init_timeout(self, sender, args):
+        self._stop_watchdog()
+        if self._init_done or self._disposed:
+            return
+        self._fail("{0} timed out after {1} seconds starting its browser view.\n\n{2}".format(
+            self.title, INIT_TIMEOUT_SECONDS, support.runtime_hint()))
+
+    def _on_init(self, sender, args):
+        self._stop_watchdog()
+        if self._disposed:
+            return
+        if args.IsSuccess is False:
+            self._fail("WebView2 initialization failed: {0}\n\n{1}".format(
+                args.InitializationException, support.runtime_hint()))
+            return
+        log("WebView2 init OK")
+        core = self.WebView.CoreWebView2
+        try:
+            self._configure_core(core)
+        except Exception as exc:
+            # Fail closed: without navigation limits the page must not load.
+            self._fail("Could not secure the browser view: {0}".format(exc))
+            return
+
+        url = "https://{0}/{1}".format(support.TOOL_HOST, quote(os.path.basename(self.html_file)))
+        self.WebView.Source = Uri(url)
+        log("Navigating to: {0}", url)
+
+        self._init_done = True
+        if self._pre_init_queue:
+            log("Flushing {0} queued post(s)", len(self._pre_init_queue))
+        for message in self._pre_init_queue:
+            core.PostWebMessageAsJson(message)
+        self._pre_init_queue = []
+
+    def _subscribe(self, core, event_name, handler):
+        """Attach a CoreWebView2 event handler and remember it for cleanup."""
+        getattr(core, event_name).__iadd__(handler)
+        self._core_handlers.append((event_name, handler))
+
+    def _configure_core(self, core):
+        """Settings, virtual hosts and the navigation policy. Raises on a failure
+        that would leave the page unrestricted."""
+        settings = core.Settings
+        for name, value in (
+            ("AreDevToolsEnabled", bool(self.allow_devtools)),
+            ("AreDefaultContextMenusEnabled", False),
+            ("IsStatusBarEnabled", False),
+            ("IsZoomControlEnabled", False),
+            ("AreBrowserAcceleratorKeysEnabled", False),
+            ("IsGeneralAutofillEnabled", False),
+            ("IsPasswordAutosaveEnabled", False),
+        ):
+            try:
+                setattr(settings, name, value)
+            except Exception as exc:
+                log("WARN: could not set WebView2 setting {0}: {1}", name, exc)
+
+        # One folder per virtual host name; WebView2 allows a single mapping per host.
+        # Deny: nothing outside the tool page reads the tool folder.
+        # Allow: the stylesheet's @font-face requests are CORS fetches from the
+        # tool page's origin, so the assets host must allow cross-origin reads.
+        method = core.GetType().GetMethod("SetVirtualHostNameToFolderMapping")
+        access_type = method.GetParameters()[2].ParameterType
+        tool_dir = os.path.dirname(os.path.abspath(self.html_file))
+        core.SetVirtualHostNameToFolderMapping(support.TOOL_HOST, tool_dir, _enum_value(access_type, "Deny"))
+        log("Virtual host: https://{0}/ -> {1}", support.TOOL_HOST, tool_dir)
+        core.SetVirtualHostNameToFolderMapping(support.ASSETS_HOST, ASSETS_DIR, _enum_value(access_type, "Allow"))
+        log("Virtual host: https://{0}/ -> {1}", support.ASSETS_HOST, ASSETS_DIR)
+
+        # Required: if either of these cannot be attached, the caller closes the window.
+        self._subscribe(core, "NavigationStarting", self._on_navigation_starting)
+        self._subscribe(core, "FrameNavigationStarting", self._on_navigation_starting)
+        self._subscribe(core, "NewWindowRequested", self._on_new_window)
+        # Best effort.
+        for event_name, handler in (
+            ("DownloadStarting", self._on_download_starting),
+            ("PermissionRequested", self._on_permission_requested),
+            ("ProcessFailed", self._on_process_failed),
+        ):
+            try:
+                self._subscribe(core, event_name, handler)
+            except Exception as exc:
+                log("WARN: could not attach {0}: {1}", event_name, exc)
+
+    # ------------------------------------------------------------ Policy
+
+    def _on_navigation_starting(self, sender, args):
+        if not support.is_allowed_uri(args.Uri):
+            args.Cancel = True
+            log("BLOCKED navigation to {0}", args.Uri)
+
+    def _on_new_window(self, sender, args):
+        args.Handled = True
+        log("BLOCKED new window for {0}", args.Uri)
+
+    def _on_download_starting(self, sender, args):
+        args.Cancel = True
+        log("BLOCKED download")
+
+    def _on_permission_requested(self, sender, args):
+        args.State = _enum_value(args.State.GetType(), "Deny")
+        log("DENIED permission request: {0}", args.PermissionKind)
+
+    # ------------------------------------------------------------ Window events
+
+    def _on_window_loaded(self, sender, args):
+        log("Window Loaded event fired")
+        self._start_webview_init()
+
+    def _on_window_closed(self, sender, args):
+        log("Window Closed event fired")
+        self._cleanup()
+
+    def _on_preview_key_down(self, sender, args):
+        """Escape closes the tool. WebView2 surfaces Escape to the host as a routed
+        key event even when the page handled it, and an unhandled Escape then
+        reaches Revit, where it is universal cancel."""
+        try:
+            if args.Key == Key.Escape:
+                args.Handled = True
+                self.Close()
+        except Exception as exc:
+            log("WARN: Escape handling failed: {0}", exc)
+
+    def _cleanup(self):
+        """Detach handlers and dispose the WebView2 control."""
+        if self._disposed:
+            return
+        self._disposed = True
+        log("Cleaning up WebToolWindow resources...")
+        self._stop_watchdog()
+        for step in (
+            self._detach_window_handlers,
+            self._detach_control_handlers,
+            self._detach_core_handlers,
+        ):
+            try:
+                step()
+            except Exception:
+                pass
+        try:
+            if hasattr(self.WebView, "Dispose"):
+                self.WebView.Dispose()
+                log("WebView2 control disposed")
+        except Exception as exc:
+            log("WARN: WebView2 dispose raised: {0}", exc)
+
+    def _detach_window_handlers(self):
+        self.PreviewKeyDown -= self._on_preview_key_down
+
+    def _detach_control_handlers(self):
+        self.WebView.CoreWebView2InitializationCompleted -= self._on_init
+        self.WebView.WebMessageReceived -= self._on_message
+
+    def _detach_core_handlers(self):
+        core = self.WebView.CoreWebView2
+        if core is None:
+            return
+        for event_name, handler in self._core_handlers:
+            try:
+                getattr(core, event_name).__isub__(handler)
+            except Exception:
+                pass
+
+    def _on_process_failed(self, sender, args):
+        """Log renderer failures and make one guarded reload attempt.
+
+        A blank shell means the renderer can no longer paint. One reload is a
+        reasonable recovery; repeated recovery is blocked so a bad page cannot loop.
+        """
+        kind = str(getattr(args, "ProcessFailedKind", "Unknown"))
+        reason = str(getattr(args, "Reason", "Unknown"))
+        log("WebView2 PROCESS FAILED: kind={0} reason={1} exit_code={2}",
+            kind, reason, getattr(args, "ExitCode", ""))
+        if "RenderProcess" not in kind and "BrowserProcessExited" not in kind:
+            log("WebView2 failure is not reload-recoverable; automatic reload skipped")
+            return
+        if self._process_recovery_attempted:
+            log("WebView2 renderer recovery already attempted; reload suppressed")
+            try:
+                forms.alert(
+                    "{0}'s browser view failed twice. Close and reopen the tool; "
+                    "the details are in the pyRevit output and the log file.".format(self.title),
+                    title=self.title)
+            except Exception:
+                pass
+            return
+        self._process_recovery_attempted = True
+        log("WebView2 renderer recovery: scheduling one reload")
+        try:
+            self.WebView.Dispatcher.BeginInvoke(System.Action(self._reload_page))
+        except Exception:
+            self._reload_page()
+
+    def _reload_page(self):
+        try:
+            self.WebView.CoreWebView2.Reload()
+            log("WebView2 renderer recovery reload requested")
+        except Exception as exc:
+            log("WebView2 renderer recovery FAILED: {0}", exc)
+
+    # ------------------------------------------------------------ Messages
+
+    def _log_bridge_error(self, method_name, trace):
+        log("Bridge method {0} raised:\n{1}", method_name, trace)
+
+    def _on_message(self, sender, args):
+        """Runs on the WPF UI thread (Revit's main thread for pyRevit-hosted windows)."""
+        source = None
+        try:
+            source = args.Source
+        except Exception:
+            pass
+        if source is not None and not support.is_allowed_uri(source):
+            log("DROPPED message from {0}", source)
+            return
+        try:
+            raw = args.TryGetWebMessageAsString()
+        except Exception:
+            raw = str(args.WebMessageAsJson)
+        log("msg in:  {0}", raw)
+        reply = self._bridge.dispatch_json(raw)
+        log("msg out: {0}", reply)
+        self._post_to_js(reply)
+
+    def post_event(self, name, data=None):
+        """Push a fire-and-forget event to the page: ``window.{{ ns }}.on(name, fn)``."""
+        self._post_to_js(dumps({"event": name, "data": data}))
+
+    def _post_to_js(self, json_text):
+        """Send JSON to the page. Must end up on the WebView2's UI thread."""
+        if not self._init_done:
+            self._pre_init_queue.append(json_text)
+            return
+        if self.WebView.Dispatcher.CheckAccess():
+            self.WebView.CoreWebView2.PostWebMessageAsJson(json_text)
+        else:
+            self.WebView.Dispatcher.Invoke(
+                System.Action(lambda: self.WebView.CoreWebView2.PostWebMessageAsJson(json_text)))
+
+    @expose
+    def close_window(self):
+        """Called by ``window.{{ ns }}.close()``: the tool is finished."""
+        log("close_window: tool finishing")
+        self.Close()
+        return {"closed": True}
+
+    # ------------------------------------------------------------ Public entry
+
+    def show_dialog(self):
+        """Refuses: web tools are modeless by construction, see ``show``.
+
+        ``ShowDialog`` runs a modal loop under Revit's external-command context
+        that can stop the async WebView2 initialization from ever completing,
+        without any error. Redirected rather than raised: a traceback in an
+        output panel nobody opened is no improvement on the tool working.
+        """
+        log("WARN: show_dialog() is not supported for web tools; using show() instead")
+        return self.show()
+
+    def show(self):
+        """Show modeless and pump a nested DispatcherFrame until the window closes."""
+        log("show() called (modeless + DispatcherFrame)")
+        frame = DispatcherFrame()
+
+        def on_closed(sender, args):
+            frame.Continue = False
+
+        self.Closed += on_closed
+        try:
+            self.Show()
+            self._start_webview_init()
+            Dispatcher.PushFrame(frame)
+        finally:
+            self._cleanup()
+            log("show() returning; tool ended")
+            log("=" * 60)

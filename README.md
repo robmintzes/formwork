@@ -1,54 +1,96 @@
-# pyRevit Agentic Toolkit Foundation
+# pyRevit Toolbar Template: a design technology foundation
 
-An early-stage, firm-neutral foundation for teams building a governed pyRevit
-toolbar and a local, read-only Revit MCP bridge with AI coding agents.
+**What this is now:** a foundation that generates a firm's own design
+technology workspace (branded pyRevit toolbar, WPF UI kit, HTML guides,
+agent-neutral governance, and a read-only MCP bridge) from a small
+configuration. You do not rebrand this repository; you generate a separate
+workspace from it and regenerate when your inputs change.
 
-Live Revit/pyRevit verification remains outstanding. See the [September 2026 repository assessment](docs/reviews/repository-state-2026-09-30.md) for the distinction between `main` and the unmerged stabilization work.
+> **Alpha.** Generation, validators, and automated tests pass. **No live
+> Revit/pyRevit verification has been completed**. The C# add-in starter
+> compiles offline but has never been loaded in Revit. Treat it as a
+> development foundation, not a production deployment system.
 
-Before developing, install the local Git guards and follow the [branch policy](docs/onboarding/BRANCH_POLICY.md). All contributions use a human-owned branch and a pull request.
+- **Adopting it?** Read the [adoption guide](docs/onboarding/ADOPTING.md).
+- **Want the contracts?** See the [foundation specification](docs/product/FOUNDATION_SPEC.md).
+- **Fastest start:** `python -m toolkit_cli serve` opens the local onboarding
+  wizard (loopback only; it prints a link with a per-launch token).
+- **Contributing?** Follow the [branch policy](docs/onboarding/BRANCH_POLICY.md):
+  a human-owned branch and a pull request for every change.
 
-> **Alpha status:** the repository has static validation and automated Python
-> tests, but it has not yet completed an end-to-end test inside a live Revit and
-> pyRevit session. Treat it as a development foundation, not a production-ready
-> deployment system.
+Profiles are the inputs to generation. `profiles/bimxbert` is the default (the
+BIMxBert name and marks are **not** MIT-licensed; see its `NOTICE-brand.md`).
+`profiles/quillmoor` is a fictional firm that proves identity is data. The
+foundation code is MIT.
 
-## Current scope
+```powershell
+python -m toolkit_cli config validate --firm profiles/quillmoor
+python -m toolkit_cli init --profile profiles/quillmoor --workspace "D:\Work\quillmoor-dt"
+python -m toolkit_cli render --workspace "D:\Work\quillmoor-dt" --dry-run
+python -m toolkit_cli render --workspace "D:\Work\quillmoor-dt"
+python -m toolkit_cli validate --workspace "D:\Work\quillmoor-dt"
+```
 
-The repository currently provides:
+Repeat renders are no-ops, edited generated files are reported as conflicts
+instead of overwritten, and firm-owned tools are never touched.
 
-- vendor-neutral agent instructions and a pyRevit authoring playbook;
-- a neutral sample pyRevit extension with toolbar, bundle, and tool-doc specs;
-- a localhost-only, read-only MCP bridge foundation;
-- standard-library validators for bundle structure, metadata, icons, safety
-  patterns, toolbar coverage, and spec-to-bundle alignment;
-- CI coverage for validator regressions, generated structure, and the MCP server;
-- PowerShell packaging and verified local pyRevit registration helpers;
-- cross-platform environment diagnostics and a redacted live Revit verification
-  harness.
+The [September 2026 repository assessment](docs/reviews/repository-state-2026-09-30.md)
+records the distinction between `main` and earlier unmerged stabilization work.
 
-It does **not** yet provide an update-safe setup wizard, managed firm-wide
-deployment, authenticated remote MCP access, or completed live Revit
-verification. Those are roadmap work, not implied capabilities.
-See the [toolkit roadmap](docs/ROADMAP.md) for the proposed configuration-first
-onboarding architecture and delivery phases.
+## Surfaces
+
+A firm enables surfaces in `firm.json`. All are generated and tested; none is
+live-verified in Revit yet.
+
+| Surface | Produces |
+| --- | --- |
+| `pyrevit-sample` | pyRevit extension with a read-only Hello Button, icons, spec fragment, tool guide |
+| `wpf-specimen` | Themed WPF resource dictionaries, specimen window, PowerShell runner, bundled fonts |
+| `html-guide` | Self-contained offline guide with the firm's brand |
+| `governance` | `AGENTS.md` and thin agent pointers, branch policy, hooks, CI, GitHub ruleset JSON |
+| `mcp-bridge` | Read-only pyRevit Routes bridge and external FastMCP server |
+| `ui-kit` | Themed WPF dialogs (chooser, selector, result), controls, icons, `UI Kit Demo` button |
+| `web-host` | HTML tool host for pyRevit (WebView2 in a WPF window, using the WebView2 files that ship with Revit), a bridge, themed assets and a read-only `Web Tool Demo` button |
+| `revit-addin` | C# add-in project for Revit 2025-2027 (ribbon button, read-only themed command, stable `AddInId`); builds offline with the .NET SDK |
+| `python-app` | Stdlib-only Python CLI (`apps/<namespace>-report`) that turns a CSV or JSON table into a branded offline HTML report; no install step |
+| `web-app` | Dependency-free TypeScript web starter (`apps/<namespace>-web`): loopback-only static server, branded app shell, `node --test` suite; Node 22.18+, no install step |
+
+Not built yet: managed firm-wide
+deployment and authenticated remote MCP. See the
+[backlog](docs/product/BACKLOG.md) and the [toolkit roadmap](docs/ROADMAP.md).
+
+This checkout also still carries the original neutral sample extension
+(`extensions/Placeholder.extension`), a local read-only MCP bridge, and
+standard-library validators for bundle structure, metadata, icons, safety
+patterns, and toolbar spec alignment. Generated workspaces vendor the
+validators and bridge from here.
 
 ## Repository layout
 
 ```text
 pyrevit-toolbar-template/
 ├── .agents/skills/pyrevit-tool/       # pyRevit authoring playbook
-├── .github/workflows/ci.yml           # repository and MCP test pipeline
+├── .github/workflows/                 # CI and development-policy pipelines
 ├── docs/
+│   ├── decisions/                     # architecture decision records
 │   ├── design/                        # neutral WPF and HTML design guidance
 │   ├── handoffs/                      # durable work-in-progress state
 │   ├── memory/                        # Revit-version API overlays
-│   ├── onboarding/                    # developer and MCP setup guides
+│   ├── onboarding/                    # adopter guide, developer and MCP guides
+│   ├── product/                       # charter, foundation spec, backlog
+│   ├── reviews/                       # repository assessments
 │   ├── templates/                     # reusable documentation templates
-│   └── toolbar/                       # ribbon spec and per-tool guides
-├── extensions/Placeholder.extension/ # deployable pyRevit extension root
-├── scripts/                           # bootstrap, install, and package helpers
+│   ├── toolbar/                       # ribbon spec and per-tool guides
+│   └── verification/                  # live-check runbooks and evidence matrix
+├── extensions/Placeholder.extension/  # neutral sample pyRevit extension
+├── profiles/                          # bimxbert (default) and quillmoor (fictional)
+├── schemas/                           # firm.json JSON Schema
+├── scripts/                           # install, verification, and package helpers
 ├── servers/revit-mcp/                 # local MCP-to-pyRevit Routes bridge
 ├── tests/                             # validator and generation regression tests
+├── toolkit_cli/                       # command-line entry point (python -m toolkit_cli)
+├── toolkit_engine/                    # generator, adapters, templates, planner
+├── toolkit_wizard/                    # local onboarding wizard service and UI
 └── validators/                        # static repository guardrails
 ```
 
@@ -58,9 +100,15 @@ pyRevit.
 
 ## Start locally
 
-### 1. Run the repository checks
+### 1. Install the Git guards and run the repository checks
 
-Use CPython 3.10 or newer. From the repository root:
+Use CPython 3.10 or newer. Install the guards once per clone (use your own
+human branch prefix; see the [branch policy](docs/onboarding/BRANCH_POLICY.md)),
+then run the checks from the repository root:
+
+```powershell
+.\scripts\install-git-hooks.ps1 -Owner <your-branch-prefix>
+```
 
 ```bash
 python -m unittest discover -s tests -v
@@ -83,29 +131,26 @@ Run the portable authoring diagnostic on macOS, Linux, or Windows:
 python -m toolkit_cli doctor --profile authoring
 ```
 
-### 2. Rebrand a working copy
+### 2. Create your firm's workspace
 
-The current bootstrap scripts mutate the checkout in place. Run one of them
-once on a clean feature branch or disposable copy:
+Use the wizard (`python -m toolkit_cli serve`) or the CLI commands above. Copy
+`profiles/quillmoor` as the starting point for your own profile. Full steps,
+ownership rules, and upgrade guidance are in the
+[adoption guide](docs/onboarding/ADOPTING.md). The in-place `bootstrap` scripts
+that previously rebranded this checkout were retired on 2026-09-30. CI
+generates both shipped profiles on Windows in paths containing spaces and
+validates them.
 
-```bash
-python scripts/bootstrap.py --firm "Example Firm" --extension "ExampleTools"
-```
+### 3. Register an extension with pyRevit
+
+For a generated workspace:
 
 ```powershell
-.\scripts\bootstrap.ps1 -FirmName "Example Firm" -ExtensionName "ExampleTools"
+pyrevit extensions paths add "D:\Work\quillmoor-dt\extensions"
 ```
 
-The two implementations declare the same replacement surfaces. CI exercises
-the Python generator plus both Windows PowerShell 5.1 and PowerShell 7 in paths
-containing spaces. Neither script is an update-safe project generator, and live
-workstation onboarding remains a separate verification gate. A bootstrap error
-can leave its working copy partially changed; discard that copy or restore the
-feature branch before retrying instead of running the script again in place.
-
-### 3. Register the extension with pyRevit
-
-On a Windows workstation with the pyRevit CLI available:
+For this checkout's neutral sample, on a Windows workstation with the pyRevit
+CLI available:
 
 ```powershell
 .\scripts\install-extension.ps1
@@ -120,8 +165,11 @@ the [MCP guide](docs/onboarding/MCP_GUIDE.md) before making a request.
 
 ### 4. Produce live Windows/Revit evidence
 
-The guarded Windows runner checks prerequisites and exercises every documented
-read-only Routes endpoint and MCP tool while retaining no raw project data:
+For a generated workspace, follow the [generated workspace live
+check](docs/verification/GENERATED_WORKSPACE.md). For this checkout's own
+sample and read-only Routes/MCP bridge, the guarded Windows runner checks
+prerequisites and exercises every documented read-only Routes endpoint and MCP
+tool while retaining no raw project data:
 
 ```powershell
 .\scripts\verify-windows.ps1 -Mode Preflight
@@ -147,15 +195,20 @@ prevent the known unsafe call sequence after pyRevit Reload.
 
 ## Verification status
 
-Automated tests exercise the Python validators, bootstrap structure, and MCP
-server contract. The verification harness can record live results, but static
-checks cannot prove Revit API behavior, pyRevit ribbon loading, Routes lifecycle
-behavior, or transaction safety at runtime.
+Automated tests exercise the Python validators, workspace generation, the
+wizard service, and the MCP server contract. The verification harness can
+record live results, but static checks cannot prove Revit API behavior, pyRevit
+ribbon loading, Routes lifecycle behavior, or transaction safety at runtime.
+Native WPF and browser renders of the generated specimens were captured
+separately (see `docs/verification/foundation-generator/`).
 
-No live Revit/pyRevit verification has been completed for this stabilization
-slice. The active checklist and blockers are recorded in
+No live Revit/pyRevit verification has been completed for the foundation or for
+any generated workspace; the [verification matrix](docs/verification/MATRIX.md)
+has no passing combination. The active checklist and blockers for the MCP
+bridge are recorded in
 [docs/handoffs/mcp-bridge-onboarding-2026-06-19.md](docs/handoffs/mcp-bridge-onboarding-2026-06-19.md).
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE).
+This project is licensed under the MIT License. See [LICENSE](LICENSE). The
+BIMxBert name and marks in `profiles/bimxbert` are not covered by that license.

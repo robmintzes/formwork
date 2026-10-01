@@ -1,0 +1,172 @@
+# -*- coding: utf-8 -*-
+"""M1 compact result dialog (generated, managed file: regenerate, do not edit).
+
+Report what happened after Revit input or a transaction: a status heading
+coloured from the status tokens, one summary sentence, an evidence log, then
+Copy log, an optional follow-up action and Close.
+
+Transaction rule for tools that use it: collect input, show the input dialog,
+run ONE short Transaction, then show this dialog after the Transaction has
+committed or rolled back. Never keep a Transaction open while a dialog is up.
+
+IronPython 2.7 conventions: no f-strings or annotations, named handler methods
+instead of lambdas (closure capture in += handlers is unreliable), and
+package-qualified imports.
+"""
+from __future__ import absolute_import, print_function
+
+import os
+
+import clr
+
+clr.AddReference("PresentationFramework")
+clr.AddReference("PresentationCore")
+clr.AddReference("WindowsBase")
+
+from System import TimeSpan
+from System.Windows import Visibility
+from System.Windows.Input import Key
+from System.Windows.Threading import DispatcherTimer
+from pyrevit import forms
+
+from {{ package }} import bootstrap
+from {{ package }}.result_model import ToolResult
+
+# Status colour keys come from Theme.xaml; the heading text carries the state
+# even when a key is missing, so a theme problem never hides the outcome.
+STATUS_KEY = {
+    "success": "{{ ns }}.Color.Status.Success.Fg",
+    "partial": "{{ ns }}.Color.Status.Warning.Fg",
+    "failed": "{{ ns }}.Color.Status.Danger.Fg",
+    "cancelled": "{{ ns }}.Color.Text.Secondary",
+}
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_XAML_PATH = os.path.join(_HERE, "ResultDialog.xaml")
+
+
+class ResultDialog(forms.WPFWindow):
+    """Modal M1 result dialog.
+
+    result       ToolResult or a dict for ToolResult.from_dict.
+    tool_name    Title strip text; the tool's name, once.
+    eyebrow      Workflow family such as "Annotate / Views" (not the tool name).
+    countdown    Seconds until auto-close. Honoured only when usage is
+                 "one-time" (a tool that made its change and has nothing to
+                 adjust); any key or mouse input cancels it.
+    action_label Caption of an optional primary action; read action_requested
+                 after ShowDialog and run the host action then.
+    usage        "reusable", "setup" or "one-time" for the titlebar badge.
+    """
+
+    def __init__(self, result, tool_name, eyebrow=None, countdown=None, action_label=None, usage=None):
+        forms.WPFWindow.__init__(self, _XAML_PATH)
+        bootstrap.prepare_window(self, tool_name, usage)
+
+        if isinstance(result, dict):
+            result = ToolResult.from_dict(result)
+        self._result = result
+        self.action_requested = False
+
+        self._countdown = int(countdown) if (countdown and usage == "one-time") else 0
+        self._countdown_active = self._countdown > 0
+
+        bootstrap.show_text(self.EyebrowBlock, eyebrow)
+        self.StatusHeadingBlock.Text = result.heading
+        brush = self.TryFindResource(STATUS_KEY.get(result.status, STATUS_KEY["failed"]))
+        if brush is not None:
+            self.StatusHeadingBlock.Foreground = brush
+        self.SummaryBlock.Text = result.summary or u""
+        if result.log_text:
+            self.LogBox.Text = result.log_text
+        else:
+            self.LogBox.Visibility = Visibility.Collapsed
+
+        self.CloseXBtn.Click += self._on_close_clicked
+        self.CopyLogBtn.Click += self._on_copy_log_clicked
+        self.CloseBtn.Click += self._on_close_clicked
+        self.ActionBtn.Click += self._on_action_clicked
+        if action_label:
+            self.ActionBtn.Content = bootstrap.button_text(action_label)
+            self.ActionBtn.Visibility = Visibility.Visible
+
+        self._timer = DispatcherTimer()
+        self._timer.Interval = TimeSpan.FromSeconds(1)
+        self._timer.Tick += self._on_timer_tick
+        self.Closed += self._on_window_closed
+        self.PreviewKeyDown += self._on_preview_key_down
+        self.PreviewMouseDown += self._on_user_interaction
+
+        self._update_close_caption()
+        if self._countdown_active:
+            self._timer.Start()
+
+    def _update_close_caption(self):
+        if self._countdown_active and self._countdown > 0:
+            self.CloseBtn.Content = bootstrap.button_text(u"Close ({0})".format(self._countdown))
+        else:
+            self.CloseBtn.Content = bootstrap.button_text(u"Close")
+
+    def _stop_countdown(self):
+        if self._countdown_active:
+            self._countdown_active = False
+            self._timer.Stop()
+            self._update_close_caption()
+
+    def _on_timer_tick(self, sender, args):
+        self._countdown -= 1
+        if self._countdown <= 0:
+            self._countdown_active = False
+            self.Close()
+        else:
+            self._update_close_caption()
+
+    def _on_user_interaction(self, sender, args):
+        self._stop_countdown()
+
+    def _on_preview_key_down(self, sender, args):
+        self._stop_countdown()
+        if args.Key == Key.Escape:
+            args.Handled = True
+            self.Close()
+
+    def _on_close_clicked(self, sender, args):
+        self.Close()
+
+    def _on_action_clicked(self, sender, args):
+        self.action_requested = True
+        self.Close()
+
+    def _on_window_closed(self, sender, args):
+        try:
+            self._timer.Stop()
+        except Exception:
+            pass
+
+    def _on_copy_log_clicked(self, sender, args):
+        try:
+            from System.Windows import Clipboard
+
+            Clipboard.SetText(self._result.log_text or u"")
+            self.CopyLogBtn.Content = bootstrap.button_text(u"Copied")
+        except Exception:
+            self.CopyLogBtn.Content = bootstrap.button_text(u"Copy failed")
+
+    @classmethod
+    def show_result(cls, result, tool_name, eyebrow=None, countdown=None, action_label=None, usage=None):
+        """Construct, show modally, and return the dialog (check action_requested)."""
+        dialog = cls(
+            result,
+            tool_name,
+            eyebrow=eyebrow,
+            countdown=countdown,
+            action_label=action_label,
+            usage=usage,
+        )
+        dialog.ShowDialog()
+        return dialog
+
+
+def show_result(*args, **kwargs):
+    """Module-level shortcut for ResultDialog.show_result."""
+    return ResultDialog.show_result(*args, **kwargs)
