@@ -121,7 +121,7 @@ identifiers, or persistence keys.
 pyRevit derives command identity from bundle paths, so these folder names are
 technical identity even though users see them. Renaming them is a migration
 (old managed files become obsolete and are deleted only when unmodified), not a
-rebrand. Not Windows reserved names; not `Placeholder`.
+rebrand. Not Windows reserved names, and not the template sample's own extension name.
 
 ### 2.4 Brand inputs (`brand`)
 
@@ -133,7 +133,8 @@ rebrand. Not Windows reserved names; not `Placeholder`.
                  "inverse": {"svg": "...", "png": "..."}},
     "symbol":   {"light": {...}, "inverse": {...}}
   },
-  "fonts": [{"family": "Geist", "files": ["fonts/geist/Geist-Regular.ttf"],
+  "fonts": [{"family": "Geist",
+             "files": [{"path": "fonts/geist/Geist-Regular.ttf", "weight": 400, "style": "normal"}],
              "license": "OFL-1.1", "license_file": "fonts/geist/OFL.txt",
              "source": "https://github.com/vercel/geist-font"}],
   "notices": ["NOTICE-brand.md"]

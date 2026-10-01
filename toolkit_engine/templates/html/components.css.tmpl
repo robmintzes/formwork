@@ -1,0 +1,121 @@
+*, *::before, *::after { box-sizing: border-box; }
+html { background: {{ color_surface_default }}; }
+body {
+  margin: 0;
+  color: {{ color_text_primary }};
+  background: {{ color_surface_default }};
+  font-family: {{ font_body }};
+  font-weight: {{ font_weight_body }};
+  font-size: {{ font_size_body }};
+  line-height: 1.5;
+}
+a { color: {{ color_accent_default }}; }
+.masthead {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: {{ space_md }};
+  padding: {{ space_md }} {{ space_xl }};
+  background: {{ color_surface_inverse }};
+  color: {{ color_text_inverse }};
+}
+.masthead img { display: block; height: 40px; width: auto; }
+.label, .masthead__eyebrow {
+  font-family: {{ font_label }};
+  font-size: {{ font_size_label }};
+  font-weight: {{ font_weight_label }};
+  letter-spacing: calc({{ tracking_label }} * 1em);
+  text-transform: uppercase;
+}
+.label { color: {{ color_text_secondary }}; margin: 0 0 {{ space_sm }}; }
+main { max-width: 880px; margin: 0 auto; padding: {{ space_xl }} {{ space_lg }}; }
+h1 {
+  font-family: {{ font_display }};
+  font-weight: {{ font_weight_display }};
+  font-size: {{ font_size_display }};
+  line-height: 1.05;
+  margin: 0 0 {{ space_sm }};
+}
+h2 {
+  font-family: {{ font_display }};
+  font-weight: {{ font_weight_display }};
+  font-size: {{ font_size_title }};
+  margin: {{ space_xl }} 0 {{ space_sm }};
+  padding-top: {{ space_md }};
+  border-top: {{ stroke_hairline }} solid {{ color_line_subtle }};
+}
+.lede, .small { color: {{ color_text_secondary }}; }
+.small { font-size: {{ font_size_small }}; }
+code {
+  font-family: {{ font_code }};
+  font-size: {{ font_size_code }};
+  background: {{ color_surface_sunken }};
+  padding: 0 {{ space_xs }};
+}
+table { border-collapse: collapse; width: 100%; }
+th, td {
+  text-align: left; vertical-align: top;
+  padding: {{ space_sm }};
+  border-bottom: {{ stroke_hairline }} solid {{ color_line_subtle }};
+}
+.card {
+  background: {{ color_surface_card }};
+  border: {{ stroke_control }} solid {{ color_line_subtle }};
+  padding: {{ space_md }};
+  margin-bottom: {{ space_md }};
+}
+.actions { display: flex; flex-wrap: wrap; align-items: center; gap: {{ space_md }}; }
+.btn {
+  font: inherit;
+  font-weight: {{ font_weight_strong }};
+  min-height: {{ control_height }};
+  padding: 0 {{ space_md }};
+  border: {{ stroke_control }} solid transparent;
+  border-radius: {{ button_radius }};
+  text-transform: {{ button_case }};
+  cursor: pointer;
+}
+.btn:hover { opacity: 0.88; }
+.btn:active { opacity: 0.76; }
+.btn:focus-visible, .btn.is-focus-depicted { outline: {{ stroke_focus }} solid {{ color_focus_ring }}; outline-offset: 2px; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn--primary { background: {{ primary_bg }}; color: {{ primary_fg }}; border-color: {{ primary_border }}; }
+.btn--secondary { background: {{ secondary_bg }}; color: {{ secondary_fg }}; border-color: {{ secondary_border }}; }
+.chips { display: flex; gap: {{ space_sm }}; flex-wrap: wrap; margin-bottom: {{ space_sm }}; }
+.chip {
+  font: inherit; font-size: {{ font_size_small }};
+  padding: 4px {{ space_md }};
+  color: {{ color_text_primary }};
+  background: {{ color_surface_card }};
+  border: {{ stroke_control }} solid {{ color_line_strong }};
+  border-radius: {{ button_radius }};
+}
+.chip[aria-pressed="true"] {
+  background: {{ color_accent_soft }};
+  border: 2px solid {{ color_accent_default }};
+  font-weight: {{ font_weight_strong }};
+}
+.list { list-style: none; margin: 0; padding: 0; font-size: {{ font_size_small }}; }
+.list li { padding: 6px {{ space_sm }}; border-left: 3px solid transparent; border-bottom: {{ stroke_hairline }} solid {{ color_line_subtle }}; }
+.list li[aria-selected="true"] { background: {{ color_accent_soft }}; border-left-color: {{ color_accent_default }}; }
+.badge {
+  display: inline-block;
+  margin-right: {{ space_sm }};
+  padding: 2px {{ space_sm }};
+  font-family: {{ font_label }};
+  font-size: {{ font_size_label }};
+  font-weight: {{ font_weight_label }};
+  letter-spacing: calc({{ tracking_label }} * 1em);
+  text-transform: {{ badge_case }};
+  border: {{ stroke_control }} solid transparent;
+  border-radius: {{ badge_radius }};
+}
+{{ badge_rules }}
+{{ registration_marks }}
+footer {
+  display: flex; align-items: center; gap: {{ space_sm }};
+  max-width: 880px; margin: 0 auto;
+  padding: {{ space_lg }};
+  border-top: {{ stroke_hairline }} solid {{ color_line_subtle }};
+  color: {{ color_text_secondary }};
+  font-size: {{ font_size_small }};
+}
+footer img { height: 20px; width: auto; }

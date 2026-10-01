@@ -19,7 +19,9 @@ EXT_DIR_NAME = "extensions"
 REQUIRED_BUTTON_FILES = {"script.py", "bundle.yaml", "icon.png"}
 REQUIRED_BUNDLE_FIELDS = {"title", "tooltip", "author"}
 REQUIRED_EXTENSION_FIELDS = {"name", "author"}
-EXPECTED_ICON_SIZE = (32, 32)
+# pyRevit scales icons up to 96x96 (ADR 0007); 32x32 remains the classic size.
+ALLOWED_ICON_SIZES = ((32, 32), (96, 96))
+EXPECTED_ICON_SIZE = ALLOWED_ICON_SIZES[0]  # retained for existing callers
 
 
 def parse_yaml_metadata(text: str) -> dict[str, str]:
@@ -250,16 +252,30 @@ def validate_bundle_structure(root: Path = ROOT) -> tuple[list[str], list[str]]:
                             )
 
             icon_path = button / "icon.png"
+            icon_size = None
             if icon_path.is_file():
                 try:
-                    dimensions = read_png_size(icon_path)
+                    icon_size = read_png_size(icon_path)
                 except (OSError, ValueError, struct.error) as exc:
                     errors.append(f"Invalid icon {icon_path.relative_to(root)}: {exc}.")
                 else:
-                    if dimensions != EXPECTED_ICON_SIZE:
+                    if icon_size not in ALLOWED_ICON_SIZES:
                         errors.append(
-                            f"Icon {icon_path.relative_to(root)} is {dimensions[0]}x{dimensions[1]}; "
-                            f"expected {EXPECTED_ICON_SIZE[0]}x{EXPECTED_ICON_SIZE[1]}."
+                            f"Icon {icon_path.relative_to(root)} is {icon_size[0]}x{icon_size[1]}; "
+                            "expected 32x32 or 96x96."
+                        )
+
+            dark_path = button / "icon.dark.png"
+            if dark_path.is_file():
+                try:
+                    dark_size = read_png_size(dark_path)
+                except (OSError, ValueError, struct.error) as exc:
+                    errors.append(f"Invalid icon {dark_path.relative_to(root)}: {exc}.")
+                else:
+                    if icon_size is not None and dark_size != icon_size:
+                        errors.append(
+                            f"Dark icon {dark_path.relative_to(root)} is {dark_size[0]}x{dark_size[1]}; "
+                            f"it must match icon.png ({icon_size[0]}x{icon_size[1]})."
                         )
 
     return errors, warnings

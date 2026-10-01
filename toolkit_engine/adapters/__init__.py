@@ -1,0 +1,46 @@
+"""Platform adapters: pure functions from a Profile to rendered files.
+
+Each adapter returns a RenderResult and never touches the filesystem
+(FOUNDATION_SPEC section 6). ``common`` always runs; the rest run when their
+surface id is listed in firm.json ``surfaces``.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Callable
+
+from toolkit_engine.diagnostics import Diagnostic
+from toolkit_engine.outputs import OutputFile
+from toolkit_engine.profile import Profile
+
+
+@dataclass
+class RenderResult:
+    files: list[OutputFile] = field(default_factory=list)
+    diagnostics: list[Diagnostic] = field(default_factory=list)
+
+
+Adapter = Callable[[Profile], RenderResult]
+
+
+def _registry() -> dict[str, Adapter]:
+    from toolkit_engine.adapters import common, html_guide, pyrevit_sample, wpf_specimen
+
+    return {
+        "common": common.render,
+        "pyrevit-sample": pyrevit_sample.render,
+        "wpf-specimen": wpf_specimen.render,
+        "html-guide": html_guide.render,
+    }
+
+
+def render_all(profile: Profile) -> RenderResult:
+    """Run ``common`` plus every enabled surface adapter, in a fixed order."""
+    registry = _registry()
+    combined = RenderResult()
+    for adapter_id in ("common",) + tuple(s for s in registry if s in profile.config.surfaces):
+        result = registry[adapter_id](profile)
+        combined.files.extend(result.files)
+        combined.diagnostics.extend(result.diagnostics)
+    return combined

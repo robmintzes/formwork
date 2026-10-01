@@ -131,7 +131,7 @@ class ValidatorFixture(unittest.TestCase):
 
         errors, _ = validate_bundle_structure(self.root)
 
-        self.assertIn("is 64x64; expected 32x32", "\n".join(errors))
+        self.assertIn("is 64x64; expected 32x32 or 96x96", "\n".join(errors))
 
     def test_bundle_validator_rejects_truncated_png(self) -> None:
         (self.button / "icon.png").write_bytes(

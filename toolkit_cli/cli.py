@@ -19,6 +19,7 @@ from toolkit_cli.doctor import (
     run_doctor,
     write_json,
 )
+from toolkit_cli.generate import add_generation_commands, run_generation_command
 from toolkit_cli.results import report_exit_code
 from toolkit_cli.verify import verify_and_write
 
@@ -41,7 +42,7 @@ def _default_evidence_dir(repo_root: Path) -> Path:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="toolkit",
-        description="Firm-neutral diagnostics and live verification tooling.",
+        description="Firm-neutral diagnostics, workspace generation, and live verification tooling.",
     )
     parser.add_argument("--version", action="version", version=__version__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -105,6 +106,7 @@ def build_parser() -> argparse.ArgumentParser:
             "the most recent pyRevit Reload."
         ),
     )
+    add_generation_commands(commands)
     return parser
 
 
@@ -139,6 +141,9 @@ def _format_verify_text(
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+
+    if args.command in ("config", "init", "render"):
+        return run_generation_command(args)
 
     try:
         if args.command == "doctor":

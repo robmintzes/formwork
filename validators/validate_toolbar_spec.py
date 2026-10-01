@@ -18,6 +18,8 @@ except ImportError:  # pragma: no cover - exercised by the CLI invocation
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC_RELATIVE_PATH = Path("docs/toolbar/toolbar_spec.md")
+# Generated workspaces keep managed spec blocks in fragments beside the firm-owned spec.
+SPEC_FRAGMENTS_RELATIVE_PATH = Path("docs/toolbar/spec.d")
 TOOLS_DOCS_RELATIVE_PATH = Path("docs/toolbar/tools")
 REQUIRED_TAB_FIELDS = (
     "id",
@@ -147,10 +149,14 @@ def validate_toolbar_spec(root: Path = ROOT) -> tuple[dict[str, int], list[str]]
     if not spec_path.is_file():
         return ({"tabs": 0, "tab_paths": 0, "entries": 0, "spec_paths": 0, "disk_paths": 0}, [f"Spec file not found: {SPEC_RELATIVE_PATH.as_posix()}."])
 
-    try:
-        spec_text = spec_path.read_text(encoding="utf-8")
-    except (OSError, UnicodeError) as exc:
-        return ({"tabs": 0, "tab_paths": 0, "entries": 0, "spec_paths": 0, "disk_paths": 0}, [f"Could not read {SPEC_RELATIVE_PATH.as_posix()}: {exc}."])
+    spec_files = [spec_path] + sorted((root / SPEC_FRAGMENTS_RELATIVE_PATH).glob("*.md"))
+    texts: list[str] = []
+    for path in spec_files:
+        try:
+            texts.append(path.read_text(encoding="utf-8"))
+        except (OSError, UnicodeError) as exc:
+            return ({"tabs": 0, "tab_paths": 0, "entries": 0, "spec_paths": 0, "disk_paths": 0}, [f"Could not read {path.relative_to(root).as_posix()}: {exc}."])
+    spec_text = "\n".join(texts)
 
     tabs = parse_tab_entries(spec_text)
     entries = parse_spec_entries(spec_text)

@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/robmintzes/pyrevit-toolbar-template/schemas/firm-config.v1.schema.json",
+  "title": "Firm configuration (firm.json) v1",
+  "description": "Editor completion for firm.json. toolkit_engine.config is the authority; tests keep this file in step with it.",
+  "type": "object",
+  "required": ["schema_version", "profile", "identity", "technical", "brand", "appearance", "surfaces", "maintainers"],
+  "patternProperties": {"^x-": {}},
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {"type": "string"},
+    "schema_version": {"const": 1},
+    "profile": {
+      "type": "object",
+      "required": ["id", "description"],
+      "additionalProperties": false,
+      "patternProperties": {"^x-": {}},
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 40},
+        "description": {"type": "string", "maxLength": 400},
+        "fictional": {"type": "boolean"}
+      }
+    },
+    "identity": {
+      "description": "Display identity. Safe to change at any time; never renames paths or identifiers.",
+      "type": "object",
+      "required": ["display_name", "short_name", "author", "logo_alt", "links"],
+      "additionalProperties": false,
+      "patternProperties": {"^x-": {}},
+      "properties": {
+        "display_name": {"type": "string", "maxLength": 80},
+        "short_name": {"type": "string", "maxLength": 24},
+        "author": {"type": "string", "maxLength": 80, "description": "Used for __author__ and bundle.yaml author."},
+        "logo_alt": {"type": "string", "maxLength": 80, "description": "Accessible name for logo images."},
+        "links": {
+          "type": "object",
+          "required": ["support"],
+          "additionalProperties": false,
+          "patternProperties": {"^x-": {}},
+          "properties": {
+            "support": {"$ref": "#/$defs/https"},
+            "documentation": {"$ref": "#/$defs/https"}
+          }
+        }
+      }
+    },
+    "technical": {
+      "description": "Stable technical identity. Changing these is a migration, not a rebrand.",
+      "type": "object",
+      "required": ["namespace", "workspace_id", "pyrevit"],
+      "additionalProperties": false,
+      "patternProperties": {"^x-": {}},
+      "properties": {
+        "namespace": {"type": "string", "pattern": "^[a-z][a-z0-9]{1,23}$"},
+        "workspace_id": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 64},
+        "pyrevit": {
+          "type": "object",
+          "required": ["extension", "tab", "sample_panel"],
+          "additionalProperties": false,
+          "patternProperties": {"^x-": {}},
+          "properties": {
+            "extension": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9]{0,39}$"},
+            "tab": {"$ref": "#/$defs/folder_title"},
+            "sample_panel": {"$ref": "#/$defs/folder_title"}
+          }
+        }
+      }
+    },
+    "brand": {
+      "type": "object",
+      "required": ["tokens", "assets", "fonts"],
+      "additionalProperties": false,
+      "patternProperties": {"^x-": {}},
+      "properties": {
+        "tokens": {"type": "string", "pattern": "\\.tokens\\.json$"},
+        "assets": {
+          "type": "object",
+          "required": ["wordmark", "symbol"],
+          "additionalProperties": false,
+          "patternProperties": {"^x-": {}},
+          "properties": {
+            "wordmark": {"$ref": "#/$defs/asset_slot"},
+            "symbol": {"$ref": "#/$defs/asset_slot"}
+          }
+        },
+        "fonts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["family", "files", "license", "license_file", "source"],
+            "additionalProperties": false,
+            "patternProperties": {"^x-": {}},
+            "properties": {
+              "family": {"type": "string"},
+              "license": {"type": "string", "examples": ["OFL-1.1", "Apache-2.0", "MIT"]},
+              "license_file": {"type": "string"},
+              "source": {"$ref": "#/$defs/https"},
+              "files": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": ["path", "weight"],
+                  "additionalProperties": false,
+                  "patternProperties": {"^x-": {}},
+                  "properties": {
+                    "path": {"type": "string", "pattern": "\\.(ttf|otf|TTF|OTF)$"},
+                    "weight": {"type": "integer", "minimum": 1, "maximum": 1000},
+                    "style": {"enum": ["normal", "italic"]}
+                  }
+                }
+              }
+            }
+          }
+        },
+        "notices": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "appearance": {
+      "type": "object",
+      "required": ["button", "badge", "decorations"],
+      "additionalProperties": false,
+      "patternProperties": {"^x-": {}},
+      "properties": {
+        "button": {
+          "type": "object",
+          "required": ["primary", "secondary", "shape", "label_case"],
+          "additionalProperties": false,
+          "patternProperties": {"^x-": {}},
+          "properties": {
+            "primary": {"enum": ["solid", "outline"]},
+            "secondary": {"enum": ["outline", "tonal", "ghost"]},
+            "shape": {"enum": ["square", "rounded", "pill"]},
+            "label_case": {"enum": ["as-written", "uppercase"]}
+          }
+        },
+        "badge": {
+          "type": "object",
+          "required": ["style", "shape", "label_case"],
+          "additionalProperties": false,
+          "patternProperties": {"^x-": {}},
+          "properties": {
+            "style": {"enum": ["soft", "solid", "outline"]},
+            "shape": {"enum": ["square", "rounded", "pill"]},
+            "label_case": {"enum": ["as-written", "uppercase"]}
+          }
+        },
+        "decorations": {
+          "type": "object",
+          "required": ["registration_marks"],
+          "additionalProperties": false,
+          "patternProperties": {"^x-": {}},
+          "properties": {"registration_marks": {"type": "boolean"}}
+        }
+      }
+    },
+    "surfaces": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"enum": ["pyrevit-sample", "wpf-specimen", "html-guide"]}
+    },
+    "maintainers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["name", "branch_prefix"],
+        "additionalProperties": false,
+        "patternProperties": {"^x-": {}},
+        "properties": {
+          "name": {"type": "string", "maxLength": 80},
+          "branch_prefix": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$", "maxLength": 39}
+        }
+      }
+    }
+  },
+  "$defs": {
+    "https": {"type": "string", "pattern": "^https://[^\\s<>\"'`]+$"},
+    "folder_title": {"type": "string", "pattern": "^[A-Za-z0-9]+(?: [A-Za-z0-9]+)*$", "maxLength": 40},
+    "asset_files": {
+      "type": "object",
+      "required": ["svg", "png"],
+      "additionalProperties": false,
+      "properties": {
+        "svg": {"type": "string", "pattern": "\\.svg$"},
+        "png": {"type": "string", "pattern": "\\.png$"}
+      }
+    },
+    "asset_slot": {
+      "type": "object",
+      "required": ["light"],
+      "additionalProperties": false,
+      "patternProperties": {"^x-": {}},
+      "properties": {
+        "light": {"$ref": "#/$defs/asset_files"},
+        "inverse": {"$ref": "#/$defs/asset_files"}
+      }
+    }
+  }
+}
