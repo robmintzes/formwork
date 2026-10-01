@@ -592,8 +592,12 @@ fonts used by the source UI are never packaged; fonts come from the firm profile
 The license texts are added to `THIRD_PARTY_NOTICES.md` by the always-on `common`
 adapter whenever the surface is enabled, independent of branding. Origin and
 changes of the ported code are in [RELEASE_RECORD.md](RELEASE_RECORD.md) (R05).
-Every render reports `ui-kit.not-live-verified` (info) until a live Revit run is
-recorded.
+**Verified live** (Revit 2026 (26.0.4.409), pyRevit 6.5.5, IronPython 2.7.12, 2026-10-01; [MATRIX](../verification/MATRIX.md)): the chooser, selector, and result
+dialogs open from UI Kit Demo with the firm's titlebar, mark, badge, and fonts;
+filtering, Enter, Esc, and Copy log work; no Undo entry. The run found the
+selector's resize strip, fixed by giving it the shared frame. Not verified: other
+Revit versions. Every render still reports `ui-kit.not-live-verified` (info),
+which tells an adopter to run the demo on each Revit version they support.
 
 ### 8.3 Revit add-in starter (`revit-addin` surface)
 
@@ -822,13 +826,16 @@ external URLs, inline code and foreign names, asserts the design on the source o
 attached before navigation), runs `bridge.js` and `tool-ui.js` against stubs in Node when
 it is present and, on a machine with Revit installed, finds Core, Wpf and a native
 loader in every installed Revit 2024 or later. The page was also viewed in a browser
-with a stub bridge. **Not verified**: any WebView2 window opened in Revit; the
-`EnsureCoreWebView2Async` overload under IronPython; the polled environment task and
-event attach through `+=` inside Revit. the `.test` mapping, the `Deny`
-and `Allow` access kinds, the CSP and clipboard writes inside WebView2; Escape handling
-with browser accelerator keys off; the Wpf assemblies of Revit 2025 and later; behavior
-next to other add-ins' Core versions; the per-Core-version data folder. Every render
-reports `web-host.not-live-verified` (info) until a live run is recorded.
+with a stub bridge. **Verified live** (Revit 2026 (26.0.4.409), pyRevit 6.5.5, IronPython 2.7.12, 2026-10-01; [MATRIX](../verification/MATRIX.md)): Web Tool Demo opens a
+WebView2 window inside Revit using the Core and Wpf assemblies Revit ships (1.0.2478.35),
+with the preloaded-assembly reference, the polled environment task,
+`EnsureCoreWebView2Async`, event attach through `+=`, both `.test` mappings (the page
+and its fonts load), filtering, the clipboard write, Escape and Close, and no Undo
+entry. The run found two IronPython defects on this path, both fixed (see the
+matrix). **Not verified**: the `Deny` access kind's effect and the CSP against a
+hostile page; Revit versions other than 2026; behavior next to other add-ins' Core
+versions. Every render still reports `web-host.not-live-verified` (info), which tells
+an adopter to run the demo on each Revit version they support.
 
 ## 9. Notices, attribution, and provenance
 
