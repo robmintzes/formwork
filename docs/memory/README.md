@@ -8,7 +8,7 @@ This folder contains version-specific reference files that outline API shifts, r
 
 Revit API interfaces change rapidly between releases. In addition, Autodesk changed the underlying framework runtime across recent versions:
 - **Revit 2024 and older:** Uses legacy .NET Framework 4.8.
-- **Revit 2025 and 2026:** Uses modern .NET 8.
+- **Revit 2025 and 2026:** Shipped on .NET 8. The 2025.5 and 2026.5 updates (2026) moved both to .NET 10; check the installed build (see `revit-2025.md`).
 - **Revit 2027:** Uses modern .NET 10.
 
 AI coding assistants often confuse these details, leading to scripts that use deprecated methods or compile assemblies targeting the wrong .NET version.

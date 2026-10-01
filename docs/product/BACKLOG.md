@@ -19,12 +19,12 @@ decision. Specification: [FOUNDATION_SPEC.md](FOUNDATION_SPEC.md).
 | B10 | Native WPF snapshot on Windows; browser screenshot; record in handoff | B6 | C | done |
 | B11 | Live gate: Revit 2026 + pyRevit 6.5.5 + IronPython 2.7.12 via `toolkit verify revit`, generated BIMxBert workspace installed | B7, PR #2 review | C/H (combination) | todo - needs Rob at Revit |
 | B12 | Governance adapter: AGENTS.md, agent shims, branch policy/hooks, ruleset JSON from `maintainers` | B7 | C | done |
-| B13 | `config migrate`, template overrides, three-way upgrade merge | B8 | P | todo |
+| B13 | Template overrides (done: `firm/overrides/`); `config migrate` and three-way upgrade merge (todo, wait for a schema v2) | B8 | P | partial |
 | B14 | Wizard (`toolkit serve`) per ADR 0006 | B8, B10 | C (wizard), P (stack) | todo |
 | B15 | Retire `scripts/bootstrap.*` once `init`/`render` cover the sample; update CI windows-smoke | B8 | P | done |
 | B16 | Engine distribution to adopters (pip, pinned checkout, vendored) | B8 | H | todo |
 | B17 | Permanent product/repository name | - | H | todo |
-| B18 | Later surfaces: ~~MCP bridge in workspaces~~ (done: `mcp-bridge` surface, spec 8.1; live run pending), C# add-in starter, Python app, TypeScript app | B12 | C (scope), P (order) | todo (MCP bridge part done) |
+| B18 | Later surfaces: ~~MCP bridge in workspaces~~ (done: `mcp-bridge` surface, spec 8.1; live run pending), ~~C# add-in starter~~ (done: `revit-addin` surface, spec 8.3; builds offline for 2025-2027, never loaded in Revit), Python app, TypeScript app | B12 | C (scope), P (order) | todo (MCP bridge and C# add-in starter done) |
 | B19 | `ui-kit` surface: themed WPF dialog kit (M0 chooser, M1 result, M2-lite selector), controls, icons, `UI Kit Demo` button; ported under ADR 0005 (R05); native renders recorded | B6, B12 | C | done (live Revit run pending, with B11) |
 | B20 | Port the WebView2 HTML tool host (M2-M7 families): NuGet-sourced DLLs, bridge verbs, session and result shape, offline assets | B19 | P | todo |
 

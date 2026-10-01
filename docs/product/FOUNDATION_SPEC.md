@@ -51,7 +51,8 @@ proves identity is data.
   Python is checked with the existing conservative AST guard; only live
   execution proves compatibility.
 - Generated WPF XAML: loose ResourceDictionaries usable by `XamlReader.Parse`
-  from pyRevit or PowerShell. No compiled assemblies in the first milestone.
+  from pyRevit or PowerShell. The only compiled output is the opt-in `revit-addin` surface
+  (section 8.3), which is built by the user's own .NET SDK; the engine never compiles.
 - Generated HTML: one self-contained file per guide plus relative local assets;
   no network requests.
 
@@ -65,8 +66,9 @@ proves identity is data.
 | `governance` | agent instructions, branch policy, hooks, CI, ruleset (section 8) | hooks exercised in a temporary repository; ruleset activation is a maintainer action |
 | `mcp-bridge` | read-only Revit MCP bridge: pyRevit Routes side in the firm extension, external FastMCP server, guide (section 8.1) | static checks and extension runtime tests **and** a live Revit/pyRevit run behind the mandatory reset rule |
 | `ui-kit` | themed WPF dialog kit in the firm extension (`lib/<namespace>_ui`): result, chooser, selector, controls, icons, plus a read-only `UI Kit Demo` button (section 8.2) | static key-resolution and runtime-contract tests, a native WPF render of every dialog **and** a live Revit/pyRevit run |
+| `revit-addin` | C# Revit add-in starter under `addins/<Extension>.Addin/`: SDK-style project, ribbon button, read-only command with a themed WPF window, manifest with a stable `AddInId`, README (section 8.3) | `dotnet build` succeeds offline against the installed Revit API (build evidence) **and** the add-in loads and its command runs in a live Revit (host evidence); neither implies the other |
 
-Compiled Revit add-ins and Python/TypeScript app starters are later surfaces
+Python and TypeScript app starters are later surfaces
 ([backlog](BACKLOG.md)). The adapter interface (section 6) is shared so those
 are additions, not special cases.
 
@@ -381,7 +383,27 @@ reported, not deleted.
   (`foundation.downgrade`); upgrading is allowed and shows the diff.
 - Config `schema_version` migrations are explicit functions `N -> N+1`, run in
   memory and shown in the plan; the firm's `firm.json` is rewritten only by an
-  explicit `toolkit config migrate` (backlog B8). v1 has no migrations.
+  explicit `toolkit config migrate` (backlog B13). v1 has no migrations.
+
+### 4.7 Overrides (`firm/overrides/`)
+
+A firm that wants to own the content of one managed file puts its version at
+`firm/overrides/<workspace-relative path>`. On render:
+
+- the override replaces the generated content (CRLF is normalized for text);
+  output checks still run on it, so a broken override blocks the render;
+- the manifest entry records `override: true` and `generated_sha256` (the hash
+  of what the generator would have written);
+- when a later render produces different generated content,
+  `override.upstream-changed` warns and the override is kept;
+- `override.orphan` (no generated file at that path) and `override.not-managed`
+  (the path is a seed, which already belongs to the firm) are errors;
+- deleting the override restores the generated content on the next render.
+
+Overrides are always read from the workspace's own `firm/`, including when a
+client (the wizard) plans with draft inputs, so a plan never proposes reverting
+an override. Editing a managed file in place remains a conflict; overrides
+are the supported way to keep a customization.
 
 ---
 
@@ -396,6 +418,9 @@ required.
 | `toolkit config validate --firm <dir>` | validate `firm.json`, tokens, assets, fonts; print diagnostics |
 | `toolkit init --profile <dir> --workspace <dir>` | create a workspace, copy a profile into `firm/`, write `.toolkit/workspace.json`; does not render |
 | `toolkit render --workspace <dir> [--dry-run]` | plan and (unless dry-run) apply generation |
+| `toolkit validate --workspace <dir> [--skip-tests]` | workspace matches its inputs; bundle, spec, and safety validators; the firm's own `tests/` |
+| `toolkit serve [--port N] [--no-open]` | the local onboarding wizard (section 7) |
+| `toolkit verify workspace --workspace <dir> --manual-checks <file> --revit-version <year>` | record redacted live-host evidence for a generated workspace |
 | existing `toolkit doctor`, `toolkit verify revit` | unchanged |
 
 Exit codes: `0` success (including a no-change run and a clean dry-run); `1`
@@ -405,9 +430,8 @@ path, I/O error). JSON reports carry `schema_version`, `kind`,
 `hint`), and for render a `plan.actions[]` list and `summary`. Reports contain
 workspace-relative paths only.
 
-Planned later: `toolkit validate --workspace` (run validators/tests in a
-workspace), `toolkit install`, `toolkit config migrate`, `toolkit serve`
-(wizard backend).
+Planned later: `toolkit install` and `toolkit config migrate` (needed only
+once a schema v2 exists).
 
 ---
 
@@ -427,10 +451,14 @@ filesystem. Two adapters may not emit the same path (checked). Shared outputs
 
 ---
 
-## 7. Wizard and agent clients (design only in this slice)
+## 7. Wizard and agent clients (implemented: `toolkit_wizard/`)
 
 - Wizard: a local browser UI served by `toolkit serve` over the same engine
-  functions **[proposed]** ([ADR 0006](../decisions/0006-wizard-stack.md)).
+  functions ([ADR 0006](../decisions/0006-wizard-stack.md)). It edits an
+  in-memory draft of `firm/` inputs, validates and previews it with the
+  engine, plans read-only against a workspace, and applies only after a
+  passing plan. Tests cover the token, Host/Origin, traversal, body-size, and
+  cookie-scoped preview rules.
   Stdlib `http.server` bound to `127.0.0.1`, random port, a per-launch secret
   token required on every API request, `Host` and `Origin` validation, JSON-only
   bodies with a size cap, and writes limited to the selected workspace's
@@ -553,6 +581,51 @@ adapter whenever the surface is enabled, independent of branding. Origin and
 changes of the ported code are in [RELEASE_RECORD.md](RELEASE_RECORD.md) (R05).
 Every render reports `ui-kit.not-live-verified` (info) until a live Revit run is
 recorded.
+
+### 8.3 Revit add-in starter (`revit-addin` surface)
+
+Opt-in surface (`"revit-addin"` in `surfaces`). It needs no other surface: the theme
+comes from the shared `wpf_common` code, not from `wpf-specimen` or `ui-kit`. All
+outputs are `managed`, under `addins/<Extension>.Addin/` (`<Extension>` is
+`technical.pyrevit.extension`).
+
+| Output | Notes |
+| --- | --- |
+| `<Extension>.Addin.csproj` | SDK-style, `UseWPF`, nullable, `LangVersion latest`, no `PackageReference`, so restore works offline. `RevitVersion` (default 2026) picks the Revit API folder and the target framework; `RevitInstallDir` defaults to `C:\Program Files\Autodesk\Revit <year>\`. `RevitAPI.dll` and `RevitAPIUI.dll` are referenced with `Private=false`. Output goes to `bin\<Configuration>\<year>\`. |
+| `App.cs`, `HelloCommand.cs`, `SummaryWindow.cs`, `ThemeResources.cs` | `IExternalApplication` adds a ribbon button; the `IExternalCommand` is `[Transaction(TransactionMode.ReadOnly)]` and creates no Transaction: no document -> TaskDialog, family document -> TaskDialog, otherwise it counts non-template views and shows a themed window. Namespace `<Ns>.Addin` (`technical.namespace`, PascalCase). |
+| `<Extension>.Addin.addin` | Application manifest; `<Assembly>` is `<Extension>.Addin\<Extension>.Addin.dll`, relative to the folder the manifest is installed in. |
+| `Resources/Theme.xaml`, `Controls.xaml`, `SummaryWindow.xaml`, brand symbol PNGs, 32 px and 16 px ribbon icons | Theme and Controls are the UI kit's dictionaries (same `<Ns>.*` keys). Embedded in the DLL as text and parsed at run time with `XamlReader`, the loader the pyRevit kit uses, instead of markup compilation: no WPF XAML compiler pass, and packaged fonts resolve by relative URI against the folder that holds the DLL (`fonts/<family>/`, copied beside it by the build). The ribbon icons are drawn by the engine, deterministically. |
+| `README.md`, `.gitignore` | Build and install steps, supported versions, what is unverified; `bin/` and `obj/` ignored. |
+
+**Stable identity.** `AddInId` is `uuid5(<foundation constant>, technical.workspace_id + ":revit-addin")`
+(`toolkit_engine.adapters.revit_addin.FOUNDATION_ADDIN_NAMESPACE`), uppercase. It depends on nothing a
+rebrand touches, so re-rendering or changing `identity` never changes it; changing `workspace_id` does.
+Assembly name, root namespace, `VendorId` (`technical.namespace`) and the manifest class name are technical
+identity too. Display strings (product, company, window text, manifest `<Name>`) follow `identity`.
+
+**Ribbon and pyRevit.** The add-in creates the tab named `technical.pyrevit.tab` and tolerates it already
+existing. Its panel is `<sample_panel> Add-in`, so it never matches the pyRevit panel on a same-named tab.
+If the tab exists but the API cannot address it, the panel falls back to Revit's Add-Ins tab. Coexistence of
+a pyRevit tab and a compiled add-in panel on one tab has not been seen in a live session.
+
+**Supported Revit versions.** 2025, 2026 and 2027. Autodesk moved Revit 2025 and 2026 from .NET 8 to .NET 10
+in the 2025.5 and 2026.5 updates (Revit 2027 is .NET 10), and an add-in built for one runtime does not load in
+the other. The project chooses `net10.0-windows` for 2027 and, for 2025/2026, when the installed
+`AdApplicationFrame.runtimeconfig.json` names `net10.0`; otherwise `net8.0-windows`. `-p:RevitTargetFramework`
+overrides. Any other `RevitVersion` stops with `TKADDIN001`, a bad framework with `TKADDIN003`, a missing
+Revit install with `TKADDIN002`. **Revit 2024 is excluded**: it hosts .NET Framework 4.8, whose reference
+assemblies are not part of a default SDK install and would have to be downloaded, which the offline-build
+rule forbids. The .NET 8 branch compiles only against a pre-update host and is untested here.
+
+**Build evidence is not host evidence.** `tests/test_revit_addin_surface.py` runs `dotnet build` offline for
+both shipped profiles against the Revit API installed on the machine (skipped with a stated reason when
+`dotnet` or `RevitAPI.dll` is absent). The window's XAML was also rendered natively once in a throwaway
+harness; that harness is not part of the suite.
+A successful compile proves the code matches that API; it does not prove Revit loads the add-in, shows the
+ribbon button, or runs the command. Every render reports `revit-addin.not-live-verified` (info) until a live
+run is recorded, and `revit-addin.invalid-identifier` (warning) when `technical.namespace` or
+`technical.pyrevit.extension` is a C# reserved word. All-users manifest locations changed in Revit 2027;
+see [docs/memory/revit-2027.md](../memory/revit-2027.md) and the generated README.
 
 ## 9. Notices, attribution, and provenance
 

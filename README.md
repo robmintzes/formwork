@@ -7,9 +7,9 @@ configuration. You do not rebrand this repository; you generate a separate
 workspace from it and regenerate when your inputs change.
 
 > **Alpha.** Generation, validators, and automated tests pass. **No live
-> Revit/pyRevit verification has been completed**, and a C# add-in starter does
-> not exist yet. Treat it as a development foundation, not a production
-> deployment system.
+> Revit/pyRevit verification has been completed**. The C# add-in starter
+> compiles offline but has never been loaded in Revit. Treat it as a
+> development foundation, not a production deployment system.
 
 - **Adopting it?** Read the [adoption guide](docs/onboarding/ADOPTING.md).
 - **Want the contracts?** See the [foundation specification](docs/product/FOUNDATION_SPEC.md).
@@ -50,8 +50,9 @@ live-verified in Revit yet.
 | `governance` | `AGENTS.md` and thin agent pointers, branch policy, hooks, CI, GitHub ruleset JSON |
 | `mcp-bridge` | Read-only pyRevit Routes bridge and external FastMCP server |
 | `ui-kit` | Themed WPF dialogs (chooser, selector, result), controls, icons, `UI Kit Demo` button |
+| `revit-addin` | C# add-in project for Revit 2025-2027 (ribbon button, read-only themed command, stable `AddInId`); builds offline with the .NET SDK |
 
-Not built yet: a C# add-in starter, application starters, managed firm-wide
+Not built yet: Python and TypeScript application starters, managed firm-wide
 deployment, authenticated remote MCP, and the WebView2 tool host. See the
 [backlog](docs/product/BACKLOG.md) and the [toolkit roadmap](docs/ROADMAP.md).
 

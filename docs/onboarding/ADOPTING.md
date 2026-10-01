@@ -29,7 +29,7 @@ that configuration changes. Surfaces are chosen per firm in `surfaces` in
 | `governance` | `AGENTS.md`, thin agent pointers, branch policy, git hooks, CI workflow, GitHub ruleset JSON, pyRevit playbook | Generated and tested. Hooks exercised in a temporary repository. The ruleset protects nothing until you apply it. |
 | `mcp-bridge` | Read-only pyRevit Routes bridge, external FastMCP server, setup scripts, guide | Generated and tested (contract and runtime tests, no Revit). Not live-verified. |
 | `ui-kit` | Themed WPF dialogs (chooser, selector, result), controls, icons, a `UI Kit Demo` button | Generated and tested. Native renders recorded in a harness. Not live-verified. |
-| C# Revit add-in starter | Nothing yet | **Not implemented.** Backlog item B18. |
+| `revit-addin` | C# add-in project (Revit 2025-2027): ribbon button, read-only command with a themed window, manifest with a stable `AddInId`, README | Builds offline with the .NET SDK against the installed Revit API (tested). Never loaded in Revit. Revit 2024 is not covered. |
 
 `mcp-bridge` and `ui-kit` require `pyrevit-sample`. Supported host combination
 for the first live run: Revit 2026, pyRevit 6.5.5 (IronPython 2.7.12), Windows
@@ -54,8 +54,9 @@ Default and example profiles live in `profiles/`:
 - pyRevit, only to load the generated toolbar in Revit.
 - Python packages from `servers/revit-mcp/mcp-server/requirements.txt`, only if
   you run the MCP server (the generated workspace has its own setup script).
-- .NET SDK: **not needed today.** It will matter only when the C# add-in starter
-  exists.
+- .NET 10 SDK (or 8 for un-updated Revit 2025/2026 hosts): only for the
+  `revit-addin` starter. Revit 2025.5 and 2026.5 and later run on .NET 10, like
+  2027. The build reads the installed host and needs no NuGet packages.
 - No AI subscription. The wizard and CLI work without any agent; agents are
   optional clients of the same commands.
 
@@ -180,12 +181,18 @@ file that has been edited, or a file of yours sitting at a managed path, is a
 `retired-modified`). Any conflict blocks the whole render: nothing is written,
 exit code 1, and the report lists each path.
 
-Resolve each conflict one of three ways:
+Resolve each conflict one of four ways:
 
 1. Revert your edit, then re-render.
 2. Delete the file to accept regeneration, then re-render.
 3. Move your customization to a firm-owned path (a seed file, or a new panel),
    then do 1 or 2.
+4. To keep your version of a generated file deliberately, copy it to
+   `firm/overrides/<same path>` (for example
+   `firm/overrides/specimens/wpf/Theme.xaml`), then delete the edited original
+   and re-render. The override wins on every render. When the generator's
+   own version changes later, render warns `override.upstream-changed` so you
+   can review it. Delete the override to return to generated content.
 
 Re-running `render` with no changes is a no-op. Edit hashes ignore line-ending
 differences, so Git `autocrlf` does not create false conflicts.
@@ -394,8 +401,9 @@ where one exists. Codes below are the ones you will meet first.
 | conflict `managed-modified`, `unmanaged-at-managed-path`, `retired-modified` | See [section 5](#5-ownership-rules) | Revert, delete, or move your change. |
 | `foundation.downgrade`, `manifest.schema-too-new`, `workspace.schema-too-new` | Workspace was written by a newer foundation | Update the foundation checkout. |
 | `output.ironpython-syntax`, `output.ps1-non-ascii`, `output.external-resource` | A generated file failed a safety check | Report it as a foundation bug; do not hand-edit the output. |
+| `revit-addin.invalid-identifier` (warning) | `technical.namespace` or `technical.pyrevit.extension` is a C# reserved word | Pick another value if your own add-in code names it; the generated files still build. |
 | `governance.ruleset-not-applied` (info) | Ruleset is only a file | Apply it, [section 8](#8-put-the-workspace-in-git-and-github). |
-| `mcp-bridge.not-live-verified`, `ui-kit.not-live-verified` (info) | Not run in Revit yet | True for everyone today; run the live check. |
+| `mcp-bridge.not-live-verified`, `ui-kit.not-live-verified`, `revit-addin.not-live-verified` (info) | Not run in Revit yet | True for everyone today; run the live check. |
 
 Other notes:
 
