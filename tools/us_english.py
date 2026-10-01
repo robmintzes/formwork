@@ -68,6 +68,8 @@ EXCLUDED = (
     "toolkit_engine/resources/",  # third-party license texts
 )
 EXCLUDED_NAMES = {"OFL.txt", "LICENSE"}
+# The checker's word list and its test fixture spell the British forms on purpose.
+SELF_FILES = {"tools/us_english.py", "tests/test_us_english.py"}
 
 
 def tracked_files() -> list[Path]:
@@ -77,7 +79,7 @@ def tracked_files() -> list[Path]:
         path = ROOT / rel
         if path.suffix.lower() not in TEXT_SUFFIXES or path.name in EXCLUDED_NAMES:
             continue
-        if rel.startswith(EXCLUDED) or rel == "tools/us_english.py":
+        if rel.startswith(EXCLUDED) or rel in SELF_FILES:
             continue
         files.append(path)
     return files
