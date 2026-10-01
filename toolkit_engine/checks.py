@@ -6,6 +6,11 @@ import ast
 import re
 import xml.etree.ElementTree as ElementTree
 
+try:  # CPython 3.11+; on 3.10 TOML outputs are not parsed.
+    import tomllib
+except ImportError:  # pragma: no cover
+    tomllib = None  # type: ignore[assignment]
+
 from toolkit_engine.diagnostics import Diagnostics
 from toolkit_engine.jsonio import JsonInputError, loads_strict
 from toolkit_engine.outputs import RESERVED_PREFIXES, OutputFile
@@ -19,6 +24,15 @@ EXTERNAL_LOADS = (
     re.compile(r"""url\(\s*["']?\s*(?:https?:)?//""", re.IGNORECASE),
     re.compile(r"""@import\b""", re.IGNORECASE),
     re.compile(r"""\bSource\s*=\s*["']\s*(?:https?|pack):""", re.IGNORECASE),
+)
+# Network loads from script: ``import ... from "https://..."``, dynamic ``import("https://...")`` and
+# ``fetch("https://...")``, with ' " or ` quotes. Loopback addresses are allowed: the generated web
+# app's own tests talk to the server they start on 127.0.0.1.
+_LOOPBACK = r"(?!(?:127\.0\.0\.1|localhost|\[::1\])[:/'\"`])"
+SCRIPT_EXTERNAL_LOADS = (
+    re.compile(r"""\bimport\s*(?:[^'"`;]*?\bfrom\s*)?["'`]\s*(?:https?:)?//""" + _LOOPBACK, re.IGNORECASE),
+    re.compile(r"""\bimport\s*\(\s*["'`]\s*(?:https?:)?//""" + _LOOPBACK, re.IGNORECASE),
+    re.compile(r"""\bfetch\s*\(\s*["'`]\s*(?:https?:)?//""" + _LOOPBACK, re.IGNORECASE),
 )
 IRONPYTHON_INCOMPATIBLE = (
     (ast.AnnAssign, "variable annotation"),
@@ -65,6 +79,11 @@ def _check_content(item: OutputFile, location: str, diags: Diagnostics) -> None:
                 if pattern.search(text):
                     diags.error("output.external-resource", location, "Output loads an external resource; generated surfaces must work offline.")
                     break
+        if suffix in ("ts", "js", "mjs"):
+            for pattern in SCRIPT_EXTERNAL_LOADS:
+                if pattern.search(text):
+                    diags.error("output.external-resource", location, "Script loads an external resource; generated surfaces must work offline.")
+                    break
         if suffix == "xaml":
             try:
                 ElementTree.fromstring(item.content)
@@ -80,6 +99,11 @@ def _check_content(item: OutputFile, location: str, diags: Diagnostics) -> None:
                 loads_strict(text)
             except JsonInputError as exc:
                 diags.error("output.json-invalid", location, str(exc))
+        elif suffix == "toml" and tomllib is not None:
+            try:
+                tomllib.loads(text)
+            except tomllib.TOMLDecodeError as exc:
+                diags.error("output.toml-invalid", location, "TOML does not parse: {}.".format(exc))
         elif suffix == "py":
             # Only extension code runs inside Revit's embedded engine; tooling
             # such as vendored validators is CPython (FOUNDATION_SPEC 1.1).

@@ -93,6 +93,28 @@ change before committing.
 | `8798b52` | `toolkit validate --workspace`; bootstrap scripts retired; Windows CI generates and validates both profiles |
 | `25b1a20` | Wizard backend (`toolkit serve`): loopback-only, token, Host/Origin checks, cookie-scoped preview, plan-before-apply |
 | `776bb63` | `mcp-bridge` surface (Sonnet), and CI running the vendored MCP server tests in a generated workspace |
+| `2537d84` | Wizard UI (Sonnet): 8 steps, strict CSP, no innerHTML; the lead clicked through it in the browser pane |
+| `159ae5c` | `ui-kit` surface ported from Rockwell rgdt_ui (Sonnet): M0/M1/M2 dialogs, UI Kit Demo button, native snapshots |
+| `91bae77` | Live checklist gains UI Kit Demo checks (WPF inside Revit) |
+| `63692cb` | Adopter guide `docs/onboarding/ADOPTING.md` and README refresh (Sonnet) |
+| `c7eaef2` | Firm overrides (`firm/overrides/`): deliberate customization without conflicts |
+| `b60e9fc` | `revit-addin` C# starter (Sonnet): offline `dotnet build` for Revit 2026/2027 verified; stable uuid5 AddInId |
+| `4bf8a37` | Spec 4.7 overrides; Revit 2025.5/2026.5 now on .NET 10 (memory overlay corrected after checking Autodesk and the local RevitAPI references) |
+| `b003ac2` | CI fix: add-in build-error tests gated to Windows (NETSDK1100 on Ubuntu runners) |
+| (this commit) | `python-app` (branded CSV/JSON to HTML report CLI) and `web-app` (dependency-free TypeScript on Node 22.18+) starters (Sonnet) |
+
+Findings worth Rob's attention:
+
+- **Revit 2025 and 2026 moved to .NET 10** in their .5 updates. The repo's
+  memory overlay said .NET 8, and the installed RevitAPI.dll references
+  confirm .NET 10. Any Rockwell C# add-ins still targeting net8 should be
+  checked against .NET 10 breaking changes.
+- **Cylance Script Control** blocked `verify-generated-workspace.ps1` but
+  allowed `show-specimen.ps1` and the UI-kit snapshot script, so the policy is
+  selective. The Python CLI paths avoid it.
+- **Rockwell reuse:** ADR 0005 and release record R05 record the scope.
+  Licensed fonts, Rockwell marks, WebView2 DLLs, internal paths, and project
+  data stay out.
 
 ## Incremental Edit Log
 

@@ -30,8 +30,10 @@ that configuration changes. Surfaces are chosen per firm in `surfaces` in
 | `mcp-bridge` | Read-only pyRevit Routes bridge, external FastMCP server, setup scripts, guide | Generated and tested (contract and runtime tests, no Revit). Not live-verified. |
 | `ui-kit` | Themed WPF dialogs (chooser, selector, result), controls, icons, a `UI Kit Demo` button | Generated and tested. Native renders recorded in a harness. Not live-verified. |
 | `revit-addin` | C# add-in project (Revit 2025-2027): ribbon button, read-only command with a themed window, manifest with a stable `AddInId`, README | Builds offline with the .NET SDK against the installed Revit API (tested). Never loaded in Revit. Revit 2024 is not covered. |
+| `python-app` | `apps/<namespace>-report`: a stdlib-only Python CLI that turns a CSV or JSON table into a branded offline HTML report, with tests and a sample | Generated and tested: its unittest suite and CLI run in the foundation's tests. Needs no Revit. |
+| `web-app` | `apps/<namespace>-web`: a dependency-free TypeScript web starter (loopback-only static server, branded app shell, `node --test` suite, brand fonts) | Generated and tested with `node --test` (when Node is installed). Types are not checked. Needs no Revit. |
 
-`mcp-bridge` and `ui-kit` require `pyrevit-sample`. Supported host combination
+`mcp-bridge` and `ui-kit` require `pyrevit-sample`; `python-app` and `web-app` stand alone. Supported host combination
 for the first live run: Revit 2026, pyRevit 6.5.5 (IronPython 2.7.12), Windows
 11. No combination is recorded as passing in the [verification
 matrix](../verification/MATRIX.md).
@@ -57,6 +59,10 @@ Default and example profiles live in `profiles/`:
 - .NET 10 SDK (or 8 for un-updated Revit 2025/2026 hosts): only for the
   `revit-addin` starter. Revit 2025.5 and 2026.5 and later run on .NET 10, like
   2027. The build reads the installed host and needs no NuGet packages.
+- Node.js 22.18 or newer (24 is fine): only for the `web-app` starter. Node runs
+  its TypeScript directly by stripping types, so there is no `npm install` and
+  no build. Type-checking is optional and needs you to install `typescript`
+  yourself. The `python-app` starter needs nothing beyond CPython 3.10+.
 - No AI subscription. The wizard and CLI work without any agent; agents are
   optional clients of the same commands.
 
@@ -401,6 +407,8 @@ where one exists. Codes below are the ones you will meet first.
 | conflict `managed-modified`, `unmanaged-at-managed-path`, `retired-modified` | See [section 5](#5-ownership-rules) | Revert, delete, or move your change. |
 | `foundation.downgrade`, `manifest.schema-too-new`, `workspace.schema-too-new` | Workspace was written by a newer foundation | Update the foundation checkout. |
 | `output.ironpython-syntax`, `output.ps1-non-ascii`, `output.external-resource` | A generated file failed a safety check | Report it as a foundation bug; do not hand-edit the output. |
+| `web-app.typecheck-not-run` (info) | The generated TypeScript is run by Node's type stripping and never type-checked | Nothing to fix; optionally `npm install -D typescript @types/node` and `npx tsc` in `apps/<namespace>-web`. |
+| `output.toml-invalid` | A generated `pyproject.toml` does not parse | Report it as a foundation bug; do not hand-edit the output. |
 | `revit-addin.invalid-identifier` (warning) | `technical.namespace` or `technical.pyrevit.extension` is a C# reserved word | Pick another value if your own add-in code names it; the generated files still build. |
 | `governance.ruleset-not-applied` (info) | Ruleset is only a file | Apply it, [section 8](#8-put-the-workspace-in-git-and-github). |
 | `mcp-bridge.not-live-verified`, `ui-kit.not-live-verified`, `revit-addin.not-live-verified` (info) | Not run in Revit yet | True for everyone today; run the live check. |

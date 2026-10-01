@@ -69,7 +69,9 @@
     "governance",
     "mcp-bridge",
     "ui-kit",
-    "revit-addin"
+    "revit-addin",
+    "python-app",
+    "web-app"
   ],
   "technical": {
     "namespace": "quillmoor",

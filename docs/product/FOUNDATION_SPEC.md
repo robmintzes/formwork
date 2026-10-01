@@ -53,6 +53,9 @@ proves identity is data.
 - Generated WPF XAML: loose ResourceDictionaries usable by `XamlReader.Parse`
   from pyRevit or PowerShell. The only compiled output is the opt-in `revit-addin` surface
   (section 8.3), which is built by the user's own .NET SDK; the engine never compiles.
+- Generated application starters (section 8.4): the `python-app` CLI is stdlib-only
+  CPython 3.10+; the `web-app` is erasable TypeScript that Node 22.18+ runs directly.
+  Neither needs an install step, and the engine never runs either.
 - Generated HTML: one self-contained file per guide plus relative local assets;
   no network requests.
 
@@ -67,10 +70,11 @@ proves identity is data.
 | `mcp-bridge` | read-only Revit MCP bridge: pyRevit Routes side in the firm extension, external FastMCP server, guide (section 8.1) | static checks and extension runtime tests **and** a live Revit/pyRevit run behind the mandatory reset rule |
 | `ui-kit` | themed WPF dialog kit in the firm extension (`lib/<namespace>_ui`): result, chooser, selector, controls, icons, plus a read-only `UI Kit Demo` button (section 8.2) | static key-resolution and runtime-contract tests, a native WPF render of every dialog **and** a live Revit/pyRevit run |
 | `revit-addin` | C# Revit add-in starter under `addins/<Extension>.Addin/`: SDK-style project, ribbon button, read-only command with a themed WPF window, manifest with a stable `AddInId`, README (section 8.3) | `dotnet build` succeeds offline against the installed Revit API (build evidence) **and** the add-in loads and its command runs in a live Revit (host evidence); neither implies the other |
+| `python-app` | stdlib-only Python CLI under `apps/<namespace>-report/` that renders a CSV or JSON table as a branded offline HTML report: PEP 621 project, `src/<namespace>_report`, generated `theme.css`, unittest suite, sample table, README (section 8.4) | the generated unittest suite and the CLI on the sample table pass in CPython (tested by the engine's suite); host-independent, so no Revit run applies |
+| `web-app` | dependency-free TypeScript web starter under `apps/<namespace>-web/`: loopback-only `node:http` static server, `node:test` suite, branded app shell, generated `theme.css`, packaged fonts, README (section 8.4) | the generated `node --test` suite passes on Node 22.18+ (tested by the engine's suite when Node is present); types are **not** checked (no `tsc`) |
 
-Python and TypeScript app starters are later surfaces
-([backlog](BACKLOG.md)). The adapter interface (section 6) is shared so those
-are additions, not special cases.
+The adapter interface (section 6) is shared, so each later surface is an addition, not a special case.
+Further surfaces are tracked in the [backlog](BACKLOG.md).
 
 ---
 
@@ -117,7 +121,7 @@ identifiers, or persistence keys.
 
 | Field | Rules | Used for |
 | --- | --- | --- |
-| `namespace` | `^[a-z][a-z0-9]{1,23}$` | CSS custom-property and XAML key prefixes, future Python package and assembly roots |
+| `namespace` | `^[a-z][a-z0-9]{1,23}$` | CSS custom-property and XAML key prefixes, Python package (`<namespace>_report`) and npm package (`<namespace>-web`) names, Revit add-in root namespace |
 | `workspace_id` | kebab-case, 2-64 | manifest identity; refuses to render a workspace initialized for another id |
 | `pyrevit.extension` | `^[A-Za-z][A-Za-z0-9]{0,39}$` | `<extension>.extension` folder |
 | `pyrevit.tab` | letters, digits, single spaces; 1-40 | `<tab>.tab` folder (pyRevit shows the folder name) |
@@ -626,6 +630,53 @@ ribbon button, or runs the command. Every render reports `revit-addin.not-live-v
 run is recorded, and `revit-addin.invalid-identifier` (warning) when `technical.namespace` or
 `technical.pyrevit.extension` is a C# reserved word. All-users manifest locations changed in Revit 2027;
 see [docs/memory/revit-2027.md](../memory/revit-2027.md) and the generated README.
+
+### 8.4 Application starters (`python-app` and `web-app` surfaces)
+
+Two opt-in surfaces, each standalone (no other surface required, none depends on Revit). Everything is `managed`,
+under `apps/`. Both build their stylesheet with the shared `toolkit_engine.adapters.web_theme` helpers (tokens as
+`--<ns>-*` custom properties, then the same component rules as the HTML guide), so a button, badge or table
+heading here matches the guide. The HTML guide's output is unchanged by that refactor.
+
+**`python-app`: `apps/<namespace>-report/`.** A CPython 3.10+ standard-library CLI:
+`python -m <namespace>_report report INPUT --output OUT.html [--title T] [--status-column C]`, run from the app folder
+with `PYTHONPATH=src` (or `pip install -e .`, optional). `INPUT` is a CSV (header row first) or a JSON list of objects.
+The output is one portable HTML file in the "report console" style: masthead with the inverse wordmark, a metric
+strip (rows, columns, distinct statuses), the table (sortable-looking headers via CSS only, no script), status pills,
+and a footer with the support link and a notices pointer.
+
+| Output | Notes |
+| --- | --- |
+| `pyproject.toml` | PEP 621, setuptools backend declared but not needed to run; name `<namespace>-report`, no dependencies, console script of the same name, package data `theme.css` and `assets/*.svg`. Parsed with `tomllib` by the output checks. |
+| `src/<namespace>_report/{__init__,__main__,cli,render}.py` | argparse CLI (exit 2 with a one-line message on bad input); `render.py` HTML-escapes every value from the input, embeds `theme.css` verbatim in a `<style>` element and the brand SVGs as data URIs when each is at most 256 KB (otherwise it copies them to `assets/` beside the report), and references no URL except the support link. |
+| `src/<namespace>_report/branding.py` | Display name, short name, logo alt and support URL baked in from `identity` (the only file that carries them); package and command names come from `technical.namespace` and survive a rebrand. |
+| `src/<namespace>_report/theme.css`, `assets/*.svg` | Generated stylesheet, brand wordmark (inverse) and symbol (light). No fonts are packaged: a report uses the token font stack and falls back to system fonts, because a single portable file should not inline font binaries. |
+| `tests/test_report.py`, `sample.csv`, `README.md`, `.gitignore` | unittest suite (escaping, no external loads, status pills, CLI), a fictional sheet index, run instructions. |
+
+**`web-app`: `apps/<namespace>-web/`.** A TypeScript starter that Node runs by stripping types, so there is
+**no install step** (no `npm install`, no build). Requires Node 22.18+ (type stripping is on by default there;
+22.6 to 22.17 need `--experimental-strip-types`). The TypeScript is erasable syntax only: no enums, namespaces,
+parameter properties or decorators. Browsers cannot run TypeScript, so client code is plain JavaScript.
+
+| Output | Notes |
+| --- | --- |
+| `package.json` | `"type": "module"`, `start` is `node server.ts`, `test` is `node --test`, no dependencies, `engines.node` `>=22.18`. |
+| `server.ts` | `node:http` static server bound to 127.0.0.1 only, port from `PORT` (default 5173), serves `public/` through a fixed content-type map. Rejects non-GET (405 with `Allow: GET`), traversal (`..`, `%2e%2e`, encoded separators, backslashes, colons, dot-files, symbolic links that resolve outside `public/`) with 404. Every response sends `Content-Security-Policy: default-src 'self'` and `X-Content-Type-Options: nosniff`. Starts only when run directly, so tests import it. |
+| `test/server.test.ts` | `node:test` and `node:assert`: ephemeral-port server, headers, loopback bind, traversal sent as raw request targets (fetch would normalise `..` away), method rejection, and a no-inline-script/style check on the shell. |
+| `public/index.html`, `theme.css`, `app.js` | Branded shell (inverse wordmark band, a card with primary and secondary buttons, selectable chips, status badges, support footer). No inline script or style, which the CSP would block. |
+| `public/assets/*.svg`, `public/fonts/<family>/*` | Brand SVGs; packaged fonts with their licence files, referenced by `@font-face` in `theme.css`. |
+| `tsconfig.json`, `README.md`, `.gitignore` | `tsconfig.json` is for editors only (`erasableSyntaxOnly`); type-checking needs the optional `npm install -D typescript @types/node`. |
+
+**Checks.** `.toml` outputs must parse (`output.toml-invalid`; skipped on CPython 3.10, which has no `tomllib`).
+`.ts`, `.js` and `.mjs` outputs are scanned for network loads: `import ... from "http(s)://..."` or
+`"//..."`, dynamic `import("...")` and `fetch("...")` of the same shapes (`output.external-resource`). Loopback
+addresses (`127.0.0.1`, `localhost`, `[::1]`) are exempt because the generated server tests call the server they
+start. The scan is a guard, not a JavaScript parser.
+
+**Evidence and gaps.** The engine's suite generates both profiles, runs the generated Python suite and CLI, and runs
+`node --test` in the generated web app when a suitable Node is on PATH (skipped, with the reason, otherwise). Every
+render reports `web-app.typecheck-not-run` (info): `tsc` is neither installed nor run, so a type error would not
+be caught. There is no `python-app` verification diagnostic because the app does not touch Revit.
 
 ## 9. Notices, attribution, and provenance
 

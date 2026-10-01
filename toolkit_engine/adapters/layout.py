@@ -63,6 +63,19 @@ def addin_dir(technical: Technical) -> str:
     return "addins/{}".format(addin_project(technical))
 
 
+def python_app_package(technical: Technical) -> str:
+    """Importable package name of the generated Python report app."""
+    return "{}_report".format(technical.namespace)
+
+
+def python_app_dir(technical: Technical) -> str:
+    return "apps/{}-report".format(technical.namespace)
+
+
+def web_app_dir(technical: Technical) -> str:
+    return "apps/{}-web".format(technical.namespace)
+
+
 def font_path(font: FontSpec, font_file: FontFile) -> str:
     return "{}/{}/{}".format(FONTS_DIR, kebab(font.family), font_file.path.rsplit("/", 1)[-1])
 

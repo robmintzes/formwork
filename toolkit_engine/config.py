@@ -14,7 +14,7 @@ from toolkit_engine import CONFIG_SCHEMA_VERSION, __version__
 from toolkit_engine.diagnostics import Diagnostics, did_you_mean
 from toolkit_engine.paths import WINDOWS_RESERVED_NAMES, check_relative_path
 
-SURFACES = ("pyrevit-sample", "wpf-specimen", "html-guide", "governance", "mcp-bridge", "ui-kit", "revit-addin")
+SURFACES = ("pyrevit-sample", "wpf-specimen", "html-guide", "governance", "mcp-bridge", "ui-kit", "revit-addin", "python-app", "web-app")
 # Surfaces that only make sense inside another surface's output.
 SURFACE_REQUIRES = {"mcp-bridge": ("pyrevit-sample",), "ui-kit": ("pyrevit-sample",)}
 ASSET_SLOTS = ("wordmark", "symbol")

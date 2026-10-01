@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from html import escape as _html_escape
+import json
 from pathlib import Path
 import re
 
@@ -59,6 +60,15 @@ def yaml_scalar(value: str) -> str:
 def md(value: str) -> str:
     """Escape Markdown control characters in inline text."""
     return re.sub(r"([\\`*_{}\[\]<>#|])", r"\\\1", value)
+
+
+def json_string(value: str) -> str:
+    """Double-quoted string literal that is also a valid TOML basic string and Python str literal.
+
+    Non-ASCII text stays literal (the files are UTF-8); quotes, backslashes and control
+    characters are escaped with the JSON escapes both languages share.
+    """
+    return json.dumps(value, ensure_ascii=False)
 
 
 def css_string(value: str) -> str:

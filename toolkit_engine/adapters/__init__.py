@@ -31,8 +31,10 @@ def _registry() -> dict[str, Adapter]:
         html_guide,
         mcp_bridge,
         pyrevit_sample,
+        python_app,
         revit_addin,
         ui_kit,
+        web_app,
         wpf_specimen,
     )
 
@@ -45,6 +47,8 @@ def _registry() -> dict[str, Adapter]:
         "mcp-bridge": mcp_bridge.render,
         "ui-kit": ui_kit.render,
         "revit-addin": revit_addin.render,
+        "python-app": python_app.render,
+        "web-app": web_app.render,
     }
 
 

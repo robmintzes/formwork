@@ -994,6 +994,8 @@ const SURFACES = [
   ['mcp-bridge', 'MCP bridge', 'Read-only Revit MCP bridge inside the extension, an external FastMCP server, and a guide. Requires the pyRevit sample.'],
   ['ui-kit', 'Tool UI kit', 'Branded WPF dialogs for pyRevit tools (chooser, selector, result) with a read-only demo button. Requires the pyRevit sample.'],
   ['revit-addin', 'Revit add-in starter', 'C# add-in project (Revit 2025-2027) with a ribbon button and a read-only command that uses the same theme. Builds with the .NET SDK; no NuGet packages.'],
+  ['python-app', 'Python report app', 'Stdlib-only Python command line that turns a CSV or JSON table into a branded offline HTML report. No install step.'],
+  ['web-app', 'TypeScript web app', 'Dependency-free TypeScript web starter with a loopback-only static server and a branded app shell. Runs on Node 22.18 or newer with no install step.'],
 ];
 
 function renderComponents(root) {

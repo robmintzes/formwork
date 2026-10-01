@@ -24,7 +24,7 @@ decision. Specification: [FOUNDATION_SPEC.md](FOUNDATION_SPEC.md).
 | B15 | Retire `scripts/bootstrap.*` once `init`/`render` cover the sample; update CI windows-smoke | B8 | P | done |
 | B16 | Engine distribution to adopters (pip, pinned checkout, vendored) | B8 | H | todo |
 | B17 | Permanent product/repository name | - | H | todo |
-| B18 | Later surfaces: ~~MCP bridge in workspaces~~ (done: `mcp-bridge` surface, spec 8.1; live run pending), ~~C# add-in starter~~ (done: `revit-addin` surface, spec 8.3; builds offline for 2025-2027, never loaded in Revit), Python app, TypeScript app | B12 | C (scope), P (order) | todo (MCP bridge and C# add-in starter done) |
+| B18 | Later surfaces: ~~MCP bridge in workspaces~~ (done: `mcp-bridge` surface, spec 8.1; live run pending), ~~C# add-in starter~~ (done: `revit-addin` surface, spec 8.3; builds offline for 2025-2027, never loaded in Revit), ~~Python app~~ (done: `python-app` surface, spec 8.4; stdlib CLI that renders a table as a branded HTML report, its tests run in the engine suite), ~~TypeScript app~~ (done: `web-app` surface, spec 8.4; Node 22.18+ type-stripped server and app shell, `node --test` run in the engine suite, types not checked) | B12 | C (scope), P (order) | done (live Revit run still pending for the Revit-facing parts) |
 | B19 | `ui-kit` surface: themed WPF dialog kit (M0 chooser, M1 result, M2-lite selector), controls, icons, `UI Kit Demo` button; ported under ADR 0005 (R05); native renders recorded | B6, B12 | C | done (live Revit run pending, with B11) |
 | B20 | Port the WebView2 HTML tool host (M2-M7 families): NuGet-sourced DLLs, bridge verbs, session and result shape, offline assets | B19 | P | todo |
 

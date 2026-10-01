@@ -51,8 +51,10 @@ live-verified in Revit yet.
 | `mcp-bridge` | Read-only pyRevit Routes bridge and external FastMCP server |
 | `ui-kit` | Themed WPF dialogs (chooser, selector, result), controls, icons, `UI Kit Demo` button |
 | `revit-addin` | C# add-in project for Revit 2025-2027 (ribbon button, read-only themed command, stable `AddInId`); builds offline with the .NET SDK |
+| `python-app` | Stdlib-only Python CLI (`apps/<namespace>-report`) that turns a CSV or JSON table into a branded offline HTML report; no install step |
+| `web-app` | Dependency-free TypeScript web starter (`apps/<namespace>-web`): loopback-only static server, branded app shell, `node --test` suite; Node 22.18+, no install step |
 
-Not built yet: Python and TypeScript application starters, managed firm-wide
+Not built yet: managed firm-wide
 deployment, authenticated remote MCP, and the WebView2 tool host. See the
 [backlog](docs/product/BACKLOG.md) and the [toolkit roadmap](docs/ROADMAP.md).
 
