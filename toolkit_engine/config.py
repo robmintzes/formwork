@@ -14,7 +14,7 @@ from toolkit_engine import CONFIG_SCHEMA_VERSION, __version__
 from toolkit_engine.diagnostics import Diagnostics, did_you_mean
 from toolkit_engine.paths import WINDOWS_RESERVED_NAMES, check_relative_path
 
-SURFACES = ("pyrevit-sample", "wpf-specimen", "html-guide")
+SURFACES = ("pyrevit-sample", "wpf-specimen", "html-guide", "governance")
 ASSET_SLOTS = ("wordmark", "symbol")
 ASSET_VARIANTS = ("light", "inverse")
 ASSET_FORMATS = ("svg", "png")
@@ -96,6 +96,12 @@ class Maintainer:
 
 
 @dataclass(frozen=True)
+class Governance:
+    required_approvals: int
+    approvals_defaulted: bool
+
+
+@dataclass(frozen=True)
 class FirmConfig:
     schema_version: int
     profile_id: str
@@ -110,6 +116,7 @@ class FirmConfig:
     appearance: Appearance
     surfaces: tuple[str, ...]
     maintainers: tuple[Maintainer, ...]
+    governance: Governance = Governance(0, True)
     extensions: dict[str, Any] = field(default_factory=dict)
 
 
@@ -249,7 +256,7 @@ def validate_config(data: Any, source: str, diags: Diagnostics) -> FirmConfig | 
         data,
         "",
         ("schema_version", "profile", "identity", "technical", "brand", "appearance", "surfaces", "maintainers"),
-        ("$schema",),  # editor hint pointing at schemas/firm-config.v1.schema.json
+        ("$schema", "governance"),  # $schema: editor hint for schemas/firm-config.v1.schema.json
     )
     if top is None:
         return None
@@ -267,6 +274,7 @@ def validate_config(data: Any, source: str, diags: Diagnostics) -> FirmConfig | 
     appearance = _appearance(r, top.get("appearance", {}))
     surfaces = _surfaces(r, top.get("surfaces"))
     maintainers = _maintainers(r, top.get("maintainers"))
+    governance = _governance(r, top.get("governance"), len(maintainers))
 
     errors_after = len([d for d in diags.items if d.severity == "error"])
     if errors_after > errors_before:
@@ -287,6 +295,7 @@ def validate_config(data: Any, source: str, diags: Diagnostics) -> FirmConfig | 
         appearance=appearance,
         surfaces=surfaces,
         maintainers=maintainers,
+        governance=governance,
         extensions={k: v for k, v in top.items() if k.startswith("x-")},
     )
 
@@ -503,3 +512,25 @@ def _maintainers(r: _Reader, value: Any) -> tuple[Maintainer, ...]:
         if name and prefix:
             result.append(Maintainer(name, prefix))
     return tuple(result)
+
+
+def _governance(r: _Reader, value: Any, maintainer_count: int) -> Governance:
+    """Review policy. Default: no required approval for a solo maintainer, one otherwise."""
+    default = 0 if maintainer_count <= 1 else 1
+    if value is None:
+        return Governance(default, True)
+    obj = r.obj(value, "/governance", (), ("required_approvals",)) or {}
+    approvals = obj.get("required_approvals", default)
+    if not isinstance(approvals, int) or isinstance(approvals, bool) or not 0 <= approvals <= 6:
+        r.diags.error("config.type", r.loc("/governance/required_approvals"), "required_approvals must be an integer 0-6.")
+        return Governance(default, True)
+    if approvals >= maintainer_count and approvals > 0:
+        r.diags.warning(
+            "governance.approvals-unreachable",
+            r.loc("/governance/required_approvals"),
+            "{} required approval(s) with {} maintainer(s): authors cannot approve their own PRs, so merges may be impossible.".format(
+                approvals, maintainer_count
+            ),
+            "List the other reviewers as maintainers or lower required_approvals.",
+        )
+    return Governance(approvals, "required_approvals" not in obj)

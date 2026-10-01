@@ -57,8 +57,7 @@ is merged; this branch's eventual PR is stacked on both.
    with the human `--routes-reset-confirmed` assertion.
 3. **Unverified host claims to check live:** pyRevit honours `help_url` in
    `bundle.yaml`; `icon.dark.png` at 96x96 displays in dark theme.
-4. **Next engineering:** governance adapter (B12: AGENTS.md, agent shims,
-   hooks/branch policy from `maintainers`, ruleset JSON); `toolkit validate
+4. **Next engineering:** `toolkit validate
    --workspace`; retire `scripts/bootstrap.*` and update CI windows-smoke
    (B15); wizard per ADR 0006 (B14).
 5. **Pending human decisions:** permanent product name (B17); engine
@@ -72,6 +71,13 @@ is merged; this branch's eventual PR is stacked on both.
   WPF size offsets (ADR 0003).
 
 ## Incremental Edit Log
+
+- **2026-09-30:** Added the `governance` surface (B12): canonical AGENTS.md, thin
+  client pointers, firm skill, branch policy doc, CI workflow, ruleset JSON,
+  and vendored validators/hooks/installer with asserted substitutions;
+  optional `governance.required_approvals`. The IronPython guard is now scoped to
+  `extensions/`. Real-hook test: generated workspace blocks main, agent, and
+  non-maintainer branches.
 
 - **2026-09-30:** Added `toolkit verify workspace` (redacted evidence; checklist
   coverage enforcement), the manual checklist template, the runbook, and

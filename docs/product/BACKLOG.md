@@ -18,7 +18,7 @@ decision. Specification: [FOUNDATION_SPEC.md](FOUNDATION_SPEC.md).
 | B9 | Validator updates: 32/96 icons + dark variant, toolbar spec fragments | B6 | P | done |
 | B10 | Native WPF snapshot on Windows; browser screenshot; record in handoff | B6 | C | done |
 | B11 | Live gate: Revit 2026 + pyRevit 6.5.5 + IronPython 2.7.12 via `toolkit verify revit`, generated BIMxBert workspace installed | B7, PR #2 review | C/H (combination) | todo - needs Rob at Revit |
-| B12 | Governance adapter: AGENTS.md, agent shims, branch policy/hooks, ruleset JSON from `maintainers` | B7 | C | todo |
+| B12 | Governance adapter: AGENTS.md, agent shims, branch policy/hooks, ruleset JSON from `maintainers` | B7 | C | done |
 | B13 | `config migrate`, template overrides, three-way upgrade merge | B8 | P | todo |
 | B14 | Wizard (`toolkit serve`) per ADR 0006 | B8, B10 | C (wizard), P (stack) | todo |
 | B15 | Retire `scripts/bootstrap.*` once `init`/`render` cover the sample; update CI windows-smoke | B8 | P | todo |

@@ -76,7 +76,9 @@ def _check_content(item: OutputFile, location: str, diags: Diagnostics) -> None:
             except JsonInputError as exc:
                 diags.error("output.json-invalid", location, str(exc))
         elif suffix == "py":
-            _check_python(text, location, diags)
+            # Only extension code runs inside Revit's embedded engine; tooling
+            # such as vendored validators is CPython (FOUNDATION_SPEC 1.1).
+            _check_python(text, location, diags, embedded=item.path.startswith("extensions/"))
         elif suffix == "ps1" and any(ord(ch) > 127 for ch in text):
             diags.error("output.ps1-non-ascii", location, "Windows PowerShell 5.1 misreads BOM-less UTF-8; keep generated scripts ASCII.")
     elif suffix == "png":
@@ -91,12 +93,15 @@ def _check_content(item: OutputFile, location: str, diags: Diagnostics) -> None:
             diags.error("output.svg-invalid", location, "SVG is not well-formed: {}.".format(exc))
 
 
-def _check_python(text: str, location: str, diags: Diagnostics) -> None:
-    """CPython parse plus a conservative IronPython 2.7 syntax guard (not a live compile)."""
+def _check_python(text: str, location: str, diags: Diagnostics, *, embedded: bool) -> None:
+    """CPython parse; for embedded (pyRevit) code also a conservative IronPython 2.7
+    syntax guard (not a live compile)."""
     try:
         tree = ast.parse(text)
     except SyntaxError as exc:
         diags.error("output.python-invalid", location, "Generated Python does not parse: {}.".format(exc))
+        return
+    if not embedded:
         return
     for node in ast.walk(tree):
         for kind, label in IRONPYTHON_INCOMPATIBLE:

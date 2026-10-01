@@ -86,7 +86,8 @@ The engine is the authority; a test keeps the JSON Schema in step with it.
 | `technical` | object | stable technical identity (2.3). |
 | `brand` | object | token file, asset slots, fonts (2.4). |
 | `appearance` | object | component treatments (2.5). |
-| `surfaces` | array of surface ids | non-empty, unique, known ids (1.2). |
+| `surfaces` | array of surface ids | non-empty, unique, known ids (1.2, plus `governance`, section 8). |
+| `governance` | object, optional | `required_approvals` 0-6 (section 8). |
 | `maintainers` | array | each `{name, branch_prefix}`; prefix matches the branch-policy component rule. At least one. |
 | keys starting `x-` | any | firm extension data; preserved, ignored by the engine. |
 
@@ -442,18 +443,28 @@ filesystem. Two adapters may not emit the same path (checked). Shared outputs
 
 ---
 
-## 8. Agent neutrality and firm governance (next slice)
+## 8. Agent neutrality and firm governance (`governance` surface)
 
-Generated workspaces will receive canonical `AGENTS.md`, thin `CLAUDE.md` /
-`GEMINI.md` pointers, branch policy and hooks parameterized by `maintainers`,
-and a GitHub ruleset JSON. Generating ruleset JSON does not activate it; the
-report says so. Solo-practitioner defaults: zero required approvals, PR + CI
-required. Rob's owner prefix and BIMxBert links appear only in the BIMxBert
-profile, never as hidden defaults in templates (enforced by a test that renders
-the fictional profile and searches all output for `robmintzes`, `BIMxBert`, and
-`bimxbert`).
+Implemented as an opt-in surface (`"governance"` in `surfaces`):
 
----
+| Output | Ownership | Notes |
+| --- | --- | --- |
+| `AGENTS.md` | managed | Canonical rules: ownership, branches, tool conventions, Revit safety, verification, handoffs; lists `maintainers`. |
+| `CLAUDE.md`, `GEMINI.md`, `.github/copilot-instructions.md` | managed | Thin pointers to `AGENTS.md`, no rule text, so clients cannot drift. |
+| `.agents/skills/pyrevit-tool/SKILL.md` | managed | Firm-neutral playbook using the workspace's paths and `<Ns>.*` WPF keys. |
+| `docs/onboarding/BRANCH_POLICY.md` | managed | Maintainers, approval rule, hook install, ruleset activation. |
+| `.github/workflows/development-policy.yml` | managed | Jobs `branch-policy` and `repository-validation` (the required checks). |
+| `.github/rulesets/main-branch-ruleset.json` | managed | `required_approving_review_count` from `governance.required_approvals`. |
+| `validators/*.py`, `.githooks/*`, `scripts/install-git-hooks.ps1` | managed | Vendored from the foundation with asserted substitutions (owner example, mandatory `-Owner`, `__author__`). A drifted source file fails generation. |
+| `docs/agents/FIRM_RULES.md`, `docs/handoffs/INDEX.md` | seed | Firm-owned extensions of the rules. |
+
+`governance.required_approvals` is optional. It defaults to 0 for one
+maintainer and 1 otherwise, and the default is reported as
+`governance.approvals-default`. A count that the listed maintainers cannot
+satisfy warns `governance.approvals-unreachable`. Generating the ruleset does
+not activate it; `governance.ruleset-not-applied` says so on every render.
+The IronPython syntax guard applies only to `extensions/**.py`. Vendored
+validators are CPython tooling.
 
 ## 9. Notices, attribution, and provenance
 

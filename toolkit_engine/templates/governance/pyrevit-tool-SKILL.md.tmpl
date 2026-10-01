@@ -1,0 +1,65 @@
+---
+name: pyrevit-tool
+description: Use when building or modifying a pyRevit tool in this workspace (pushbutton, helper library, or WPF dialog). Covers registration, folder layout, icons, metadata, Revit transaction safety, generated UI resources, and the delivery checklist.
+---
+
+# pyRevit tool playbook
+
+Generated file; firm additions belong in `docs/agents/FIRM_RULES.md`.
+
+## 1. Register, then build
+
+1. Add the tool to `docs/toolbar/toolbar_spec.md` (id, display_name, type, category, risk, lifecycle_stage, description, source_path).
+2. Write `docs/toolbar/tools/<id>.md`: workflow, technical design, risk, transactions, troubleshooting.
+3. Create the folder in a firm panel, never in the generated sample panel:
+
+```text
+extensions/{{ extension }}.extension/{{ tab }}.tab/<Panel>.panel/<Tool>.pushbutton/
+  script.py        IronPython 2.7-compatible
+  bundle.yaml      title (must equal the spec display_name), tooltip, author: {{ author }}
+  icon.png         96x96 (or 32x32) RGBA, for the light theme
+  icon.dark.png    same size, for the dark theme
+```
+
+## 2. Revit safety
+
+- Check context first. Exit cleanly when `revit.doc` is None or when the document type is wrong. Do this before any dialog.
+- Do every read before opening a transaction. Never show UI while a transaction is open.
+- Wrap writes as follows:
+
+```python
+tx = DB.Transaction(doc, "Describe the change")
+try:
+    tx.Start()
+    # modifications
+    tx.Commit()
+except Exception as exc:
+    if tx.HasStarted() and not tx.HasEnded():
+        tx.RollBack()
+    forms.alert("Could not complete: {}".format(exc), title="Tool name")
+```
+
+- Catch `Autodesk.Revit.Exceptions.OperationCanceledException` for picks.
+- Linked documents are read-only.
+- Use no f-strings, annotations, or walrus operators: pyRevit's default engine is IronPython 2.7.
+
+## 3. Interface
+
+- Prefer pyRevit primitives (`forms.alert`, `forms.SelectFromList`) for simple interactions.
+- For custom WPF, merge `specimens/wpf/Theme.xaml` and `Controls.xaml` and use their `{{ ns }}.*` keys:
+  - `{{ ns }}.Button.Primary`
+  - `{{ ns }}.Button.Secondary`
+  - `{{ ns }}.Badge.Success`
+  - `{{ ns }}.Text.Body`
+  - `{{ ns }}.Card`
+
+  Load them with the folder as the XAML base URI so the packaged fonts resolve. `specimens/wpf/show-specimen.ps1` shows the pattern.
+- Keep colours, fonts, and radii in `firm/` tokens, never hard-coded in tool XAML.
+
+## 4. Delivery checklist
+
+1. `python validators/check_bundle_structure.py`
+2. `python validators/check_safety_rules.py`
+3. `python validators/validate_toolbar_spec.py`
+4. Live check in Revit for each context the tool supports (no document, family, project), plus the cancel path. Record the result in the tool doc.
+5. If the work is partial, leave a handoff in `docs/handoffs/`.

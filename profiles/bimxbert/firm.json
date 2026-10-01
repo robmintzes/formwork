@@ -121,7 +121,8 @@
   "surfaces": [
     "pyrevit-sample",
     "wpf-specimen",
-    "html-guide"
+    "html-guide",
+    "governance"
   ],
   "technical": {
     "namespace": "bimxbert",
