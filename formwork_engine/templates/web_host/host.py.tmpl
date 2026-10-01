@@ -127,7 +127,17 @@ def ensure_webview2_assemblies(tool_title="This tool"):
     directories = support.search_directories(_process_path(), os.environ)
     missing = []
     for simple_name in support.WEBVIEW2_ASSEMBLIES:
-        if _loaded_assembly(simple_name) is not None:
+        loaded = _loaded_assembly(simple_name)
+        if loaded is not None:
+            # Revit loaded it, but IronPython imports namespaces only from
+            # assemblies referenced through clr. Without this, importing
+            # Microsoft.Web.WebView2.Core fails with "No module named Web".
+            try:
+                clr.AddReference(loaded)
+            except Exception as exc:
+                raise WebView2HostError(
+                    "{0} could not reference {1} from {2}: {3}".format(
+                        tool_title, simple_name, _assembly_location(loaded), exc))
             continue
         path = support.find_assembly(simple_name, directories)
         if path is None:
@@ -258,7 +268,13 @@ class WebToolWindow(forms.WPFWindow):
         log("WebView2 user data folder: {0}", folder)
         try:
             from Microsoft.Web.WebView2.Core import CoreWebView2Environment
-
+        except ImportError as exc:
+            # Not a runtime problem: the assemblies loaded but Python cannot see them.
+            self._fail("WebView2 is loaded but Python cannot import it: {0}. This is a "
+                       "host defect, not a missing runtime; the log lists the loaded "
+                       "assemblies.".format(exc))
+            return
+        try:
             task = CoreWebView2Environment.CreateAsync(None, folder, None)
             self._env_task = task
             task.ContinueWith(System.Action[Task](self._on_environment_task))
