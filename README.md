@@ -1,6 +1,10 @@
 # pyRevit Agentic Toolbar Template
 
-A comprehensive, production-grade, AI-agent-agnostic template framework for architecture and BIM teams to scaffold, validate, and deploy custom pyRevit toolbars and extensions.
+An early-stage template framework for architecture and BIM teams to scaffold and validate custom pyRevit toolbars and extensions with AI coding agents.
+
+Live Revit/pyRevit verification remains outstanding. See the [September 2026 repository assessment](docs/reviews/repository-state-2026-09-30.md) for the distinction between `main` and the unmerged stabilization work.
+
+Before developing, install the local Git guards and follow the [branch policy](docs/onboarding/BRANCH_POLICY.md). All contributions use a human-owned branch and a pull request.
 
 ---
 
