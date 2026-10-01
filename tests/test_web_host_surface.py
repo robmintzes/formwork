@@ -31,12 +31,12 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from toolkit_engine.adapters import layout, render_all  # noqa: E402
-from toolkit_engine.checks import check_outputs  # noqa: E402
-from toolkit_engine.diagnostics import Diagnostics  # noqa: E402
-from toolkit_engine.outputs import text_file  # noqa: E402
-from toolkit_engine.profile import load_profile  # noqa: E402
-from toolkit_engine.workspace import init_workspace, render_workspace, validate_firm  # noqa: E402
+from formwork_engine.adapters import layout, render_all  # noqa: E402
+from formwork_engine.checks import check_outputs  # noqa: E402
+from formwork_engine.diagnostics import Diagnostics  # noqa: E402
+from formwork_engine.outputs import text_file  # noqa: E402
+from formwork_engine.profile import load_profile  # noqa: E402
+from formwork_engine.workspace import init_workspace, render_workspace, validate_firm  # noqa: E402
 from validators.check_bundle_structure import validate_bundle_structure  # noqa: E402
 from validators.check_safety_rules import find_violations  # noqa: E402
 from validators.validate_toolbar_spec import validate_toolbar_spec  # noqa: E402
@@ -109,7 +109,7 @@ class WebHostCase(unittest.TestCase):
 
     @staticmethod
     def host_paths(root: Path) -> list[str]:
-        manifest = json.loads((root / ".toolkit" / "manifest.json").read_text(encoding="utf-8"))
+        manifest = json.loads((root / ".formwork" / "manifest.json").read_text(encoding="utf-8"))
         return sorted(rel for rel, entry in manifest["files"].items() if entry["adapter"] == "web-host")
 
 
@@ -125,7 +125,7 @@ class GeneratedFilesTests(WebHostCase):
                 for name in DEMO_FILES:
                     self.assertTrue((demo / name).is_file(), name)
                 self.assertTrue((root / "docs" / "toolbar" / "tools" / "web-tool-demo.md").is_file())
-                manifest = json.loads((root / ".toolkit" / "manifest.json").read_text(encoding="utf-8"))
+                manifest = json.loads((root / ".formwork" / "manifest.json").read_text(encoding="utf-8"))
                 paths = self.host_paths(root)
                 self.assertGreaterEqual(len(paths), 19)
                 for rel in paths:
@@ -806,7 +806,7 @@ class DemoTests(WebHostCase):
         json.dumps(rows)
 
     def test_icons_are_96_px_pairs_and_differ(self) -> None:
-        from toolkit_engine.png import read_png_size
+        from formwork_engine.png import read_png_size
 
         for extension, namespace, profile, panel in PROFILES:
             with self.subTest(profile=namespace):
@@ -892,7 +892,7 @@ class FoundationValidatorTests(WebHostCase):
         self.assertIn("web-host", schema["properties"]["surfaces"]["items"]["enum"])
         for profile in (QUILLMOOR, BIMXBERT):
             self.assertIn("web-host", json.loads((profile / "firm.json").read_text(encoding="utf-8"))["surfaces"])
-        self.assertIn("'web-host'", (REPO / "toolkit_wizard" / "static" / "app.js").read_text(encoding="utf-8"))
+        self.assertIn("'web-host'", (REPO / "formwork_wizard" / "static" / "app.js").read_text(encoding="utf-8"))
 
     def test_names_are_derived_from_the_namespace(self) -> None:
         for _, namespace, profile, _ in PROFILES:

@@ -13,9 +13,9 @@ Labels used below:
 - **[pending]** needs a human decision; independent work continues around it.
 
 The product is **Formwork**, a BIMxBert project **[confirmed]**
-([ADR 0008](../decisions/0008-product-name.md)). Package names in this document
-(`toolkit_engine`, the `toolkit` CLI) are technical and are scheduled to become
-`formwork` in a separate change (backlog B21).
+([ADR 0008](../decisions/0008-product-name.md)). The code names followed in
+0.3.0 ([ADR 0010](../decisions/0010-cli-package-rename.md)): `formwork_engine`,
+`formwork_cli`, `formwork_wizard`, and the `.formwork/` state folder.
 
 ---
 
@@ -23,10 +23,10 @@ The product is **Formwork**, a BIMxBert project **[confirmed]**
 
 | Boundary | Lives in | Owner | Contents |
 | --- | --- | --- | --- |
-| Reusable foundation | this repository | foundation maintainers | `toolkit_engine/` (generator), `toolkit_cli/` (commands), `schemas/`, validators, templates, docs |
+| Reusable foundation | this repository | foundation maintainers | `formwork_engine/` (generator), `formwork_cli/` (commands), `schemas/`, validators, templates, docs |
 | Firm configuration | `firm/` inside a firm workspace | the adopting firm | `firm.json`, a DTCG token file, brand assets, font files and their licenses |
-| Platform adapters | `toolkit_engine/adapters/` | foundation maintainers | pure functions: resolved profile -> rendered files for one surface |
-| Generated firm workspace | a separate directory/repository | the adopting firm | managed generated files, seeded files the firm then owns, firm-owned tools, `.toolkit/manifest.json` |
+| Platform adapters | `formwork_engine/adapters/` | foundation maintainers | pure functions: resolved profile -> rendered files for one surface |
+| Generated firm workspace | a separate directory/repository | the adopting firm | managed generated files, seeded files the firm then owns, firm-owned tools, `.formwork/manifest.json` |
 
 **[confirmed]** A firm's repository is a *generated workspace*, separate from the
 foundation; the foundation checkout is never mutated by generation
@@ -36,7 +36,7 @@ contain an initialized workspace, not the foundation source.
 
 **[confirmed]** One foundation repository while boundaries settle. Profiles that
 ship with the foundation live in `profiles/<profile-id>/` and are *inputs* only;
-`toolkit init` copies one into a new workspace's `firm/` folder.
+`formwork init` copies one into a new workspace's `firm/` folder.
 
 **[confirmed]** BIMxBert is the default, complete profile. A fictional firm
 profile with a different logo, palette, typography, and component treatments
@@ -46,7 +46,7 @@ proves identity is data.
 
 - Generator, CLI, and future wizard service: **CPython 3.10+, standard library
   only** **[proposed]** ([ADR 0001](../decisions/0001-engine-placement-and-stack.md)).
-  Same constraint as the existing `toolkit_cli`.
+  Same constraint as the existing `formwork_cli`.
 - Generated pyRevit code: **IronPython 2.7-compatible syntax** (pyRevit 6.5.5's
   default engine on the reference workstation is IronPython 2.7.12). Generated
   Python is checked with the existing conservative AST guard; only live
@@ -291,13 +291,13 @@ dictionary runs 2 DIP smaller than its CSS; v1 profiles use one value.)
 Override/extension files: in v1 the overrides are the firm's own inputs (tokens,
 appearance) and firm-owned files. Template-level overrides are backlog item B9.
 
-### 4.2 Manifest (`.toolkit/manifest.json`)
+### 4.2 Manifest (`.formwork/manifest.json`)
 
 ```json
 {
   "schema_version": 1,
-  "kind": "toolkit-generation-manifest",
-  "foundation_version": "0.2.0-alpha.1",
+  "kind": "formwork-generation-manifest",
+  "foundation_version": "0.3.0-alpha.1",
   "workspace_id": "bimxbert-design-technology",
   "profile_id": "bimxbert",
   "inputs_sha256": "<hash of canonicalized firm.json, token file, and every referenced input file>",
@@ -310,7 +310,7 @@ appearance) and firm-owned files. Template-level overrides are backlog item B9.
 
 Sorted keys, two-space indent, LF, no timestamps, no absolute paths, no user or
 host names. Identical inputs and foundation version therefore produce identical
-bytes. `.toolkit/workspace.json` (written by `init`) holds `workspace_id` and
+bytes. `.formwork/workspace.json` (written by `init`) holds `workspace_id` and
 `schema_version` and marks the directory as a workspace.
 
 Text outputs are hashed after normalizing CRLF to LF so a Git `autocrlf`
@@ -352,7 +352,7 @@ brand change is harder to diagnose than an unapplied one.
    (4.5), case-insensitive path collisions, and IronPython syntax guard for
    generated Python.
 4. Plan (4.3). `--dry-run` stops here and is strictly read-only (it does not
-   even create `.toolkit/`).
+   even create `.formwork/`).
 5. Apply: each file is written to a temporary sibling and moved into place with
    `os.replace`; retired files are deleted after all writes; the manifest is
    replaced last.
@@ -370,7 +370,7 @@ reported, not deleted.
 - Workspace root: resolved to an absolute path; must not be a drive root, the
   user's home directory, inside the foundation checkout, or contain it.
   `init` requires a missing or empty directory; `render` requires
-  `.toolkit/workspace.json` with a matching `workspace_id`.
+  `.formwork/workspace.json` with a matching `workspace_id`.
 - Every output path is relative, POSIX-separated, without `.`/`..`, drive
   letters, or empty components; no component is a Windows reserved device name
   (`CON`, `PRN`, `AUX`, `NUL`, `COM1-9`, `LPT1-9`, with or without extension),
@@ -389,7 +389,13 @@ reported, not deleted.
   (`foundation.downgrade`); upgrading is allowed and shows the diff.
 - Config `schema_version` migrations are explicit functions `N -> N+1`, run in
   memory and shown in the plan; the firm's `firm.json` is rewritten only by an
-  explicit `toolkit config migrate` (backlog B13). v1 has no migrations.
+  explicit `formwork config migrate` (backlog B13). v1 has no migrations.
+- State folder: workspaces rendered before 0.3.0 keep state in `.toolkit/`.
+  Reads accept it, along with its `toolkit-*` `kind` values; a dry run reports
+  `plan.state_migration`; the first applied render renames the folder to
+  `.formwork/` before writing. If both folders exist, the render refuses
+  (`workspace.state-ambiguous`). `.toolkit/` stays reserved for outputs
+  ([ADR 0010](../decisions/0010-cli-package-rename.md)).
 
 ### 4.7 Overrides (`firm/overrides/`)
 
@@ -415,28 +421,29 @@ are the supported way to keep a customization.
 
 ## 5. Commands
 
-Added to the existing `toolkit` CLI (`python -m toolkit_cli`), keeping its
+Added to the existing `formwork` CLI (`python -m formwork_cli`; the deprecated
+`python -m toolkit_cli` alias forwards to it until 0.4.0), keeping its
 conventions: argparse, `--format text|json`, `--output`, no interactive prompts
 required.
 
 | Command | Purpose |
 | --- | --- |
-| `toolkit config validate --firm <dir>` | validate `firm.json`, tokens, assets, fonts; print diagnostics |
-| `toolkit init --profile <dir> --workspace <dir>` | create a workspace, copy a profile into `firm/`, write `.toolkit/workspace.json`; does not render |
-| `toolkit render --workspace <dir> [--dry-run]` | plan and (unless dry-run) apply generation |
-| `toolkit validate --workspace <dir> [--skip-tests]` | workspace matches its inputs; bundle, spec, and safety validators; the firm's own `tests/` |
-| `toolkit serve [--port N] [--no-open]` | the local onboarding wizard (section 7) |
-| `toolkit verify workspace --workspace <dir> --manual-checks <file> --revit-version <year>` | record redacted live-host evidence for a generated workspace |
-| existing `toolkit doctor`, `toolkit verify revit` | unchanged |
+| `formwork config validate --firm <dir>` | validate `firm.json`, tokens, assets, fonts; print diagnostics |
+| `formwork init --profile <dir> --workspace <dir>` | create a workspace, copy a profile into `firm/`, write `.formwork/workspace.json`; does not render |
+| `formwork render --workspace <dir> [--dry-run]` | plan and (unless dry-run) apply generation |
+| `formwork validate --workspace <dir> [--skip-tests]` | workspace matches its inputs; bundle, spec, and safety validators; the firm's own `tests/` |
+| `formwork serve [--port N] [--no-open]` | the local onboarding wizard (section 7) |
+| `formwork verify workspace --workspace <dir> --manual-checks <file> --revit-version <year>` | record redacted live-host evidence for a generated workspace |
+| existing `formwork doctor`, `formwork verify revit` | unchanged |
 
 Exit codes: `0` success (including a no-change run and a clean dry-run); `1`
 blocked (invalid configuration or conflicts); `2` cannot run (usage, unsafe
 path, I/O error). JSON reports carry `schema_version`, `kind`,
-`toolkit_version`, `diagnostics[]` (`code`, `severity`, `location`, `message`,
+`formwork_version`, `diagnostics[]` (`code`, `severity`, `location`, `message`,
 `hint`), and for render a `plan.actions[]` list and `summary`. Reports contain
 workspace-relative paths only.
 
-Planned later: `toolkit install` and `toolkit config migrate` (needed only
+Planned later: `formwork install` and `formwork config migrate` (needed only
 once a schema v2 exists).
 
 ---
@@ -457,9 +464,9 @@ filesystem. Two adapters may not emit the same path (checked). Shared outputs
 
 ---
 
-## 7. Wizard and agent clients (implemented: `toolkit_wizard/`)
+## 7. Wizard and agent clients (implemented: `formwork_wizard/`)
 
-- Wizard: a local browser UI served by `toolkit serve` over the same engine
+- Wizard: a local browser UI served by `formwork serve` over the same engine
   functions ([ADR 0006](../decisions/0006-wizard-stack.md)). It edits an
   in-memory draft of `firm/` inputs, validates and previews it with the
   engine, plans read-only against a workspace, and applies only after a
@@ -533,8 +540,8 @@ so a rebrand never moves the URL; changing the namespace is a migration. The
 adapter also fails when the foundation bridge or server directories gain or lose
 a file it does not list. `servers/revit-mcp/mcp-server/live_probe.py` and its
 test are deliberately not vendored: they import the foundation's own
-`toolkit_cli`, which a workspace does not contain. The foundation's
-`toolkit verify revit --repository <workspace> --routes-url http://127.0.0.1:48884/<namespace>`
+`formwork_cli`, which a workspace does not contain. The foundation's
+`formwork verify revit --repository <workspace> --routes-url http://127.0.0.1:48884/<namespace>`
 is the live gate.
 
 **Mandatory reset rule.** After clicking pyRevit Reload, do not call a route:
@@ -604,7 +611,7 @@ outputs are `managed`, under `addins/<Extension>.Addin/` (`<Extension>` is
 | `README.md`, `.gitignore` | Build and install steps, supported versions, what is unverified; `bin/` and `obj/` ignored. |
 
 **Stable identity.** `AddInId` is `uuid5(<foundation constant>, technical.workspace_id + ":revit-addin")`
-(`toolkit_engine.adapters.revit_addin.FOUNDATION_ADDIN_NAMESPACE`), uppercase. It depends on nothing a
+(`formwork_engine.adapters.revit_addin.FOUNDATION_ADDIN_NAMESPACE`), uppercase. It depends on nothing a
 rebrand touches, so re-rendering or changing `identity` never changes it; changing `workspace_id` does.
 Assembly name, root namespace, `VendorId` (`technical.namespace`) and the manifest class name are technical
 identity too. Display strings (product, company, window text, manifest `<Name>`) follow `identity`.
@@ -618,8 +625,8 @@ a pyRevit tab and a compiled add-in panel on one tab has not been seen in a live
 in the 2025.5 and 2026.5 updates (Revit 2027 is .NET 10), and an add-in built for one runtime does not load in
 the other. The project chooses `net10.0-windows` for 2027 and, for 2025/2026, when the installed
 `AdApplicationFrame.runtimeconfig.json` names `net10.0`; otherwise `net8.0-windows`. `-p:RevitTargetFramework`
-overrides. Any other `RevitVersion` stops with `TKADDIN001`, a bad framework with `TKADDIN003`, a missing
-Revit install with `TKADDIN002`. **Revit 2024 is excluded**: it hosts .NET Framework 4.8, whose reference
+overrides. Any other `RevitVersion` stops with `FWADDIN001`, a bad framework with `FWADDIN003`, a missing
+Revit install with `FWADDIN002`. **Revit 2024 is excluded**: it hosts .NET Framework 4.8, whose reference
 assemblies are not part of a default SDK install and would have to be downloaded, which the offline-build
 rule forbids. The .NET 8 branch compiles only against a pre-update host and is untested here.
 
@@ -636,7 +643,7 @@ see [docs/memory/revit-2027.md](../memory/revit-2027.md) and the generated READM
 ### 8.4 Application starters (`python-app` and `web-app` surfaces)
 
 Two opt-in surfaces, each standalone (no other surface required, none depends on Revit). Everything is `managed`,
-under `apps/`. Both build their stylesheet with the shared `toolkit_engine.adapters.web_theme` helpers (tokens as
+under `apps/`. Both build their stylesheet with the shared `formwork_engine.adapters.web_theme` helpers (tokens as
 `--<ns>-*` custom properties, then the same component rules as the HTML guide), so a button, badge or table
 heading here matches the guide. The HTML guide's output is unchanged by that refactor.
 
@@ -737,7 +744,7 @@ Revit):
   present in every shipped version), marshals the result to the UI thread and passes it
   to `EnsureCoreWebView2Async`. That avoids the one broken path on 2024 and uses the same
   code on every release. No DLL is vendored, so there is no shadow copy, no version table
-  and no pin list to maintain, and a Revit update changes nothing in the toolkit. The
+  and no pin list to maintain, and a Revit update changes nothing in Formwork. The
   user data folder is `%LOCALAPPDATA%\<namespace>\WebView2\<Core version>`: Revit
   releases that run side by side use different SDK defaults, which WebView2 rejects when
   they share one folder.
@@ -752,7 +759,7 @@ Revit):
   the firm obtains a matching Core and Wpf set (and the loader, beside them or under
   `runtimes\win-x64\native`) from the `Microsoft.Web.WebView2` package under its own
   license review, avoids SDK 1.0.1343.22, and points `<NAMESPACE>_WEBVIEW2_DIR` (the
-  namespace in capitals) at the folder. The toolkit ships and downloads nothing, and this
+  namespace in capitals) at the folder. Formwork ships and downloads nothing, and this
   surface is built and tested for 2024 and later. (b) The Evergreen WebView2 Runtime must
   be installed and not blocked by policy; a fixed-version runtime is chosen with
   `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER`. (c) If another add-in loaded a different Core or
@@ -805,7 +812,7 @@ hide-while-picking `go_modeless` and `go_modal`), the page close-guard
 shadow cache and broken-SDK pin table, the `rgUI` motion primitives, `gate`, the grouped
 check list, `countUp` and `reveal`, the Lucide usage icons (a text badge only, so no icon
 notice is needed), and the M2, M3, M4, M6 and M7 scaffolds. The host supports those
-families; the toolkit does not ship a scaffold for them.
+families; Formwork does not ship a scaffold for them.
 
 **Evidence and gaps.** `tests/test_web_host_surface.py` generates both profiles and
 imports the pure modules under CPython (dispatch, error envelopes, non-ASCII round trip,
@@ -859,6 +866,6 @@ reports `web-host.not-live-verified` (info) until a live run is recorded.
 | Offline | no external URLs in generated HTML/CSS/SVG/XAML | guide opened with network unavailable |
 | Diagnostics | invalid configs produce coded diagnostics (cycle, missing role, bad path, unknown key, too-new schema) | - |
 | Separate rendering checks | - | WPF runner snapshot on Windows; browser screenshot |
-| Live host | - | `toolkit verify revit` on Revit 2026 + pyRevit 6.5.5 + IronPython 2.7.12, Windows 11 **[proposed combination]**, recorded in `docs/verification/MATRIX.md` |
+| Live host | - | `formwork verify revit` on Revit 2026 + pyRevit 6.5.5 + IronPython 2.7.12, Windows 11 **[proposed combination]**, recorded in `docs/verification/MATRIX.md` |
 
 Host support is claimed only after the last row has recorded evidence.

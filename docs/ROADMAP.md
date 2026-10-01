@@ -1,4 +1,4 @@
-# Toolkit Roadmap
+# Formwork Roadmap
 
 This project is intended to become a firm-neutral foundation for architecture,
 engineering, and construction technology teams standing up their own governed
@@ -29,7 +29,7 @@ thing to build. The correct sequence is:
    workflow is stable.
 
 The transitional bootstrap scripts, which mutated one checkout through string
-replacement, were retired on 2026-09-30. `toolkit init` and `toolkit render`
+replacement, were retired on 2026-09-30. `formwork init` and `formwork render`
 now create and reconcile a separate firm-owned workspace, show proposed
 changes before writing, and are safe to run again. See
 [FOUNDATION_SPEC.md](product/FOUNDATION_SPEC.md).
@@ -39,12 +39,12 @@ changes before writing, and are safe to run again. See
 The future CLI should expose a small sequence of composable commands:
 
 ```text
-toolkit doctor   -> inspect Git, Python, PowerShell, pyRevit, Revit, and ports
-toolkit init     -> collect or import firm configuration
-toolkit render   -> create or reconcile the firm-owned workspace
-toolkit validate -> run repository, extension, MCP, and configuration checks
-toolkit install  -> register local development integrations
-toolkit verify   -> guide and record live host-application smoke tests
+formwork doctor   -> inspect Git, Python, PowerShell, pyRevit, Revit, and ports
+formwork init     -> collect or import firm configuration
+formwork render   -> create or reconcile the firm-owned workspace
+formwork validate -> run repository, extension, MCP, and configuration checks
+formwork install  -> register local development integrations
+formwork verify   -> guide and record live host-application smoke tests
 ```
 
 Every command should support non-interactive automation. Interactive prompts are
@@ -77,7 +77,7 @@ premature repository sprawl creates governance work without creating value.
 - Add generated-project, runtime-compatibility, and contract tests.
 - Complete a documented live Revit/pyRevit verification matrix.
 
-The portable `toolkit doctor` command and redacted live-verification runner are
+The portable `formwork doctor` command and redacted live-verification runner are
 now implemented. Phase 0 remains open until their required checks pass in the
 declared Windows/Revit/pyRevit combinations; authoring the harness on macOS is
 not itself live-host evidence.

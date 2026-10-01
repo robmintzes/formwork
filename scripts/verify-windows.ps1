@@ -68,7 +68,7 @@ function Get-PythonInvocation {
     throw "Python 3.10 or newer was not found on PATH."
 }
 
-function Invoke-ToolkitPython {
+function Invoke-FormworkPython {
     param(
         [Parameter(Mandatory = $true)]
         [object]$PythonInvocation,
@@ -84,7 +84,7 @@ function Invoke-ToolkitPython {
         Write-Host ([string]$Line)
     }
     if ($NativeExitCode -notin @(0, 1, 2)) {
-        throw "Toolkit Python command failed unexpectedly with exit $NativeExitCode."
+        throw "Formwork Python command failed unexpectedly with exit $NativeExitCode."
     }
     return $NativeExitCode
 }
@@ -250,14 +250,14 @@ try {
     if ($Mode -in @("Preflight", "All")) {
         $DoctorPath = Join-Path $EvidenceDir "doctor.json"
         $DoctorArguments = @(
-            "-m", "toolkit_cli", "doctor",
+            "-m", "formwork_cli", "doctor",
             "--profile", "revit-host",
             "--routes-url", $RoutesBaseUrl,
             "--mcp-url", $McpUrl,
             "--format", "text",
             "--output", $DoctorPath
         )
-        $DoctorExitCode = Invoke-ToolkitPython `
+        $DoctorExitCode = Invoke-FormworkPython `
             -PythonInvocation $Python `
             -Arguments $DoctorArguments
         $OverallExitCode = Merge-ExitCode $OverallExitCode $DoctorExitCode
@@ -288,7 +288,7 @@ try {
 
         $LiveOutputDir = Join-Path $EvidenceDir "revit-live"
         $VerifyArguments = @(
-            "-m", "toolkit_cli", "verify", "revit",
+            "-m", "formwork_cli", "verify", "revit",
             "--routes-url", $RoutesBaseUrl,
             "--mcp-python", $McpPython,
             "--expected-context", $ExpectedContext,
@@ -296,7 +296,7 @@ try {
             "--output-dir", $LiveOutputDir,
             "--routes-reset-confirmed"
         )
-        $VerifyExitCode = Invoke-ToolkitPython `
+        $VerifyExitCode = Invoke-FormworkPython `
             -PythonInvocation $Python `
             -Arguments $VerifyArguments
         $OverallExitCode = Merge-ExitCode $OverallExitCode $VerifyExitCode

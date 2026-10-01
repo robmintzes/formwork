@@ -12,7 +12,7 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from toolkit_engine.workspace import init_workspace, render_workspace, validate_firm  # noqa: E402
+from formwork_engine.workspace import init_workspace, render_workspace, validate_firm  # noqa: E402
 
 THEME = "specimens/wpf/Theme.xaml"
 OVERRIDE = "firm/overrides/" + THEME
@@ -47,7 +47,7 @@ class OverrideTests(unittest.TestCase):
         self.assertEqual(report["summary"]["outcome"], "pass", report["diagnostics"])
         self.assertIn("override.applied", self.codes(report))
         self.assertEqual((self.root / THEME).read_text(encoding="utf-8"), text)
-        manifest = json.loads((self.root / ".toolkit" / "manifest.json").read_text(encoding="utf-8"))
+        manifest = json.loads((self.root / ".formwork" / "manifest.json").read_text(encoding="utf-8"))
         entry = manifest["files"][THEME]
         self.assertTrue(entry["override"])
         self.assertNotEqual(entry["generated_sha256"], entry["sha256"])

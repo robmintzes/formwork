@@ -16,7 +16,7 @@ class WindowsVerifierContractTests(unittest.TestCase):
 
     def test_live_routes_reset_gate_precedes_verifier_invocation(self) -> None:
         gate = self.source.index("if (-not $RoutesResetConfirmed)")
-        invocation = self.source.index('"-m", "toolkit_cli", "verify", "revit"')
+        invocation = self.source.index('"-m", "formwork_cli", "verify", "revit"')
 
         self.assertLess(gate, invocation)
         self.assertIn("exit 2", self.source[gate:invocation])
@@ -31,9 +31,9 @@ class WindowsVerifierContractTests(unittest.TestCase):
         self.assertLess(launcher_candidate, probe)
         self.assertIn("foreach ($Candidate in $Candidates)", self.source)
         self.assertIn("if ($ProbeExitCode -ne 0)", self.source)
-        self.assertIn("continue", self.source[probe : self.source.index("function Invoke-ToolkitPython")])
+        self.assertIn("continue", self.source[probe : self.source.index("function Invoke-FormworkPython")])
 
-    def test_python_prefix_is_preserved_for_probe_and_toolkit_calls(self) -> None:
+    def test_python_prefix_is_preserved_for_probe_and_formwork_calls(self) -> None:
         self.assertIn(
             "$ProbeArguments = @($Candidate.Prefix) + @(",
             self.source,
@@ -69,8 +69,8 @@ class WindowsVerifierContractTests(unittest.TestCase):
         validation = self.source.index(
             "$EffectiveManualData = Get-SanitizedManualChecklist"
         )
-        doctor = self.source.index('"-m", "toolkit_cli", "doctor"')
-        live_verify = self.source.index('"-m", "toolkit_cli", "verify", "revit"')
+        doctor = self.source.index('"-m", "formwork_cli", "doctor"')
+        live_verify = self.source.index('"-m", "formwork_cli", "verify", "revit"')
         validation_block = self.source[validation:doctor]
 
         self.assertLess(validation, doctor)

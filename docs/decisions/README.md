@@ -14,3 +14,5 @@ reversible until someone depends on it), **superseded**.
 | [0006](0006-wizard-stack.md) | Wizard is a stdlib loopback service with static UI | proposed |
 | [0007](0007-pyrevit-icon-contract.md) | 96x96 light/dark PNG icons; validator accepts 32 or 96 | proposed |
 | [0008](0008-product-name.md) | Product name: Formwork, a BIMxBert project; repository robmintzes/formwork | accepted |
+| [0009](0009-engine-distribution.md) | Engine distribution: pinned checkout now, PyPI `formwork-dt` after the live Revit gate | accepted |
+| [0010](0010-cli-package-rename.md) | Rename `toolkit` to `formwork` in code; `.toolkit/` workspaces migrate on render | accepted |

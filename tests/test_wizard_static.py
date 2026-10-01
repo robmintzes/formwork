@@ -13,7 +13,7 @@ import re
 import unittest
 
 REPO = Path(__file__).resolve().parents[1]
-STATIC = REPO / "toolkit_wizard" / "static"
+STATIC = REPO / "formwork_wizard" / "static"
 TEXT_SUFFIXES = (".html", ".css", ".js")
 FONT_SUFFIXES = (".ttf", ".otf")
 
@@ -129,9 +129,9 @@ class WizardStaticTests(unittest.TestCase):
         source = read(STATIC / "app.js")
         self.assertIn("location.hash", source)
         self.assertIn("sessionStorage", source)
-        self.assertIn("toolkitWizardToken", source)
+        self.assertIn("formworkWizardToken", source)
         self.assertIn("history.replaceState", source)
-        self.assertIn("X-Toolkit-Token", source)
+        self.assertIn("X-Formwork-Token", source)
         self.assertIn("/api/session", source)
 
     def test_scripts_avoid_dynamic_html_and_code_evaluation(self) -> None:

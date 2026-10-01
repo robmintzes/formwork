@@ -1,1 +1,1 @@
-"""Static validation helpers for the pyRevit toolkit foundation."""
+"""Static validation helpers for the Formwork foundation."""

@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from toolkit_cli.doctor import (
+from formwork_cli.doctor import (
     PROFILE_AUTHORING,
     PROFILE_REVIT_HOST,
     _discover_revit,

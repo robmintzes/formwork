@@ -1,5 +1,5 @@
-"""Portable command-line tooling for the firm-neutral toolkit foundation."""
+"""Deprecated alias: the CLI is now ``formwork_cli`` (ADR 0010).
 
-from __future__ import annotations
-
-__version__ = "0.1.0-alpha.1"
+``python -m toolkit_cli ...`` still works for one release and prints a notice.
+Remove this package in Formwork 0.4.0.
+"""

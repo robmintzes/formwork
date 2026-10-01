@@ -65,7 +65,7 @@ TEXT_SUFFIXES = {
 }
 EXCLUDED = (
     "docs/handoffs/claude-foundation-prompt-2026-09-30.md",  # verbatim historical brief
-    "toolkit_engine/resources/",  # third-party license texts
+    "formwork_engine/resources/",  # third-party license texts
 )
 EXCLUDED_NAMES = {"OFL.txt", "LICENSE"}
 # The checker's word list and its test fixture spell the British forms on purpose.

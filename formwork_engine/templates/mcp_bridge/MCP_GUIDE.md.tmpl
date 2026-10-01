@@ -1,0 +1,201 @@
+# {{ display_name }}: Revit Model Context Protocol (MCP) Bridge Guide
+
+This workspace includes an alpha, localhost-only **Model Context Protocol
+(MCP)** bridge. It lets MCP clients read structured metadata from an active
+Revit session through pyRevit Routes. Every tool is read-only.
+
+> **Verification status:** automated contract tests cover the external Python
+> server and the extension runtime, but this generated bridge has not been run
+> in a live Revit/pyRevit session. Treat the documented endpoints and
+> lifecycle behavior as unverified until a live check records evidence.
+
+This file is generated and managed: `formwork render` rewrites it, and an edit
+to it blocks the next render as a conflict. Put firm-specific notes in a
+firm-owned file instead.
+
+---
+
+## 1. System architecture
+
+Two components run on your workstation:
+
+```
+AI agent / client  <--stdio or HTTP-->  Python MCP server (port 3001)
+                                                  |
+                                                 HTTP
+                                                  |
+Autodesk Revit  <------------------->  pyRevit Routes ({{ routes_url }})
+```
+
+1. **pyRevit Routes extension (inside Revit)**
+   - Lives in `extensions/{{ extension }}.extension/`: `startup.py` and the
+     `lib/revit_mcp_bridge/` package.
+   - Registers its routes under the API name `{{ namespace }}` using pyRevit's
+     built-in Routes engine, so requests go to `{{ routes_url }}`.
+   - Runs on the Revit main thread to read Revit API objects safely.
+2. **Python MCP server (outside Revit)**
+   - Lives in `servers/revit-mcp/`. It runs in its own local Python virtual
+     environment and does not use Revit's embedded Python.
+   - Binds to `http://127.0.0.1:3001` or standard input/output (stdio).
+   - Translates MCP tool requests (for example `revit_project_info`) into
+     Routes HTTP requests against `{{ routes_url }}` and returns normalized
+     responses. Override the URL with the `REVIT_ROUTES_BASE_URL` environment
+     variable; it must stay on loopback and end with the `{{ namespace }}`
+     prefix.
+
+---
+
+## 2. Setup and installation
+
+### Step 1: Enable pyRevit Routes
+
+1. Open PowerShell and check the configuration:
+   ```powershell
+   pyrevit configs routes
+   ```
+2. If it is disabled or bound to a different port:
+   ```powershell
+   pyrevit configs routes enable
+   pyrevit configs routes port 48884
+   ```
+3. Restart Revit so the routing engine loads.
+
+### Mandatory Routes reload rule
+
+After clicking **pyRevit Reload**, do **not** call a route. Before the first
+request, either fully restart Revit or toggle pyRevit Routes off and back on.
+Reloading extension code does not safely refresh the already-running Routes
+listener, and calling it in that state can destabilize or crash Revit.
+
+### Step 2: Register this workspace's extensions with pyRevit
+
+From PowerShell, with the path of this workspace's `extensions` folder:
+
+```powershell
+pyrevit extensions paths add "<workspace>\extensions"
+```
+
+In Revit, click **pyRevit -> Reload** to load the extension. Then fully restart
+Revit, or toggle Routes off and on, before sending the first MCP/HTTP request.
+
+### Step 3: Set up the MCP server environment
+
+Install CPython 3.10 or newer. The setup script tries `python` first and then
+the Windows launcher (`py -3`). From PowerShell in the workspace root:
+
+```powershell
+.\servers\revit-mcp\scripts\setup-mcp-server.ps1
+```
+
+---
+
+## 3. Running the server
+
+### stdio mode (default)
+
+Recommended for clients that launch the process themselves, such as Claude
+Desktop and Cursor:
+
+```powershell
+.\servers\revit-mcp\scripts\start-stdio.ps1
+```
+
+### HTTP mode
+
+Recommended for the MCP Inspector and Codex CLI:
+
+```powershell
+.\servers\revit-mcp\scripts\start-local-http.ps1
+```
+
+This serves `http://127.0.0.1:3001/mcp`. To inspect the tool list:
+
+```bash
+npx @modelcontextprotocol/inspector http://127.0.0.1:3001/mcp
+```
+
+Keep both the MCP server and pyRevit Routes bound to loopback. This alpha
+bridge does not provide the authentication and origin policy required for
+remote or shared-network exposure; the server refuses non-loopback addresses.
+
+---
+
+## 4. Connecting AI clients
+
+### Claude Desktop
+
+Add this to `claude_desktop_config.json` (typically
+`%APPDATA%\Claude\claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "revit-mcp-{{ namespace }}": {
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "C:\\path\\to\\your\\workspace\\servers\\revit-mcp\\scripts\\start-stdio.ps1"
+      ]
+    }
+  }
+}
+```
+
+### Cursor
+
+1. Go to **Settings** -> **Features** -> **MCP**.
+2. Click **+ Add New MCP Server**.
+3. Name it `revit-mcp-{{ namespace }}`, choose type `command`, and use:
+   `powershell -NoProfile -ExecutionPolicy Bypass -File C:\path\to\your\workspace\servers\revit-mcp\scripts\start-stdio.ps1`
+
+---
+
+## 5. Standard tools catalog
+
+* `revit_health_ping`: verifies that Revit is open, the extension is loaded, and a document is open.
+* `revit_project_info`: retrieves active model metadata (title, file path, name, client, number, status).
+* `revit_project_levels`: returns all levels sorted by elevation.
+* `revit_project_worksets`: lists all user worksets in workshared projects.
+* `revit_project_links`: scans for linked Revit models and CAD files.
+
+These tools are intended to be read-only: the extension registers `GET` routes
+only and never opens a Revit transaction. Confirm that behavior during a live
+verification pass before connecting a client to a production model.
+
+---
+
+## 6. Verifying
+
+Automated checks, from the workspace root:
+
+```powershell
+py -3 -m unittest discover -s extensions/{{ extension }}.extension/tests
+```
+
+The server's own tests need the packages from its `requirements.txt` (use the
+virtual environment from Step 3):
+
+```powershell
+servers\revit-mcp\mcp-server\.venv\Scripts\python.exe -m pytest servers\revit-mcp\mcp-server\tests -q
+```
+
+For a live check, start a disposable model, apply the reload rule above, then
+request `{{ routes_url }}/health/` (for example with `Invoke-RestMethod`).
+
+The foundation's verifier (run from the foundation checkout, not this
+workspace) can exercise all five routes and tools and write redacted
+evidence:
+
+```powershell
+py -3.11 -m formwork_cli verify revit --repository "<workspace>" --routes-url {{ routes_url }} --routes-reset-confirmed
+```
+
+`--routes-reset-confirmed` is a human assertion that Revit was restarted, or
+Routes toggled off and on, after the most recent pyRevit Reload. The tool
+cannot check this and refuses to run without it; it is not a magic safety
+incantation. The verifier's MCP half uses the foundation's reference copy of
+the server, so it proves the Routes contract of this extension rather than
+this workspace's server files.

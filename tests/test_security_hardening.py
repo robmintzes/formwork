@@ -23,12 +23,12 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from toolkit_engine.checks import references_remote  # noqa: E402
-from toolkit_engine.diagnostics import Diagnostics  # noqa: E402
-from toolkit_engine.paths import UnsafePathError, check_relative_path, check_workspace_root  # noqa: E402
-from toolkit_engine.profile import _check_svg, load_profile  # noqa: E402
-from toolkit_engine.workspace import EngineError, init_workspace, render_workspace  # noqa: E402
-from toolkit_wizard.server import WizardHandler, WizardServer  # noqa: E402
+from formwork_engine.checks import references_remote  # noqa: E402
+from formwork_engine.diagnostics import Diagnostics  # noqa: E402
+from formwork_engine.paths import UnsafePathError, check_relative_path, check_workspace_root  # noqa: E402
+from formwork_engine.profile import _check_svg, load_profile  # noqa: E402
+from formwork_engine.workspace import EngineError, init_workspace, render_workspace  # noqa: E402
+from formwork_wizard.server import WizardHandler, WizardServer  # noqa: E402
 
 QUILLMOOR = REPO / "profiles" / "quillmoor"
 
@@ -56,7 +56,7 @@ class WorkspaceCase(unittest.TestCase):
     def tamper_manifest(self, root: Path, rel: str, adapter: str = "common", target: Path | None = None) -> None:
         import hashlib
 
-        manifest_path = root / ".toolkit" / "manifest.json"
+        manifest_path = root / ".formwork" / "manifest.json"
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         source = target or (root / Path(*rel.split("/")))
         manifest["files"][rel] = {
@@ -70,7 +70,7 @@ class WorkspaceCase(unittest.TestCase):
 class ManifestTamperingTests(WorkspaceCase):
     def test_case_variant_input_paths_cannot_be_retired(self) -> None:
         root = self.workspace()
-        for rel, real in (("FIRM/firm.json", root / "firm" / "firm.json"), (".TOOLKIT/workspace.json", root / ".toolkit" / "workspace.json")):
+        for rel, real in (("FIRM/firm.json", root / "firm" / "firm.json"), (".FORMWORK/workspace.json", root / ".formwork" / "workspace.json")):
             with self.subTest(rel=rel):
                 self.tamper_manifest(root, rel, target=real)
                 with self.assertRaises(EngineError) as caught:
@@ -78,7 +78,7 @@ class ManifestTamperingTests(WorkspaceCase):
                 self.assertEqual(caught.exception.code, "manifest.invalid")
                 self.assertTrue(real.is_file())
                 render_workspace  # keep linters quiet about the loop
-                manifest_path = root / ".toolkit" / "manifest.json"
+                manifest_path = root / ".formwork" / "manifest.json"
                 manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
                 manifest["files"].pop(rel)
                 manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
@@ -102,7 +102,7 @@ class PathRuleTests(unittest.TestCase):
 
     @unittest.skipUnless(os.name == "nt", "system folders are a Windows concept here")
     def test_system_folders_are_not_workspaces(self) -> None:
-        windows = Path(os.environ["SystemRoot"]) / "Temp" / "toolkit-ws-test"
+        windows = Path(os.environ["SystemRoot"]) / "Temp" / "formwork-ws-test"
         with self.assertRaises(UnsafePathError):
             check_workspace_root(windows, REPO)
 
@@ -211,15 +211,15 @@ class WizardHardeningTests(unittest.TestCase):
         return response, payload
 
     def test_preview_cookie_is_not_the_api_token(self) -> None:
-        response, _ = self.request("POST", "/api/session", b"{}", {"X-Toolkit-Token": "api-token-abc"})
+        response, _ = self.request("POST", "/api/session", b"{}", {"X-Formwork-Token": "api-token-abc"})
         cookie_value = response.getheader("Set-Cookie").split(";")[0].split("=", 1)[1]
         self.assertNotEqual(cookie_value, "api-token-abc")
-        response, _ = self.request("GET", "/api/starters", headers={"X-Toolkit-Token": cookie_value})
+        response, _ = self.request("GET", "/api/starters", headers={"X-Formwork-Token": cookie_value})
         self.assertEqual(response.status, 403)
 
     def test_deeply_nested_json_is_a_clean_400(self) -> None:
         body = ("[" * 100000 + "]" * 100000).encode("ascii")
-        response, payload = self.request("POST", "/api/start", body, {"X-Toolkit-Token": "api-token-abc"})
+        response, payload = self.request("POST", "/api/start", body, {"X-Formwork-Token": "api-token-abc"})
         self.assertEqual(response.status, 400)
         self.assertEqual(json.loads(payload)["error"]["code"], "request.json")
 

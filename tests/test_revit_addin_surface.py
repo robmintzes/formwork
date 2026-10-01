@@ -26,13 +26,13 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from toolkit_engine.adapters import render_all, revit_addin  # noqa: E402
-from toolkit_engine.checks import check_outputs  # noqa: E402
-from toolkit_engine.diagnostics import Diagnostics  # noqa: E402
-from toolkit_engine.outputs import text_file  # noqa: E402
-from toolkit_engine.profile import load_profile  # noqa: E402
-from toolkit_engine.textutil import cs_string, msbuild_text  # noqa: E402
-from toolkit_engine.workspace import init_workspace, render_workspace, validate_firm  # noqa: E402
+from formwork_engine.adapters import render_all, revit_addin  # noqa: E402
+from formwork_engine.checks import check_outputs  # noqa: E402
+from formwork_engine.diagnostics import Diagnostics  # noqa: E402
+from formwork_engine.outputs import text_file  # noqa: E402
+from formwork_engine.profile import load_profile  # noqa: E402
+from formwork_engine.textutil import cs_string, msbuild_text  # noqa: E402
+from formwork_engine.workspace import init_workspace, render_workspace, validate_firm  # noqa: E402
 from validators.check_bundle_structure import validate_bundle_structure  # noqa: E402
 from validators.check_safety_rules import find_violations  # noqa: E402
 from validators.validate_toolbar_spec import validate_toolbar_spec  # noqa: E402
@@ -116,7 +116,7 @@ class GeneratedFilesTests(AddinCase):
                 )
                 for name in names:
                     self.assertTrue((base / name).is_file(), name)
-                manifest = json.loads((root / ".toolkit" / "manifest.json").read_text(encoding="utf-8"))
+                manifest = json.loads((root / ".formwork" / "manifest.json").read_text(encoding="utf-8"))
                 owned = [rel for rel, entry in manifest["files"].items() if entry["adapter"] == "revit-addin"]
                 self.assertGreaterEqual(len(owned), len(names))
                 for rel in owned:
@@ -182,7 +182,7 @@ class GeneratedFilesTests(AddinCase):
                 for logical in embedded:
                     name = logical.split(".", 1)[1]
                     self.assertTrue((path.parent / "Resources" / name).is_file(), name)
-                for unsupported in ("2024", "TKADDIN001"):
+                for unsupported in ("2024", "FWADDIN001"):
                     self.assertIn(unsupported, text)
 
     def test_xaml_and_manifest_are_well_formed_and_every_style_key_resolves(self) -> None:
@@ -249,14 +249,14 @@ class GeneratedFilesTests(AddinCase):
             "%APPDATA%\\Autodesk\\Revit\\Addins\\<year>\\",
             "C:\\Program Files\\Autodesk\\Revit\\Addins\\2027\\",
             "not covered",
-            "TKADDIN001",
+            "FWADDIN001",
             "does **not** prove Revit loads the add-in",
             revit_addin.addin_id("quillmoor-design-technology"),
         ):
             self.assertIn(expected, readme)
 
     def test_icons_are_deterministic_and_the_right_size(self) -> None:
-        from toolkit_engine.png import read_png_size
+        from formwork_engine.png import read_png_size
 
         profile = load_profile(QUILLMOOR, Diagnostics())
         for size in (16, 32):
@@ -357,7 +357,7 @@ class EngineIntegrationTests(AddinCase):
             check_outputs([text_file(path, "<Project><Unclosed></Project>", "revit-addin")], diags)
             self.assertIn("output.xml-invalid", diags.codes(), path)
         diags = Diagnostics()
-        from toolkit_engine.outputs import OutputFile
+        from formwork_engine.outputs import OutputFile
 
         check_outputs([OutputFile("addins/X.Addin/App.cs", b"class A { // \xff\xfe }", "revit-addin")], diags)
         self.assertIn("output.encoding", diags.codes())
@@ -458,18 +458,18 @@ class BuildErrorTests(AddinCase):
         csproj = addin_dir(root, "Quillmoor") / "Quillmoor.Addin.csproj"
         result = self.build(csproj, "-p:RevitVersion=2024")
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("TKADDIN001", result.stdout)
+        self.assertIn("FWADDIN001", result.stdout)
         self.assertIn("Supported: 2025, 2026 and 2027", result.stdout)
         result = self.build(csproj, "-p:RevitVersion=2026", "-p:RevitTargetFramework=net9.0-windows")
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("TKADDIN003", result.stdout)
+        self.assertIn("FWADDIN003", result.stdout)
 
     def test_missing_revit_install_is_a_clear_error_not_a_compiler_cascade(self) -> None:
         root = self.workspace(QUILLMOOR, "missing-api")
         csproj = addin_dir(root, "Quillmoor") / "Quillmoor.Addin.csproj"
         result = self.build(csproj, "-p:RevitVersion=2026", "-p:RevitInstallDir=" + str(self.base / "no revit here") + "\\")
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("TKADDIN002", result.stdout)
+        self.assertIn("FWADDIN002", result.stdout)
         self.assertNotIn("CS0246", result.stdout)
 
 

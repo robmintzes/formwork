@@ -24,11 +24,11 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from toolkit_cli.revit_contract import assess_envelope  # noqa: E402
+from formwork_cli.revit_contract import assess_envelope  # noqa: E402
 
 
-PROTOCOL = "toolkit-live-probe-v1"
-PREFIX = "TOOLKIT_LIVE_PROBE_V1:"
+PROTOCOL = "formwork-live-probe-v1"
+PREFIX = "FORMWORK_LIVE_PROBE_V1:"
 TOOLS = (
     "revit_health_ping",
     "revit_project_info",

@@ -14,12 +14,12 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from toolkit_cli.verify_workspace import (  # noqa: E402
+from formwork_cli.verify_workspace import (  # noqa: E402
     MANUAL_TEMPLATE,
     render_markdown,
     run_workspace_verification,
 )
-from toolkit_engine.workspace import init_workspace, render_workspace  # noqa: E402
+from formwork_engine.workspace import init_workspace, render_workspace  # noqa: E402
 
 
 class FakePyRevit:

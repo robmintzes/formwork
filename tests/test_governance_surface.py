@@ -19,10 +19,10 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from toolkit_engine.adapters import governance  # noqa: E402
-from toolkit_engine.diagnostics import Diagnostics  # noqa: E402
-from toolkit_engine.profile import load_profile  # noqa: E402
-from toolkit_engine.workspace import init_workspace, render_workspace  # noqa: E402
+from formwork_engine.adapters import governance  # noqa: E402
+from formwork_engine.diagnostics import Diagnostics  # noqa: E402
+from formwork_engine.profile import load_profile  # noqa: E402
+from formwork_engine.workspace import init_workspace, render_workspace  # noqa: E402
 
 QUILLMOOR = REPO / "profiles" / "quillmoor"
 

@@ -68,7 +68,7 @@ Default and example profiles live in `profiles/`:
   optional clients of the same commands.
 
 If `python` opens the Microsoft Store, use the launcher: `py -3.11 -m
-toolkit_cli ...` (any installed 3.10+ works).
+formwork_cli ...` (any installed 3.10+ works).
 
 Get the foundation:
 
@@ -86,7 +86,7 @@ your home folder. Paths with spaces work; quote them.
 ## 3. Path A: the wizard
 
 ```powershell
-python -m toolkit_cli serve
+python -m formwork_cli serve
 ```
 
 This starts a local service on `127.0.0.1` (random free port, or `--port N`),
@@ -146,11 +146,11 @@ Then:
 
 ```powershell
 cd "D:\Tools\foundation"
-python -m toolkit_cli config validate --firm "D:\Firm Inputs\acme"
-python -m toolkit_cli init --profile "D:\Firm Inputs\acme" --workspace "D:\Firm\acme-dt"
-python -m toolkit_cli render --workspace "D:\Firm\acme-dt" --dry-run
-python -m toolkit_cli render --workspace "D:\Firm\acme-dt"
-python -m toolkit_cli validate --workspace "D:\Firm\acme-dt"
+python -m formwork_cli config validate --firm "D:\Firm Inputs\acme"
+python -m formwork_cli init --profile "D:\Firm Inputs\acme" --workspace "D:\Firm\acme-dt"
+python -m formwork_cli render --workspace "D:\Firm\acme-dt" --dry-run
+python -m formwork_cli render --workspace "D:\Firm\acme-dt"
+python -m formwork_cli validate --workspace "D:\Firm\acme-dt"
 ```
 
 - `config validate` checks `firm.json`, tokens, assets, and fonts. Fix errors
@@ -178,7 +178,7 @@ your original folder. Edit `D:\Firm\acme-dt\firm\` from then on.
 | Class | Where | What the generator does |
 | --- | --- | --- |
 | Input | `firm/**` | Reads. Never writes after `init`. Yours to edit. |
-| Managed | Extension manifest, sample bundle, themes, guides, fonts, notices, governance and bridge files, validators | Rewrites on every render. Hash-tracked in `.toolkit/manifest.json`. |
+| Managed | Extension manifest, sample bundle, themes, guides, fonts, notices, governance and bridge files, validators | Rewrites on every render. Hash-tracked in `.formwork/manifest.json`. |
 | Seed | `docs/toolbar/toolbar_spec.md`, `README.md`, `.gitattributes`, `docs/agents/FIRM_RULES.md`, `docs/handoffs/INDEX.md` | Written once if absent. Yours afterwards; never rewritten. A deleted seed is not recreated. |
 | Firm-owned | Anything not in the manifest, for example your own pushbuttons | Never read for writing, moved, or deleted. |
 
@@ -245,7 +245,7 @@ Decide technical identity at the start. It is cheap now and awkward later.
 3. Add `docs/toolbar/tools/<tool-id>.md` for each tool. See the [documentation
    guide](DOCUMENTATION_GUIDE.md) for the pattern (the generated workspace
    carries the same rule in its `AGENTS.md`).
-4. Run `python -m toolkit_cli validate --workspace "D:\Firm\acme-dt"`.
+4. Run `python -m formwork_cli validate --workspace "D:\Firm\acme-dt"`.
 
 Follow the Revit safety rules in the workspace `AGENTS.md`: check context
 before dialogs, never hold a transaction open while a dialog is showing, and
@@ -319,7 +319,7 @@ Then follow the runbook: [live check, generated workspace in
 Revit](../verification/GENERATED_WORKSPACE.md). It walks a checklist, then:
 
 ```powershell
-python -m toolkit_cli verify workspace --workspace "D:\Firm\acme-dt" --manual-checks .logs\workspace-verification\manual-checks.json --revit-version 2026
+python -m formwork_cli verify workspace --workspace "D:\Firm\acme-dt" --manual-checks .logs\workspace-verification\manual-checks.json --revit-version 2026
 ```
 
 Exit `0` pass, `1` fail, `2` incomplete. Evidence is written under the
@@ -355,14 +355,14 @@ in the workspace.
 ## 11. Upgrading the foundation
 
 The workspace records the foundation version that rendered it in
-`.toolkit/manifest.json`.
+`.formwork/manifest.json`.
 
 ```powershell
 cd "D:\Tools\foundation"
 git pull --ff-only
-python -m toolkit_cli render --workspace "D:\Firm\acme-dt" --dry-run
-python -m toolkit_cli render --workspace "D:\Firm\acme-dt"
-python -m toolkit_cli validate --workspace "D:\Firm\acme-dt"
+python -m formwork_cli render --workspace "D:\Firm\acme-dt" --dry-run
+python -m formwork_cli render --workspace "D:\Firm\acme-dt"
+python -m formwork_cli validate --workspace "D:\Firm\acme-dt"
 git -C "D:\Firm\acme-dt" diff
 ```
 
@@ -374,9 +374,15 @@ refused (`foundation.downgrade`).
 
 Seed files are never updated, so new seed templates reach you only if you copy
 them over yourself. Template-level overrides and three-way upgrade merges are
-not built yet (backlog B13). How the engine is distributed to adopters (pip,
-pinned checkout) is still undecided (B16); a pinned checkout, as above, is the
-only supported route.
+not built yet (backlog B13). A checkout of this repository, as above, is the
+only supported way to get the engine ([ADR 0009](../decisions/0009-engine-distribution.md)).
+Record the commit you render with (`git -C "D:\Toolsoundation" rev-parse HEAD`)
+so you can return to it. A `formwork-dt` package on PyPI comes after the live
+Revit gate.
+
+Workspaces rendered before Formwork 0.3 keep their state in `.toolkit/`. The
+first render with 0.3 or later moves it to `.formwork/`; the dry run shows the
+move first. Commit the result.
 
 ---
 
@@ -402,7 +408,7 @@ where one exists. Codes below are the ones you will meet first.
 | `font.license-unrecognized`, `font.not-packaged` (warnings) | Unknown font license, or a family used by tokens but not packaged | Check redistribution rights; or accept the fallback stack. |
 | `workspace.not-empty` | `init` target has files | Choose a new or empty folder. |
 | `workspace.overlaps-foundation`, `workspace.unsafe` | Workspace is inside the checkout, contains it, or is a drive root or home folder | Pick a different location. |
-| `workspace.not-initialized` | No `.toolkit/workspace.json` | Run `init` first. |
+| `workspace.not-initialized` | No `.formwork/workspace.json` | Run `init` first. |
 | `workspace.id-mismatch` | `workspace_id` changed after `init` | Restore the original id; see [section 6](#6-rebranding-later-versus-changing-technical-identity). |
 | `path.reparse-point`, `workspace.reparse-point` | A symlink or junction is in the write path | Remove it; the generator never writes through links. |
 | conflict `managed-modified`, `unmanaged-at-managed-path`, `retired-modified` | See [section 5](#5-ownership-rules) | Revert, delete, or move your change. |
@@ -418,12 +424,12 @@ Other notes:
 
 - **A `.ps1` script is blocked.** Some workstations run script control that
   blocks PowerShell files. Everything you need has a plain-command equivalent:
-  use the Python CLI (`python -m toolkit_cli ...`), `git config`, and `pyrevit
+  use the Python CLI (`python -m formwork_cli ...`), `git config`, and `pyrevit
   extensions paths add`. The helper scripts under `scripts\` only wrap those.
 - **A render reports a conflict you did not expect.** Run `render --dry-run
   --format json` and read `plan.actions[]`; the conflict's `reason` says which
   case it is.
-- **Run `python -m toolkit_cli doctor --profile authoring`** to check the Python
+- **Run `python -m formwork_cli doctor --profile authoring`** to check the Python
   and tooling environment. Use `--profile revit-host` on the Revit machine.
 - **The `web-host` window does not open.** The host uses the WebView2 files that
   Revit 2024 and later ship beside `Revit.exe` (nothing is bundled), and the
