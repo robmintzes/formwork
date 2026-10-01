@@ -101,7 +101,38 @@ change before committing.
 | `b60e9fc` | `revit-addin` C# starter (Sonnet): offline `dotnet build` for Revit 2026/2027 verified; stable uuid5 AddInId |
 | `4bf8a37` | Spec 4.7 overrides; Revit 2025.5/2026.5 now on .NET 10 (memory overlay corrected after checking Autodesk and the local RevitAPI references) |
 | `b003ac2` | CI fix: add-in build-error tests gated to Windows (NETSDK1100 on Ubuntu runners) |
-| (this commit) | `python-app` (branded CSV/JSON to HTML report CLI) and `web-app` (dependency-free TypeScript on Node 22.18+) starters (Sonnet) |
+| `6f3f66e` | `python-app` (branded CSV/JSON to HTML report CLI) and `web-app` (dependency-free TypeScript on Node 22.18+) starters (Sonnet) |
+| `da5d12e` | `web-host` WebView2 tool host ported from rgdt_web (Sonnet), and fixes for the Opus adversarial security review (1 medium, 6 low, 4 info; [review](../reviews/security-review-2026-10-01.md)) |
+
+### End-of-night state (2026-10-01, about 06:00)
+
+- **Surfaces (11):**
+  - pyrevit-sample, wpf-specimen, html-guide;
+  - governance, mcp-bridge;
+  - ui-kit, web-host;
+  - revit-addin, python-app, web-app;
+  - plus the always-on common files.
+- **Commands:** `config validate`, `init`, `render [--dry-run]`, `validate`, `serve` (wizard), `verify workspace`, plus PR #2's `doctor` and `verify revit`.
+- **Tests:** 299 root tests, plus 11 extension tests, all passing on Windows with CPython 3.11. CI was green at every completed head, with one Linux-only failure fixed in `b003ac2`.
+- **Evidence beyond unit tests:**
+  - native WPF snapshots: specimen, UI kit dialogs, the add-in summary window;
+  - offline headless Edge renders of the guides;
+  - real offline `dotnet build` for Revit 2026 and 2027;
+  - generated Python and Node app suites executed;
+  - vendored MCP server tests run in CI.
+- **Still unverified:** anything inside Revit or pyRevit. The checklist now covers:
+  - the ribbon and light/dark icons;
+  - `help_url`;
+  - no-document, family and project contexts;
+  - the UI Kit Demo;
+  - the Web Tool Demo;
+  - clean exit.
+
+  The C# add-in has never been loaded.
+- **Recommended next step (Rob, about 30-45 min):** run
+  [GENERATED_WORKSPACE.md](../verification/GENERATED_WORKSPACE.md) on Revit
+  2026 with a generated BIMxBert workspace. Every host surface has
+  accumulated unverified code; the live gate now outranks new features.
 
 Findings worth Rob's attention:
 
