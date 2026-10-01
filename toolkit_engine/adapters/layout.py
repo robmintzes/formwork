@@ -54,6 +54,15 @@ def ui_kit_dir(technical: Technical) -> str:
     return "{}/lib/{}".format(extension_dir(technical), ui_kit_package(technical))
 
 
+def addin_project(technical: Technical) -> str:
+    """Assembly and project name of the generated Revit add-in (never changes with branding)."""
+    return "{}.Addin".format(technical.extension)
+
+
+def addin_dir(technical: Technical) -> str:
+    return "addins/{}".format(addin_project(technical))
+
+
 def font_path(font: FontSpec, font_file: FontFile) -> str:
     return "{}/{}/{}".format(FONTS_DIR, kebab(font.family), font_file.path.rsplit("/", 1)[-1])
 

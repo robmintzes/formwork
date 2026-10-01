@@ -993,6 +993,7 @@ const SURFACES = [
   ['governance', 'Governance files', 'AGENTS.md and client pointers, branch policy, CI workflow, ruleset, and vendored validators.'],
   ['mcp-bridge', 'MCP bridge', 'Read-only Revit MCP bridge inside the extension, an external FastMCP server, and a guide. Requires the pyRevit sample.'],
   ['ui-kit', 'Tool UI kit', 'Branded WPF dialogs for pyRevit tools (chooser, selector, result) with a read-only demo button. Requires the pyRevit sample.'],
+  ['revit-addin', 'Revit add-in starter', 'C# add-in project (Revit 2025-2027) with a ribbon button and a read-only command that uses the same theme. Builds with the .NET SDK; no NuGet packages.'],
 ];
 
 function renderComponents(root) {

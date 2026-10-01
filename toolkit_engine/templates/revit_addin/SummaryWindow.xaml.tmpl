@@ -1,0 +1,79 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Summary"
+        Width="480"
+        SizeToContent="Height"
+        WindowStyle="None"
+        ResizeMode="NoResize"
+        AllowsTransparency="True"
+        ShowInTaskbar="False"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="Grayscale"
+        TextOptions.TextHintingMode="Fixed"
+        UseLayoutRounding="True">
+
+  <!-- Generated, managed. Same frame, titlebar and field styles as the pyRevit UI kit,
+       resolved from Theme.xaml and Controls.xaml that ThemeResources.Apply merges into
+       this window. The window is transparent and the inner frame is the visible dialog;
+       its 12 DIP margin is where the drop shadow renders. -->
+  <Border Margin="12" Style="{DynamicResource {{ ns }}.Window.Frame}">
+    <Border.Effect>
+      <DropShadowEffect Color="#000000" BlurRadius="18" ShadowDepth="3" Direction="270" Opacity="0.30"/>
+    </Border.Effect>
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="Auto"/>
+      </Grid.RowDefinitions>
+
+      <Border Grid.Row="0" x:Name="TitlebarBorder" Style="{DynamicResource {{ ns }}.Titlebar}">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <TextBlock x:Name="TitlebarTextBlock" Grid.Column="0" Style="{DynamicResource {{ ns }}.Titlebar.Label}"
+                     Text="Tool" AutomationProperties.Name="Window title"/>
+          <Border Grid.Column="1" Style="{DynamicResource {{ ns }}.Titlebar.Divider}"/>
+          <Image x:Name="BrandMark" Grid.Column="2" Height="20" Margin="12,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"
+                 AutomationProperties.Name="{{ logo_alt }}"/>
+          <Button x:Name="CloseXBtn" Grid.Column="3" Style="{DynamicResource {{ ns }}.Titlebar.CloseButton}"
+                  Content="&#xD7;" AutomationProperties.Name="Close window"/>
+        </Grid>
+      </Border>
+
+      <Border Grid.Row="1" Style="{DynamicResource {{ ns }}.Pane.Main}">
+        <StackPanel>
+          <TextBlock Style="{DynamicResource {{ ns }}.Text.Eyebrow}" Margin="0,0,0,8" Text="{{ eyebrow }}"/>
+          <TextBlock Style="{DynamicResource {{ ns }}.Text.Title}" Margin="0,0,0,16" Text="{{ heading }}"/>
+
+          <StackPanel Style="{DynamicResource {{ ns }}.Stat.Tile}">
+            <TextBlock Style="{DynamicResource {{ ns }}.Stat.Key}" Text="{{ label_project }}"/>
+            <TextBlock x:Name="ProjectValue" Style="{DynamicResource {{ ns }}.Stat.Value}" TextWrapping="Wrap"
+                       AutomationProperties.Name="Project"/>
+          </StackPanel>
+          <StackPanel Style="{DynamicResource {{ ns }}.Stat.Tile}">
+            <TextBlock Style="{DynamicResource {{ ns }}.Stat.Key}" Text="{{ label_view }}"/>
+            <TextBlock x:Name="ViewValue" Style="{DynamicResource {{ ns }}.Stat.Value}" TextWrapping="Wrap"
+                       AutomationProperties.Name="Active view"/>
+          </StackPanel>
+          <StackPanel Style="{DynamicResource {{ ns }}.Stat.Tile}" Margin="0,0,0,16">
+            <TextBlock Style="{DynamicResource {{ ns }}.Stat.Key}" Text="{{ label_count }}"/>
+            <TextBlock x:Name="CountValue" Style="{DynamicResource {{ ns }}.Stat.Value}"
+                       AutomationProperties.Name="Non-template view count"/>
+          </StackPanel>
+
+          <Border Style="{DynamicResource {{ ns }}.Hairline}"/>
+
+          <Button x:Name="CloseBtn" Style="{DynamicResource {{ ns }}.Button.Primary}" Content="{{ label_close }}"
+                  HorizontalAlignment="Right" MinWidth="96" Margin="0,16,0,0" IsDefault="True" IsCancel="True"
+                  AutomationProperties.Name="Close dialog"/>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Border>
+</Window>

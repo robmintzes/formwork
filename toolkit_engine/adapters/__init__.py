@@ -25,7 +25,16 @@ Adapter = Callable[[Profile], RenderResult]
 
 
 def _registry() -> dict[str, Adapter]:
-    from toolkit_engine.adapters import common, governance, html_guide, mcp_bridge, pyrevit_sample, ui_kit, wpf_specimen
+    from toolkit_engine.adapters import (
+        common,
+        governance,
+        html_guide,
+        mcp_bridge,
+        pyrevit_sample,
+        revit_addin,
+        ui_kit,
+        wpf_specimen,
+    )
 
     return {
         "common": common.render,
@@ -35,6 +44,7 @@ def _registry() -> dict[str, Adapter]:
         "governance": governance.render,
         "mcp-bridge": mcp_bridge.render,
         "ui-kit": ui_kit.render,
+        "revit-addin": revit_addin.render,
     }
 
 

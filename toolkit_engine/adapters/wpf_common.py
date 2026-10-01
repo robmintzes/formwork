@@ -208,3 +208,31 @@ def render_controls(profile: Profile) -> str:
     values["foundation_version"] = __version__
     values["badge_styles"] = badge_styles(profile)
     return render_file("wpf/Controls.xaml.tmpl", values)
+
+
+def _kit_extra_controls(profile: Profile) -> str:
+    t = profile.tokens
+    a = profile.config.appearance
+    rounded = t.px("radius.rounded")
+    values = {
+        "ns": pascal(profile.config.technical.namespace),
+        "space_sm": number(t.px("space.sm")),
+        "space_md": number(t.px("space.md")),
+        "space_xl": number(t.px("space.xl")),
+        "control_stroke": number(t.px("stroke.control")),
+        "control_height": number(t.px("size.control-height")),
+        "field_radius": number(0.0 if a.button_shape == "square" else rounded),
+        "check_radius": number(0.0 if a.button_shape == "square" else min(rounded, 3.0)),
+    }
+    return render_file("ui_kit/Controls.extra.xaml.tmpl", values)
+
+
+def render_kit_controls(profile: Profile) -> str:
+    """The specimen's Controls dictionary extended with the UI kit's own styles.
+
+    Shared by every surface that ships kit-styled windows (``ui-kit``, ``revit-addin``)."""
+    closing = "</ResourceDictionary>"
+    base = render_controls(profile).rstrip()
+    if not base.endswith(closing):
+        raise RuntimeError("the specimen Controls dictionary no longer ends with </ResourceDictionary>")
+    return base[: -len(closing)].rstrip("\n") + "\n" + _kit_extra_controls(profile) + closing + "\n"

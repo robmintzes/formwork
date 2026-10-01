@@ -77,3 +77,31 @@ def number(value: float) -> str:
     """Compact decimal without trailing zeros ("16", "0.5")."""
     text = "{:.4f}".format(value).rstrip("0").rstrip(".")
     return "0" if text in ("", "-0") else text
+
+
+def cs_string(value: str) -> str:
+    """Double-quoted C# string literal; non-ASCII and control characters become C# unicode escapes."""
+    escapes = {"\\": "\\\\", '"': '\\"', "\n": "\\n", "\r": "\\r", "\t": "\\t"}
+    parts = ['"']
+    for ch in value:
+        if ch in escapes:
+            parts.append(escapes[ch])
+        elif 32 <= ord(ch) <= 126:
+            parts.append(ch)
+        else:
+            code = ord(ch)
+            units = [code]
+            if code > 0xFFFF:
+                code -= 0x10000
+                units = [0xD800 + (code >> 10), 0xDC00 + (code & 0x3FF)]
+            parts.extend("\\u{:04X}".format(unit) for unit in units)
+    parts.append('"')
+    return "".join(parts)
+
+
+def msbuild_text(value: str) -> str:
+    """Text safe as an MSBuild property value (special characters %-escaped), then XML-escaped."""
+    escaped = "".join(
+        "%{:02X}".format(ord(ch)) if ch in "%$@';*?" else ch for ch in value
+    )
+    return xml(escaped)

@@ -124,7 +124,8 @@
     "html-guide",
     "governance",
     "mcp-bridge",
-    "ui-kit"
+    "ui-kit",
+    "revit-addin"
   ],
   "technical": {
     "namespace": "bimxbert",

@@ -70,6 +70,11 @@ def _check_content(item: OutputFile, location: str, diags: Diagnostics) -> None:
                 ElementTree.fromstring(item.content)
             except ElementTree.ParseError as exc:
                 diags.error("output.xaml-invalid", location, "XAML is not well-formed: {}.".format(exc))
+        elif suffix in ("csproj", "addin"):
+            try:
+                ElementTree.fromstring(item.content)
+            except ElementTree.ParseError as exc:
+                diags.error("output.xml-invalid", location, "{} file is not well-formed XML: {}.".format(suffix, exc))
         elif suffix == "json":
             try:
                 loads_strict(text)

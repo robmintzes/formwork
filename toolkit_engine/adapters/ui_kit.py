@@ -27,7 +27,7 @@ from toolkit_engine.diagnostics import Diagnostic
 from toolkit_engine.outputs import OutputFile, binary_file, text_file
 from toolkit_engine.png import Canvas, ring, rounded_rect
 from toolkit_engine.profile import Profile
-from toolkit_engine.textutil import kebab, md, number, pascal, py_string, render_file, xml, yaml_scalar
+from toolkit_engine.textutil import kebab, md, pascal, py_string, render_file, xml, yaml_scalar
 from toolkit_engine.tokens import Color
 
 ADAPTER_ID = "ui-kit"
@@ -45,32 +45,6 @@ def _font_folder(font: FontSpec) -> str:
 
 def _case(text: str, uppercase: bool) -> str:
     return text.upper() if uppercase else text
-
-
-def _extra_controls(profile: Profile) -> str:
-    t = profile.tokens
-    a = profile.config.appearance
-    rounded = t.px("radius.rounded")
-    values = {
-        "ns": pascal(profile.config.technical.namespace),
-        "space_sm": number(t.px("space.sm")),
-        "space_md": number(t.px("space.md")),
-        "space_xl": number(t.px("space.xl")),
-        "control_stroke": number(t.px("stroke.control")),
-        "control_height": number(t.px("size.control-height")),
-        "field_radius": number(0.0 if a.button_shape == "square" else rounded),
-        "check_radius": number(0.0 if a.button_shape == "square" else min(rounded, 3.0)),
-    }
-    return render_file("ui_kit/Controls.extra.xaml.tmpl", values)
-
-
-def _controls(profile: Profile) -> str:
-    """The specimen's Controls dictionary extended with the kit's own styles."""
-    closing = "</ResourceDictionary>"
-    base = wpf_common.render_controls(profile).rstrip()
-    if not base.endswith(closing):
-        raise RuntimeError("the specimen Controls dictionary no longer ends with </ResourceDictionary>")
-    return base[: -len(closing)].rstrip("\n") + "\n" + _extra_controls(profile) + closing + "\n"
 
 
 def _dialog_values(profile: Profile) -> dict[str, str]:
@@ -208,7 +182,7 @@ def render(profile: Profile) -> RenderResult:
         add(text_file("{}/{}".format(package_dir, name), _python_module(profile, name), ADAPTER_ID))
 
     add(text_file(package_dir + "/Theme.xaml", wpf_common.render_theme(profile, _font_folder), ADAPTER_ID))
-    add(text_file(package_dir + "/Controls.xaml", _controls(profile), ADAPTER_ID))
+    add(text_file(package_dir + "/Controls.xaml", wpf_common.render_kit_controls(profile), ADAPTER_ID))
     add(
         text_file(
             package_dir + "/Icons.xaml",
