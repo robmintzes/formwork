@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://github.com/robmintzes/pyrevit-toolbar-template/schemas/firm-config.v1.schema.json",
+  "$id": "https://github.com/robmintzes/formwork/schemas/firm-config.v1.schema.json",
   "title": "Firm configuration (firm.json) v1",
   "description": "Editor completion for firm.json. toolkit_engine.config is the authority; tests keep this file in step with it.",
   "type": "object",

@@ -38,6 +38,7 @@ from toolkit_engine.tokens import Color
 ADAPTER_ID = "revit-addin"
 # Fixed, never regenerated: uuid5(NAMESPACE_DNS, "revit-addin.pyrevit-toolbar-template.foundation").
 # Changing it changes every generated AddInId, so treat it as a published constant.
+# The seed string keeps the repository's pre-rename name on purpose (ADR 0008).
 FOUNDATION_ADDIN_NAMESPACE = uuid.UUID("14c252b8-76a6-57e0-9467-d802f0ada553")
 PANEL_SUFFIX = " Add-in"
 CSHARP_KEYWORDS = frozenset(

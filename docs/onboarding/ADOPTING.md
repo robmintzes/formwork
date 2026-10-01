@@ -73,7 +73,7 @@ toolkit_cli ...` (any installed 3.10+ works).
 Get the foundation:
 
 ```powershell
-git clone https://github.com/robmintzes/pyrevit-toolbar-template.git "D:\Tools\foundation"
+git clone https://github.com/robmintzes/formwork.git "D:\Tools\foundation"
 cd "D:\Tools\foundation"
 ```
 

@@ -75,8 +75,8 @@ Committing a JSON file does not activate server rules. The maintainer applies
 the ruleset through GitHub settings or the authenticated CLI:
 
 ```powershell
-gh api --method POST repos/robmintzes/pyrevit-toolbar-template/rulesets --input .github/main-branch-ruleset.json
-gh api repos/robmintzes/pyrevit-toolbar-template/rulesets
+gh api --method POST repos/robmintzes/formwork/rulesets --input .github/main-branch-ruleset.json
+gh api repos/robmintzes/formwork/rulesets
 ```
 
 After initial creation, update the existing ruleset by its returned ID with

@@ -1,6 +1,7 @@
 # Handoff - foundation workspace generator (first slice)
 
-Branch: `robmintzes/foundation-generator`, pushed; draft PR [#4](https://github.com/robmintzes/pyrevit-toolbar-template/pull/4).
+Branch: `robmintzes/foundation-generator`, merged to main through PR
+[#4](https://github.com/robmintzes/formwork/pull/4) on 2026-10-01.
 Stacked on `robmintzes/foundation-charter` (policy PR #3 lineage) plus a merge
 of `origin/robmintzes/runtime-stabilization` (PR #2 at `573c382`). Neither PR
 is merged; this branch's eventual PR is stacked on both.
@@ -148,6 +149,12 @@ Findings worth Rob's attention:
   data stay out.
 
 ## Incremental Edit Log
+
+- **2026-10-01:** Merged PR #3 (`6aa7e84`), then PR #2 after bringing it up to
+  date with main (`7b1e5fb`, merged `7ad4ad7`), then PR #4 (`3ccf8b4`), all with
+  merge commits and green required checks. Rob chose the name **Formwork**
+  (ADR 0008). The GitHub repo was renamed to `robmintzes/formwork` (old URLs
+  redirect; ruleset 24278014 carried over). CLI and package rename is B21.
 
 - **2026-09-30:** Added the `governance` surface (B12): canonical AGENTS.md, thin
   client pointers, firm skill, branch policy doc, CI workflow, ruleset JSON,

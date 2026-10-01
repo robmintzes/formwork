@@ -5,7 +5,7 @@ Updated September 30, 2026. No candidate source assets were copied by this task.
 
 Source labels:
 
-- **Foundation repo:** the current pyrevit-toolbar-template repository.
+- **Foundation repo:** this repository, Formwork (formerly pyrevit-toolbar-template).
 - **Rockwell repo:** Rob's local design-technology repository; paths below are
   relative to that repository, avoiding workstation-specific public links.
 - **Brand export:** BIMxBert Design System (1).zip supplied by Rob.
