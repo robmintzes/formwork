@@ -7,7 +7,7 @@ import re
 from typing import Any, Callable
 
 from toolkit_engine import WORKSPACE_SCHEMA_VERSION, __version__
-from toolkit_engine.adapters import render_all
+from toolkit_engine.adapters import known_adapters, render_all
 from toolkit_engine.apply import Writer, apply_plan, atomic_write
 from toolkit_engine.checks import check_outputs
 from toolkit_engine.diagnostics import Diagnostics
@@ -185,7 +185,7 @@ def render_workspace(
         return blocked()
 
     try:
-        manifest = load_manifest(root)
+        manifest = load_manifest(root, known_adapters())
     except ManifestError as exc:
         raise EngineError(exc.code, str(exc)) from exc
     previous_files: dict[str, dict[str, str]] = {}

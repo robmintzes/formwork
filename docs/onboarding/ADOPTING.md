@@ -29,11 +29,12 @@ that configuration changes. Surfaces are chosen per firm in `surfaces` in
 | `governance` | `AGENTS.md`, thin agent pointers, branch policy, git hooks, CI workflow, GitHub ruleset JSON, pyRevit playbook | Generated and tested. Hooks exercised in a temporary repository. The ruleset protects nothing until you apply it. |
 | `mcp-bridge` | Read-only pyRevit Routes bridge, external FastMCP server, setup scripts, guide | Generated and tested (contract and runtime tests, no Revit). Not live-verified. |
 | `ui-kit` | Themed WPF dialogs (chooser, selector, result), controls, icons, a `UI Kit Demo` button | Generated and tested. Native renders recorded in a harness. Not live-verified. |
+| `web-host` | `lib/<namespace>_web`: an HTML tool host for pyRevit (WebView2 in a WPF window, locked to two local virtual hosts), bridge, session helpers, themed assets and fonts, a read-only `Web Tool Demo` report console | Generated and tested (pure modules run under CPython, page checked in a browser with a stub bridge). The WebView2 assemblies come from your Revit installation, none are shipped. Not live-verified: no WebView2 window has been opened in Revit. |
 | `revit-addin` | C# add-in project (Revit 2025-2027): ribbon button, read-only command with a themed window, manifest with a stable `AddInId`, README | Builds offline with the .NET SDK against the installed Revit API (tested). Never loaded in Revit. Revit 2024 is not covered. |
 | `python-app` | `apps/<namespace>-report`: a stdlib-only Python CLI that turns a CSV or JSON table into a branded offline HTML report, with tests and a sample | Generated and tested: its unittest suite and CLI run in the foundation's tests. Needs no Revit. |
 | `web-app` | `apps/<namespace>-web`: a dependency-free TypeScript web starter (loopback-only static server, branded app shell, `node --test` suite, brand fonts) | Generated and tested with `node --test` (when Node is installed). Types are not checked. Needs no Revit. |
 
-`mcp-bridge` and `ui-kit` require `pyrevit-sample`; `python-app` and `web-app` stand alone. Supported host combination
+`mcp-bridge`, `ui-kit` and `web-host` require `pyrevit-sample`; `python-app` and `web-app` stand alone. Supported host combination
 for the first live run: Revit 2026, pyRevit 6.5.5 (IronPython 2.7.12), Windows
 11. No combination is recorded as passing in the [verification
 matrix](../verification/MATRIX.md).
@@ -311,7 +312,7 @@ pyrevit extensions paths add "D:\Firm\acme-dt\extensions"
 ```
 
 Reload pyRevit in Revit. You should see your tab, your sample panel, and the
-Hello Button (and `UI Kit Demo` if `ui-kit` is on). Use a disposable project
+Hello Button (and `UI Kit Demo` if `ui-kit` is on, `Web Tool Demo` if `web-host` is on). Use a disposable project
 and family for the first run.
 
 Then follow the runbook: [live check, generated workspace in
@@ -389,7 +390,7 @@ where one exists. Codes below are the ones you will meet first.
 | `config.unknown-field` | Typo or unsupported key in `firm.json` | Use the "did you mean" hint, or prefix your own data with `x-`. |
 | `config.missing-field` | A required field is absent | Add it; see the schema or spec section 2. |
 | `config.schema-too-new` | `firm.json` needs a newer foundation | Update the foundation checkout. |
-| `config.surface-requires` | `mcp-bridge` or `ui-kit` without `pyrevit-sample` | Add `pyrevit-sample` to `surfaces`. |
+| `config.surface-requires` | `mcp-bridge`, `ui-kit` or `web-host` without `pyrevit-sample` | Add `pyrevit-sample` to `surfaces`. |
 | `config.branch-prefix-agent` | A maintainer prefix names an AI or vendor | Use the accountable human's prefix. |
 | `config.name-reserved` | Extension or tab name is reserved | Pick another name. |
 | `brand.asset-missing`, `brand.png-invalid`, `brand.svg-unsafe`, `brand.svg-external` | Logo file missing, malformed, or unsafe | Fix the file; every variant needs both SVG and PNG, and SVGs may not reference external resources. |
@@ -411,7 +412,7 @@ where one exists. Codes below are the ones you will meet first.
 | `output.toml-invalid` | A generated `pyproject.toml` does not parse | Report it as a foundation bug; do not hand-edit the output. |
 | `revit-addin.invalid-identifier` (warning) | `technical.namespace` or `technical.pyrevit.extension` is a C# reserved word | Pick another value if your own add-in code names it; the generated files still build. |
 | `governance.ruleset-not-applied` (info) | Ruleset is only a file | Apply it, [section 8](#8-put-the-workspace-in-git-and-github). |
-| `mcp-bridge.not-live-verified`, `ui-kit.not-live-verified`, `revit-addin.not-live-verified` (info) | Not run in Revit yet | True for everyone today; run the live check. |
+| `mcp-bridge.not-live-verified`, `ui-kit.not-live-verified`, `web-host.not-live-verified`, `revit-addin.not-live-verified` (info) | Not run in Revit yet | True for everyone today; run the live check. |
 
 Other notes:
 
@@ -424,5 +425,13 @@ Other notes:
   case it is.
 - **Run `python -m toolkit_cli doctor --profile authoring`** to check the Python
   and tooling environment. Use `--profile revit-host` on the Revit machine.
+- **The `web-host` window does not open.** The host uses the WebView2 files that
+  Revit 2024 and later ship beside `Revit.exe` (nothing is bundled), and the
+  Microsoft Edge WebView2 Runtime installed on the machine. The tool names what is
+  missing in a message and in `%LOCALAPPDATA%\<namespace>\logs\web.log`. On Revit
+  2022 or 2023, which ship no WebView2 files, your firm must supply a matching
+  set itself and point `<NAMESPACE>_WEBVIEW2_DIR` (the namespace in capitals) at
+  the folder; the foundation neither ships nor downloads it. Details: spec
+  section 8.5.
 - **Something looks wrong in Revit.** Capture it as live-check evidence
   (a failure is still evidence) rather than editing generated files.

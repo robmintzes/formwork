@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ElementTree
 from toolkit_engine.config import ASSET_SLOTS, FirmConfig, validate_config
 from toolkit_engine.diagnostics import Diagnostics
 from toolkit_engine.jsonio import JsonInputError, loads_strict
+from toolkit_engine.paths import is_reparse_point
 from toolkit_engine.png import PngError, read_png_size
 from toolkit_engine.tokens import STATUS_NAMES, TokenSet, check_required_roles, contrast_ratio, parse_tokens
 
@@ -34,7 +35,6 @@ SYSTEM_FONTS = frozenset(
     }
 )
 GENERIC_FAMILIES = frozenset({"serif", "sans-serif", "monospace", "system-ui", "ui-monospace", "cursive"})
-EXTERNAL_REFERENCE = re.compile(r"(?:https?:)?//|javascript:|data:", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -60,6 +60,13 @@ class Profile:
 def load_profile(firm_dir: Path, diags: Diagnostics) -> Profile | None:
     """Validate *firm_dir* (containing firm.json). Returns None on errors."""
     config_path = firm_dir / CONFIG_FILE
+    if is_reparse_point(firm_dir):
+        diags.error(
+            "input.reparse-point",
+            "firm",
+            "The firm configuration folder is a link or junction; inputs must be read from a real folder.",
+        )
+        return None
     if not config_path.is_file():
         diags.error(
             "config.not-found",
@@ -169,9 +176,48 @@ def _read_input(firm_dir: Path, rel: str, diags: Diagnostics) -> bytes | None:
     return path.read_bytes()
 
 
+# Brand marks are static artwork: anything that scripts, embeds, animates, or
+# links out is refused rather than sanitized.
+SVG_FORBIDDEN_ELEMENTS = frozenset(
+    {
+        "script", "foreignObject", "iframe", "image", "a", "object", "embed",
+        "set", "animate", "animateTransform", "animateMotion", "animateColor", "discard",
+        "audio", "video", "handler", "listener",
+    }
+)
+SVG_LOCAL_URL = re.compile(r"url\(\s*['\"]?\s*#", re.IGNORECASE)
+SVG_ANY_URL = re.compile(r"url\(", re.IGNORECASE)
+SVG_SCHEMES = re.compile(r"(?:javascript|vbscript|data|https?|ftp|file)\s*:", re.IGNORECASE)
+
+
+def _svg_declares_dtd(content: bytes) -> bool:
+    """True if the document declares a DOCTYPE or entities, in any encoding expat reads."""
+    import xml.parsers.expat
+
+    found: list[bool] = []
+    parser = xml.parsers.expat.ParserCreate()
+
+    def flag(*_args: object) -> None:
+        found.append(True)
+
+    parser.StartDoctypeDeclHandler = flag
+    parser.EntityDeclHandler = flag
+    try:
+        parser.Parse(content, True)
+    except xml.parsers.expat.ExpatError:
+        return bool(found)
+    return bool(found)
+
+
+def _svg_text_external(value: str) -> bool:
+    """True if CSS or attribute text loads or executes something outside the file."""
+    if "@import" in value.lower() or SVG_SCHEMES.search(value):
+        return True
+    return len(SVG_ANY_URL.findall(value)) != len(SVG_LOCAL_URL.findall(value))
+
+
 def _check_svg(rel: str, content: bytes, diags: Diagnostics) -> None:
-    text = content.decode("utf-8", errors="replace")
-    if "<!DOCTYPE" in text or "<!ENTITY" in text:
+    if _svg_declares_dtd(content):
         diags.error("brand.svg-unsafe", rel, "SVG must not declare a DOCTYPE or entities.")
         return
     try:
@@ -184,19 +230,26 @@ def _check_svg(rel: str, content: bytes, diags: Diagnostics) -> None:
         return
     for element in root.iter():
         local = element.tag.rsplit("}", 1)[-1]
-        if local in ("script", "foreignObject", "iframe", "image"):
-            diags.error("brand.svg-unsafe", rel, "SVG contains a <{}> element.".format(local))
+        if local in SVG_FORBIDDEN_ELEMENTS:
+            diags.error(
+                "brand.svg-unsafe",
+                rel,
+                "SVG contains a <{}> element; brand marks must be static artwork.".format(local),
+            )
+            return
+        if local == "style" and _svg_text_external(element.text or ""):
+            diags.error("brand.svg-external", rel, "SVG <style> loads an external resource.")
             return
         for name, value in element.attrib.items():
             attr = name.rsplit("}", 1)[-1]
             if attr.lower().startswith("on"):
                 diags.error("brand.svg-unsafe", rel, "SVG contains an event-handler attribute.")
                 return
-            if attr == "href" and not value.startswith("#"):
+            if attr == "href" and not value.strip().startswith("#"):
                 diags.error("brand.svg-external", rel, "SVG references an external resource.")
                 return
-            if attr == "style" and EXTERNAL_REFERENCE.search(value):
-                diags.error("brand.svg-external", rel, "SVG style references an external resource.")
+            if _svg_text_external(value):
+                diags.error("brand.svg-external", rel, "SVG attribute {!r} references an external resource.".format(attr))
                 return
         if local == "metadata" and len(list(element)):
             diags.warning(

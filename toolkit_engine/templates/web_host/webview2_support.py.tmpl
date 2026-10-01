@@ -1,0 +1,126 @@
+# -*- coding: utf-8 -*-
+r"""Pure helpers for the web host: where to find WebView2, what the window may show.
+
+Generated, managed file. No .NET and no Revit are needed to import this module,
+so its logic is unit-testable under CPython.
+
+Where the WebView2 assemblies come from
+---------------------------------------
+Revit 2024 and later ship ``Microsoft.Web.WebView2.Core.dll`` and
+``Microsoft.Web.WebView2.Wpf.dll`` in the folder of ``Revit.exe`` and load them
+in-process. The host uses those files. This package ships no WebView2 binaries.
+The folder is derived at run time from the running process, never written down.
+
+``find_assembly`` looks in the running Revit folder first. If the files are not
+there (Revit 2022 and 2023 ship none) it looks in the folder named by the
+``{{ override_env }}`` environment variable, which is how a firm supplies its own
+matching set. That folder must hold the Core and Wpf assemblies, and the native
+``WebView2Loader.dll`` either beside them or under ``runtimes\win-x64\native``
+(the managed Core probes that sub-folder relative to its own location).
+
+What the window may show
+------------------------
+``is_allowed_uri`` is the navigation policy: only ``https`` addresses on the two
+virtual hosts below, with no port, user information or backslash.
+"""
+from __future__ import absolute_import, print_function
+
+import os
+import re
+
+CORE_ASSEMBLY = "Microsoft.Web.WebView2.Core"
+WPF_ASSEMBLY = "Microsoft.Web.WebView2.Wpf"
+WEBVIEW2_ASSEMBLIES = (CORE_ASSEMBLY, WPF_ASSEMBLY)
+LOADER_FILE = "WebView2Loader.dll"
+LOADER_SUBFOLDER = os.path.join("runtimes", "win-x64", "native")
+
+OVERRIDE_ENV = "{{ override_env }}"
+
+# One virtual host per folder (WebView2 maps a single folder to a host name).
+# ".test" is reserved (RFC 6761); Microsoft advises against ".local" because it
+# can delay navigations.
+TOOL_HOST = "{{ tool_host }}"
+ASSETS_HOST = "{{ assets_host }}"
+ALLOWED_HOSTS = (TOOL_HOST, ASSETS_HOST)
+
+# Anchored on both ends, host compared literally, so a parser that disagrees
+# with the browser about "user@host" or "host\@other" cannot be exploited.
+_ALLOWED_URI = re.compile(
+    r"^https://(?:" + "|".join(re.escape(host) for host in ALLOWED_HOSTS) + r")(?:[/?#][^\s\\]*)?$",
+    re.IGNORECASE,
+)
+
+
+def is_allowed_uri(uri):
+    """True when the window may navigate to (or load) ``uri``."""
+    try:
+        return bool(uri) and _ALLOWED_URI.match(uri) is not None
+    except TypeError:
+        return False
+
+
+def host_directory(process_path):
+    """Folder of the running host executable, or None when it is unknown."""
+    if not process_path:
+        return None
+    return os.path.dirname(os.path.abspath(process_path))
+
+
+def search_directories(process_path, environ):
+    """(label, folder) pairs to search, in order: the Revit folder, then the override."""
+    found = []
+    revit_dir = host_directory(process_path)
+    if revit_dir:
+        found.append(("the running Revit folder", revit_dir))
+    override = (environ.get(OVERRIDE_ENV) or "").strip()
+    if override:
+        found.append(("the folder named by " + OVERRIDE_ENV, override))
+    return found
+
+
+def find_assembly(simple_name, directories):
+    """Full path of ``<simple_name>.dll`` in the first folder that has it, else None."""
+    for _label, folder in directories:
+        candidate = os.path.join(folder, simple_name + ".dll")
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+
+def find_native_loader(folder):
+    """Where the managed Core will find ``WebView2Loader.dll`` for ``folder``, else None."""
+    for candidate in (
+        os.path.join(folder, LOADER_FILE),
+        os.path.join(folder, LOADER_SUBFOLDER, LOADER_FILE),
+    ):
+        if os.path.isfile(candidate):
+            return candidate
+    return None
+
+
+def missing_message(tool_title, missing, directories):
+    """An actionable explanation for assemblies that could not be found."""
+    if directories:
+        where = "; ".join("{0}: {1}".format(label, folder) for label, folder in directories)
+    else:
+        where = "(no folder could be determined)"
+    return (
+        "{title} could not start because Revit does not provide the WebView2 "
+        "assemblies it needs: {names}.\n\n"
+        "Looked in {where}.\n\n"
+        "Revit 2024 and later include these files beside Revit.exe; Revit 2022 and "
+        "2023 do not. If you are on a supported release, repair the Revit "
+        "installation. Otherwise ask your firm's design technology team for a "
+        "matching Microsoft.Web.WebView2 Core and Wpf assembly set (with "
+        "WebView2Loader.dll) and point the {env} environment variable at the folder "
+        "that holds it, then restart Revit."
+    ).format(title=tool_title, names=", ".join(missing), where=where, env=OVERRIDE_ENV)
+
+
+def runtime_hint():
+    """Shared tail for initialization failures and timeouts."""
+    return (
+        "The Microsoft Edge WebView2 Runtime may be missing, blocked by policy, or "
+        "unable to use its data folder. Check that it is installed (Settings > Apps), "
+        "then reopen the tool. The log lists the details."
+    )

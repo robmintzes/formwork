@@ -401,7 +401,8 @@ class FoundationValidatorTests(UiKitCase):
                 self.assertIn("author:", bundle)
 
     def test_without_the_surface_the_sample_is_unchanged(self) -> None:
-        root = self.workspace(QUILLMOOR, "no kit", lambda c: c["surfaces"].remove("ui-kit"))
+        # web-host appends its own entry to the fragment, so it is off here too.
+        root = self.workspace(QUILLMOOR, "no kit", lambda c: [c["surfaces"].remove("ui-kit"), c["surfaces"].remove("web-host")])
         fragment = (root / "docs" / "toolbar" / "spec.d" / "foundation-sample.md").read_text(encoding="utf-8")
         self.assertNotIn("ui-kit-demo", fragment)
         self.assertTrue(fragment.endswith("HelloButton.pushbutton\n```\n"), fragment[-120:])

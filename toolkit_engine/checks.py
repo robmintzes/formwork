@@ -13,27 +13,48 @@ except ImportError:  # pragma: no cover
 
 from toolkit_engine.diagnostics import Diagnostics
 from toolkit_engine.jsonio import JsonInputError, loads_strict
-from toolkit_engine.outputs import RESERVED_PREFIXES, OutputFile
+from toolkit_engine.outputs import OutputFile, is_reserved_path
 from toolkit_engine.paths import check_relative_path, find_case_collisions
 from toolkit_engine.png import PngError, read_png_size
 
-# Resource loads that would need a network. Navigation links (<a href>) are allowed.
-EXTERNAL_LOADS = (
-    re.compile(r"""\bsrc\s*=\s*["']?\s*(?:https?:)?//""", re.IGNORECASE),
-    re.compile(r"""<link\b[^>]*\bhref\s*=\s*["']?\s*(?:https?:)?//""", re.IGNORECASE),
-    re.compile(r"""url\(\s*["']?\s*(?:https?:)?//""", re.IGNORECASE),
+# What counts as a remote reference: a network or file scheme, a
+# protocol-relative or backslash-relative host, or a UNC path (which also leaks
+# NTLM credentials when WPF or a browser resolves it).
+_REMOTE = r"""(?:(?:https?|wss?|ftp|file)\s*:|//[A-Za-z0-9\[]|/\\|\\\\[A-Za-z0-9])"""
+_LOOPBACK = r"(?!(?:(?:https?|wss?)\s*:\s*//)?(?:127\.0\.0\.1|localhost|\[::1\])[:/'\"`])"
+# Resource loads in markup, styles, SVG, and XAML. Navigation links (<a>...</a>)
+# are removed before scanning, so support and documentation links stay legal.
+MARKUP_EXTERNAL_LOADS = (
+    re.compile(
+        r"""\b(?:src|srcset|href|poster|data|action|formaction|background|xlink:href|Source|ImageSource|UriSource)\s*=\s*["']?[^"'>]*?"""
+        + _REMOTE,
+        re.IGNORECASE,
+    ),
+    re.compile(r"""\burl\(\s*["']?\s*""" + _REMOTE, re.IGNORECASE),
+    re.compile(r"""\bimage-set\([^)]*""" + _REMOTE, re.IGNORECASE),
     re.compile(r"""@import\b""", re.IGNORECASE),
-    re.compile(r"""\bSource\s*=\s*["']\s*(?:https?|pack):""", re.IGNORECASE),
+    re.compile(r"""<base\b""", re.IGNORECASE),
+    re.compile(r"""\bSource\s*=\s*["']\s*pack:""", re.IGNORECASE),
 )
-# Network loads from script: ``import ... from "https://..."``, dynamic ``import("https://...")`` and
-# ``fetch("https://...")``, with ' " or ` quotes. Loopback addresses are allowed: the generated web
-# app's own tests talk to the server they start on 127.0.0.1.
-_LOOPBACK = r"(?!(?:127\.0\.0\.1|localhost|\[::1\])[:/'\"`])"
-SCRIPT_EXTERNAL_LOADS = (
-    re.compile(r"""\bimport\s*(?:[^'"`;]*?\bfrom\s*)?["'`]\s*(?:https?:)?//""" + _LOOPBACK, re.IGNORECASE),
-    re.compile(r"""\bimport\s*\(\s*["'`]\s*(?:https?:)?//""" + _LOOPBACK, re.IGNORECASE),
-    re.compile(r"""\bfetch\s*\(\s*["'`]\s*(?:https?:)?//""" + _LOOPBACK, re.IGNORECASE),
-)
+_ANCHORS = re.compile(r"<a\b[^>]*>.*?</a\s*>", re.IGNORECASE | re.DOTALL)
+# The web-host surface maps two virtual hosts, ``<namespace>-tool.test`` and
+# ``<namespace>-assets.test``, to folders inside the extension; a tool page loads its own
+# assets through them and the names never leave the machine. Only that exact shape is
+# exempt: any other host (including a firm's own ``.test`` name) still fails the check.
+_VIRTUAL_HOSTS = re.compile(r"https://[a-z][a-z0-9]{1,23}-(?:tool|assets)\.test(?=[/'\";\s>])", re.IGNORECASE)
+# Network loads from script: any quoted remote reference except loopback (the
+# generated web app's own tests talk to the server they start on 127.0.0.1).
+SCRIPT_EXTERNAL_LOADS = (re.compile(r"""["'`]\s*""" + _LOOPBACK + _REMOTE, re.IGNORECASE),)
+
+
+def references_remote(text: str, kind: str) -> bool:
+    """True if *text* (markup/css/svg/xaml or script) would load something remotely."""
+    if kind == "script":
+        return any(pattern.search(text) for pattern in SCRIPT_EXTERNAL_LOADS)
+    scrubbed = _VIRTUAL_HOSTS.sub("", _ANCHORS.sub("<a></a>", text))
+    return any(pattern.search(scrubbed) for pattern in MARKUP_EXTERNAL_LOADS)
+
+
 IRONPYTHON_INCOMPATIBLE = (
     (ast.AnnAssign, "variable annotation"),
     (ast.JoinedStr, "f-string"),
@@ -52,7 +73,7 @@ def check_outputs(files: list[OutputFile], diags: Diagnostics) -> None:
         if problem:
             diags.error("output.path-invalid", location, "Generated path {}.".format(problem))
             continue
-        if item.path.startswith(RESERVED_PREFIXES):
+        if is_reserved_path(item.path):
             diags.error("output.path-reserved", location, "Adapters may not write inside firm/ or .toolkit/.")
         if item.path in seen:
             diags.error(
@@ -74,16 +95,10 @@ def _check_content(item: OutputFile, location: str, diags: Diagnostics) -> None:
         except UnicodeDecodeError:
             diags.error("output.encoding", location, "Text output is not UTF-8.")
             return
-        if suffix in ("html", "css", "svg", "xaml"):
-            for pattern in EXTERNAL_LOADS:
-                if pattern.search(text):
-                    diags.error("output.external-resource", location, "Output loads an external resource; generated surfaces must work offline.")
-                    break
-        if suffix in ("ts", "js", "mjs"):
-            for pattern in SCRIPT_EXTERNAL_LOADS:
-                if pattern.search(text):
-                    diags.error("output.external-resource", location, "Script loads an external resource; generated surfaces must work offline.")
-                    break
+        if suffix in ("html", "css", "svg", "xaml") and references_remote(text, "markup"):
+            diags.error("output.external-resource", location, "Output loads an external resource; generated surfaces must work offline.")
+        if suffix in ("ts", "js", "mjs") and references_remote(text, "script"):
+            diags.error("output.external-resource", location, "Script loads an external resource; generated surfaces must work offline.")
         if suffix == "xaml":
             try:
                 ElementTree.fromstring(item.content)
@@ -120,6 +135,8 @@ def _check_content(item: OutputFile, location: str, diags: Diagnostics) -> None:
             ElementTree.fromstring(item.content)
         except ElementTree.ParseError as exc:
             diags.error("output.svg-invalid", location, "SVG is not well-formed: {}.".format(exc))
+        if references_remote(item.content.decode("utf-8", errors="replace"), "markup"):
+            diags.error("output.external-resource", location, "SVG loads an external resource; generated surfaces must work offline.")
 
 
 def _check_python(text: str, location: str, diags: Diagnostics, *, embedded: bool) -> None:

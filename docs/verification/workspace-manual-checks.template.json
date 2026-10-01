@@ -74,6 +74,18 @@
       "step": "After selecting, the result dialog shows the status heading, summary, and log; Copy log works; Close returns to Revit; the Undo list gains no UI Kit Demo entry."
     },
     {
+      "id": "web-tool-demo-opens",
+      "required": true,
+      "status": "pending",
+      "step": "With a project open, click Web Tool Demo. A WebView2 window opens within about 20 seconds showing view counts by type with metrics and pills, styled in the firm's colours and fonts; no error dialog appears."
+    },
+    {
+      "id": "web-tool-demo-interaction",
+      "required": true,
+      "status": "pending",
+      "step": "In Web Tool Demo, typing in the filter narrows the table, Copy summary puts text on the clipboard, Esc or Close returns to Revit, and the Undo list gains no Web Tool Demo entry."
+    },
+    {
       "id": "clean-exit",
       "required": true,
       "status": "pending",

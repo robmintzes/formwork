@@ -1,0 +1,212 @@
+# -*- coding: utf-8 -*-
+"""Bridge core: pure Python, no WebView2 dependency (generated, managed file).
+
+The bridge wraps a "tool object" whose methods carry ``@expose``, turns JSON
+request messages into method calls and the results into JSON response messages.
+The WebView2 plumbing that connects ``WebMessageReceived`` and
+``PostWebMessageAsJson`` to ``dispatch_json`` lives in ``host.py``.
+
+Request:   {"id": "req-1", "method": "add", "args": [3, 4]}
+           {"id": "req-2", "method": "add", "kwargs": {"a": 10, "b": 32}}
+Response:  {"id": "req-1", "ok": true,  "result": 7}
+           {"id": "req-3", "ok": false, "error": "message"}
+
+An error response carries a message only. Tracebacks never reach the page; the
+optional ``on_error`` callback receives them so the host can write them to its
+log.
+
+IronPython 2.7 and CPython 3 both parse this file.
+"""
+from __future__ import absolute_import, print_function
+
+import json
+import sys
+import traceback
+
+try:
+    text_type = unicode  # noqa: F821 - IronPython 2
+except NameError:
+    text_type = str
+
+_PY2 = sys.version_info[0] == 2
+
+try:
+    binary_types = (bytes, bytearray)
+except NameError:
+    binary_types = (str,)
+
+
+def _runtime_type_name(value):
+    """Return a CLR full type name when the runtime exposes one."""
+    try:
+        return value.GetType().FullName
+    except Exception:
+        return ""
+
+
+def _is_binary_string(value):
+    """Recognize CPython bytes and pyRevit's distinct IronPython byte types."""
+    if isinstance(value, binary_types):
+        return True
+    return _runtime_type_name(value) in (
+        "IronPython.Runtime.Bytes",
+        "IronPython.Runtime.ByteArray",
+    )
+
+
+def _is_dotnet_string(value):
+    """Return True for System.String values not typed as unicode by IronPython."""
+    return _runtime_type_name(value) == "System.String"
+
+
+def _decode_bytes(value):
+    """Decode legacy bridge bytes without losing Windows-1252 characters."""
+    for encoding in ("utf-8", "mbcs", "cp1252"):
+        try:
+            return value.decode(encoding)
+        except (UnicodeDecodeError, LookupError):
+            pass
+    return value.decode("utf-8", "replace")
+
+
+def _prepare_text_for_json(value):
+    """Make text safe for the legacy JSON encoder bundled with IronPython 2.
+
+    pyRevit's IronPython 2.7 runtime aliases ``str`` and ``unicode`` even though
+    its JSON encoder still assumes every non-ASCII ``str`` holds UTF-8 bytes and
+    calls ``decode("utf-8")``. Revit API text with a degree or ordinal sign
+    therefore fails inside the encoder unless it is represented as UTF-8 code
+    units first. Already-valid UTF-8 is left alone so repeated normalization is
+    idempotent. CPython 3 receives ordinary ``str`` values.
+    """
+    if not _PY2:
+        return value
+    try:
+        value.decode("utf-8")
+        return value
+    except (UnicodeError, LookupError, AttributeError):
+        try:
+            return value.encode("utf-8")
+        except UnicodeEncodeError:
+            return value.encode("utf-8", "replace")
+
+
+def _json_safe(value):
+    """Recursively normalize text to real Unicode before ``json.dumps``.
+
+    Revit API values reach IronPython as System.String or as byte strings in the
+    active Windows code page. The JSON encoder would otherwise decode those
+    implicitly and can reject valid project names. Binary forms are checked
+    before the text fast path because IronPython's byte type is distinct from
+    both ``str`` and ``unicode``.
+    """
+    if _is_binary_string(value):
+        return _prepare_text_for_json(_decode_bytes(value))
+    if isinstance(value, text_type):
+        return _prepare_text_for_json(value)
+    if _is_dotnet_string(value):
+        return _prepare_text_for_json(text_type(value))
+    if isinstance(value, dict):
+        return dict((_json_safe(key), _json_safe(item)) for key, item in value.items())
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(item) for item in value]
+    return value
+
+
+def dumps(value):
+    """Serialize one bridge envelope after normalizing nested text values."""
+    return json.dumps(_json_safe(value))
+
+
+def _message_of(exc):
+    """A printable message for an exception, whatever its text encoding."""
+    try:
+        return text_type(exc)
+    except Exception:
+        try:
+            return repr(exc)
+        except Exception:
+            return "Unprintable error"
+
+
+def expose(fn):
+    """Mark a method as callable from the page: ``window.{{ ns }}.call("name", {...})``."""
+    fn._web_exposed = True
+    return fn
+
+
+class Bridge(object):
+    """Wraps a tool object whose methods carry ``@expose``."""
+
+    def __init__(self, tool, on_error=None):
+        self.tool = tool
+        self.methods = self._collect_exposed(tool)
+        self._on_error = on_error
+
+    @staticmethod
+    def _collect_exposed(tool):
+        out = {}
+        for name in dir(tool):
+            if name.startswith("_"):
+                continue
+            try:
+                attr = getattr(tool, name)
+            except Exception:
+                # A CLR property that throws on read is not an exposed method.
+                continue
+            if callable(attr) and getattr(attr, "_web_exposed", False):
+                out[name] = attr
+        return out
+
+    def _report(self, method_name, trace):
+        if self._on_error is None:
+            return
+        try:
+            self._on_error(method_name, trace)
+        except Exception:
+            pass
+
+    @staticmethod
+    def _failure(req_id, message):
+        return dumps({"id": req_id, "ok": False, "error": message})
+
+    def dispatch_json(self, json_text):
+        """Take a JSON request, return a JSON response string. Never raises."""
+        try:
+            msg = json.loads(json_text)
+        except Exception as exc:
+            return self._failure(None, u"JSON parse error: " + _message_of(exc))
+        if not isinstance(msg, dict):
+            return self._failure(None, u"A request must be a JSON object.")
+
+        req_id = msg.get("id")
+        method_name = msg.get("method")
+        args = msg.get("args", [])
+        kwargs = msg.get("kwargs", {})
+        if args is None:
+            args = []
+        if kwargs is None:
+            kwargs = {}
+
+        if not isinstance(method_name, (text_type, str)) or method_name not in self.methods:
+            return self._failure(req_id, u"Method not exposed: {0!r}".format(method_name))
+        if not isinstance(args, list) or not isinstance(kwargs, dict):
+            return self._failure(req_id, u"args must be a list and kwargs an object.")
+
+        try:
+            # JSON keys arrive as unicode; Python 2 needs str keys for **kwargs.
+            named = dict((str(key), value) for key, value in kwargs.items())
+            result = self.methods[method_name](*args, **named)
+        except Exception as exc:
+            self._report(method_name, traceback.format_exc())
+            return self._failure(req_id, _message_of(exc))
+
+        # The success dump has its own guard: a handler returning something the
+        # encoder cannot take (for example a System.Int64 under IronPython 2.7)
+        # must become an error reply. Raising here would kill the message
+        # handler, the page would never get a reply and its UI would hang.
+        try:
+            return dumps({"id": req_id, "ok": True, "result": result})
+        except Exception as exc:
+            self._report(method_name, traceback.format_exc())
+            return self._failure(req_id, u"Result not JSON-serializable: " + _message_of(exc))

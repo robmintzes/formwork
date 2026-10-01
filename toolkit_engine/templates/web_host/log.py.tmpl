@@ -1,0 +1,86 @@
+# -*- coding: utf-8 -*-
+r"""Diagnostic logging for the web host (generated, managed file).
+
+Prints tagged lines to the pyRevit output panel and appends them to a log file
+under the user's local application data folder:
+
+    %LOCALAPPDATA%\{{ ns }}\logs\web.log
+
+    pyRevit output: [{{ ns }}_web 14:23:08] message text here
+    log file:       [2026-08-27 14:23:08 pid:12345] [{{ ns }}_web] message text here
+
+The log file is truncated when it passes 5 MB (one generation only; this module
+never deletes files).
+"""
+from __future__ import absolute_import, print_function
+
+import io
+import os
+import time
+
+NAME = "{{ ns }}_web"
+PREFIX = "[" + NAME
+
+LOG_DIR = os.path.join(
+    os.environ.get("LOCALAPPDATA", os.path.expanduser("~")),
+    "{{ ns }}", "logs",
+)
+LOG_FILE = os.path.join(LOG_DIR, "web.log")
+MAX_LOG_SIZE = 5 * 1024 * 1024
+MAX_LINE = 800
+
+
+def _text(value):
+    """Unicode text for the log file, whatever the input type."""
+    try:
+        unicode_type = unicode  # noqa: F821 - IronPython 2
+    except NameError:
+        return value if isinstance(value, str) else value.decode("utf-8", "replace")
+    if isinstance(value, unicode_type):
+        return value
+    return value.decode("utf-8", "replace")
+
+
+def _append_persistent_log(formatted_line):
+    """Append one line to the log file; never raises."""
+    try:
+        if not os.path.exists(LOG_DIR):
+            os.makedirs(LOG_DIR)
+        mode = "a"
+        if os.path.exists(LOG_FILE) and os.path.getsize(LOG_FILE) > MAX_LOG_SIZE:
+            mode = "w"
+        entry = u"[{0} pid:{1}] [{2}] {3}\n".format(
+            time.strftime("%Y-%m-%d %H:%M:%S"),
+            os.getpid(),
+            NAME,
+            _text(formatted_line),
+        )
+        with io.open(LOG_FILE, mode, encoding="utf-8") as handle:
+            handle.write(entry)
+    except Exception:
+        pass
+
+
+def log(msg, *args):
+    """Print a tagged diagnostic line and append it to the log file."""
+    try:
+        line = msg.format(*args) if args else msg
+    except Exception:
+        line = "{0} ({1})".format(msg, args)
+    # A 100 KB JSON blob in a message must not flood the output panel.
+    if len(line) > MAX_LINE:
+        line = line[:MAX_LINE - 20] + "... [truncated]"
+    try:
+        print("{0} {1}] {2}".format(PREFIX, time.strftime("%H:%M:%S"), line))
+    except Exception:
+        pass
+    _append_persistent_log(line)
+
+
+def show_output():
+    """Show the pyRevit output panel so the user sees logs immediately."""
+    try:
+        from pyrevit import script
+        script.get_output().show()
+    except Exception:
+        pass

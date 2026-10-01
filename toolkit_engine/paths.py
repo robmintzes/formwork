@@ -7,11 +7,18 @@ from pathlib import Path, PurePosixPath
 import re
 import stat
 
+# Device names Windows reserves regardless of extension, including the
+# superscript-digit COM/LPT forms and the console/clock devices.
 WINDOWS_RESERVED_NAMES = frozenset(
-    ["CON", "PRN", "AUX", "NUL"]
-    + ["COM{}".format(i) for i in range(1, 10)]
-    + ["LPT{}".format(i) for i in range(1, 10)]
+    ["CON", "PRN", "AUX", "NUL", "CONIN$", "CONOUT$", "CLOCK$"]
+    + ["COM{}".format(i) for i in list(range(1, 10)) + ["¹", "²", "³"]]
+    + ["LPT{}".format(i) for i in list(range(1, 10)) + ["¹", "²", "³"]]
 )
+
+
+def is_reserved_name(part: str) -> bool:
+    """True if Windows treats *part* as a device (``CON``, ``con.txt``, ``CON .json``)."""
+    return part.split(".", 1)[0].rstrip(" ").upper() in WINDOWS_RESERVED_NAMES
 INVALID_CHARS = re.compile(r'[<>:"|?*\x00-\x1f\\]')
 MAX_RELATIVE_LENGTH = 200
 FILE_ATTRIBUTE_REPARSE_POINT = 0x400
@@ -47,7 +54,7 @@ def check_relative_path(value: str) -> str:
             return "contains a character Windows does not allow in file names"
         if part.endswith((".", " ")) or part.startswith(" "):
             return "has a component that starts with a space or ends with a dot or space"
-        if part.split(".", 1)[0].upper() in WINDOWS_RESERVED_NAMES:
+        if is_reserved_name(part):
             return "uses the Windows reserved name {!r}".format(part)
     return ""
 
@@ -107,6 +114,13 @@ def check_workspace_root(workspace: Path, foundation_root: Path, *, home: Path |
         raise UnsafePathError("workspace.unsafe", "A drive or filesystem root cannot be a workspace.")
     if resolved == home_dir:
         raise UnsafePathError("workspace.unsafe", "The user's home directory cannot be a workspace.")
+    for variable in ("SystemRoot", "ProgramFiles", "ProgramFiles(x86)", "ProgramData"):
+        system_dir = os.environ.get(variable)
+        if os.name == "nt" and system_dir and _is_within(resolved, Path(system_dir).resolve()):
+            raise UnsafePathError(
+                "workspace.unsafe",
+                "A workspace cannot live inside a system folder ({}).".format(variable),
+            )
     if _is_within(resolved, foundation):
         raise UnsafePathError(
             "workspace.overlaps-foundation",

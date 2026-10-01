@@ -1,0 +1,112 @@
+# -*- coding: utf-8 -*-
+"""Read-only demo of the web tool host: view counts by view type in an HTML report console."""
+from __future__ import absolute_import, print_function
+
+import os
+
+from pyrevit import DB, forms, revit, script
+
+from {{ package }}.bridge import expose
+from {{ package }}.host import WebToolWindow, WebView2HostError
+from {{ package }}.session import ToolSession
+
+__author__ = {{ author_literal }}
+
+TOOL_NAME = "Web Tool Demo"
+HERE = os.path.dirname(os.path.abspath(__file__))
+
+# Pseudo views the collector returns that are not views a person works in.
+HIDDEN_VIEW_TYPES = ("Internal", "ProjectBrowser", "SystemBrowser", "Undefined")
+
+
+FRIENDLY_LABELS = {"ThreeD": "3D View"}
+
+
+def _label(view_type):
+    """'FloorPlan' -> 'Floor Plan'."""
+    if view_type in FRIENDLY_LABELS:
+        return FRIENDLY_LABELS[view_type]
+    out = []
+    for index, char in enumerate(view_type):
+        if index and char.isupper() and not view_type[index - 1].isupper():
+            out.append(" ")
+        out.append(char)
+    return "".join(out)
+
+
+def count_views_by_type(doc):
+    """Return (rows, skipped) for the document. Read-only: no transaction is opened.
+
+    Each row is {type, label, views, templates}; ``views`` excludes view templates.
+    ``skipped`` counts views whose properties could not be read.
+    """
+    counts = {}
+    skipped = 0
+    for view in DB.FilteredElementCollector(doc).OfClass(DB.View):
+        try:
+            view_type = str(view.ViewType)
+            is_template = bool(view.IsTemplate)
+        except Exception:
+            skipped += 1
+            continue
+        if view_type in HIDDEN_VIEW_TYPES:
+            continue
+        entry = counts.setdefault(view_type, {"views": 0, "templates": 0})
+        entry["templates" if is_template else "views"] += 1
+    rows = [
+        {"type": key, "label": _label(key), "views": value["views"], "templates": value["templates"]}
+        for key, value in counts.items()
+    ]
+    rows.sort(key=lambda row: (-row["views"], row["label"]))
+    return rows, skipped
+
+
+class WebToolDemoWindow(ToolSession, WebToolWindow):
+    html_file = os.path.join(HERE, "tool.html")
+    title = TOOL_NAME
+
+    def __init__(self, doc):
+        self._doc = doc
+        ToolSession.__init__(self)
+        WebToolWindow.__init__(self)
+
+    @expose
+    def init_data(self):
+        """Counts for the page. Read-only; safe to call again to refresh."""
+        rows, skipped = count_views_by_type(self._doc)
+        return {
+            "project": str(getattr(self._doc, "Title", "") or "Untitled"),
+            "rows": rows,
+            "skipped": skipped,
+            "total_views": sum(row["views"] for row in rows),
+        }
+
+    @expose
+    def cancel(self):
+        return ToolSession.cancel(self)
+
+
+def main():
+    # Validate context before collecting data or opening any window.
+    doc = revit.doc
+    if doc is None:
+        print("{0} requires an open Revit project document.".format(TOOL_NAME))
+        script.exit()
+
+    if doc.IsFamilyDocument:
+        forms.alert(
+            "{0} can only run in a Revit project document.".format(TOOL_NAME),
+            title=TOOL_NAME,
+            exitscript=True,
+        )
+
+    try:
+        window = WebToolDemoWindow(doc)
+    except WebView2HostError as exc:
+        forms.alert(str(exc), title=TOOL_NAME, exitscript=True)
+        return
+    window.show()
+
+
+if __name__ == "__main__":
+    main()

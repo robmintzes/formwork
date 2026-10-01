@@ -12,11 +12,11 @@ from typing import Any
 
 from toolkit_engine import CONFIG_SCHEMA_VERSION, __version__
 from toolkit_engine.diagnostics import Diagnostics, did_you_mean
-from toolkit_engine.paths import WINDOWS_RESERVED_NAMES, check_relative_path
+from toolkit_engine.paths import check_relative_path, is_reserved_name
 
-SURFACES = ("pyrevit-sample", "wpf-specimen", "html-guide", "governance", "mcp-bridge", "ui-kit", "revit-addin", "python-app", "web-app")
+SURFACES = ("pyrevit-sample", "wpf-specimen", "html-guide", "governance", "mcp-bridge", "ui-kit", "web-host", "revit-addin", "python-app", "web-app")
 # Surfaces that only make sense inside another surface's output.
-SURFACE_REQUIRES = {"mcp-bridge": ("pyrevit-sample",), "ui-kit": ("pyrevit-sample",)}
+SURFACE_REQUIRES = {"mcp-bridge": ("pyrevit-sample",), "ui-kit": ("pyrevit-sample",), "web-host": ("pyrevit-sample",)}
 ASSET_SLOTS = ("wordmark", "symbol")
 ASSET_VARIANTS = ("light", "inverse")
 ASSET_FORMATS = ("svg", "png")
@@ -323,7 +323,7 @@ def _identity(r: _Reader, value: Any) -> Identity | None:
 
 def _folder_title(r: _Reader, obj: dict[str, Any], key: str, pointer: str) -> str | None:
     value = r.text(obj, key, pointer, max_length=40, pattern=FOLDER_TITLE, rule="letters and digits separated by single spaces")
-    if value is not None and (value.upper() in WINDOWS_RESERVED_NAMES or value.lower() == "placeholder"):
+    if value is not None and (is_reserved_name(value) or value.lower() == "placeholder"):
         r.diags.error(
             "config.name-reserved",
             r.loc(pointer + "/" + key),
@@ -342,7 +342,7 @@ def _technical(r: _Reader, value: Any) -> Technical | None:
     workspace_id = r.text(obj, "workspace_id", p, max_length=64, pattern=KEBAB, rule="lowercase kebab-case")
     pyrevit = r.obj(obj.get("pyrevit", {}), p + "/pyrevit", ("extension", "tab", "sample_panel")) or {}
     extension = r.text(pyrevit, "extension", p + "/pyrevit", max_length=40, pattern=EXTENSION_NAME, rule="letters and digits starting with a letter")
-    if extension is not None and (extension.upper() in WINDOWS_RESERVED_NAMES or extension.lower() == "placeholder"):
+    if extension is not None and (is_reserved_name(extension) or extension.lower() == "placeholder"):
         r.diags.error("config.name-reserved", r.loc(p + "/pyrevit/extension"), "{!r} is reserved.".format(extension))
         extension = None
     tab = _folder_title(r, pyrevit, "tab", p + "/pyrevit")

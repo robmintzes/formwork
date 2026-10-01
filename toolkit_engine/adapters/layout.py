@@ -23,6 +23,9 @@ SAMPLE_TOOL_TITLE = "Hello Button"
 UI_KIT_DEMO_TOOL_ID = "ui-kit-demo"
 UI_KIT_DEMO_TITLE = "UI Kit Demo"
 UI_KIT_DEMO_DOC = "docs/toolbar/tools/ui-kit-demo.md"
+WEB_TOOL_DEMO_TOOL_ID = "web-tool-demo"
+WEB_TOOL_DEMO_TITLE = "Web Tool Demo"
+WEB_TOOL_DEMO_DOC = "docs/toolbar/tools/web-tool-demo.md"
 
 
 def extension_dir(technical: Technical) -> str:
@@ -52,6 +55,28 @@ def ui_kit_package(technical: Technical) -> str:
 
 def ui_kit_dir(technical: Technical) -> str:
     return "{}/lib/{}".format(extension_dir(technical), ui_kit_package(technical))
+
+
+def web_tool_demo_dir(technical: Technical) -> str:
+    return "{}/WebToolDemo.pushbutton".format(sample_panel_dir(technical))
+
+
+def web_host_package(technical: Technical) -> str:
+    """Importable Python package name of the generated web tool host."""
+    return "{}_web".format(technical.namespace)
+
+
+def web_host_dir(technical: Technical) -> str:
+    return "{}/lib/{}".format(extension_dir(technical), web_host_package(technical))
+
+
+def web_host_names(technical: Technical) -> tuple[str, str]:
+    """(tool host, assets host): the two virtual host names the web host maps.
+
+    ``.test`` is reserved (RFC 6761); Microsoft advises against ``.local`` because it can
+    delay navigations. WebView2 maps one folder per host name, hence two names.
+    """
+    return ("{}-tool.test".format(technical.namespace), "{}-assets.test".format(technical.namespace))
 
 
 def addin_project(technical: Technical) -> str:

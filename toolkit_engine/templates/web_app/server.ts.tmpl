@@ -4,6 +4,7 @@
 // (no enums, namespaces, parameter properties or decorators). Binds to 127.0.0.1 only.
 import { createServer } from 'node:http';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { readFile, realpath, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -57,7 +58,19 @@ export function resolvePublicPath(rawUrl: string, root: string = PUBLIC_DIR): st
   return target.startsWith(root + path.sep) ? target : null;
 }
 
+// Only this machine's loopback names are accepted, so a DNS-rebinding page
+// cannot read files through a hostname it controls.
+function hostAllowed(req: IncomingMessage): boolean {
+  const port = req.socket.localPort;
+  const host = (req.headers.host ?? '').toLowerCase();
+  return host === HOST + ':' + port || host === 'localhost:' + port;
+}
+
 async function handle(req: IncomingMessage, res: ServerResponse, root: string): Promise<void> {
+  if (!hostAllowed(req)) {
+    sendText(res, 421, 'Misdirected Request');
+    return;
+  }
   if (req.method !== 'GET') {
     sendText(res, 405, 'Method Not Allowed', { Allow: 'GET' });
     return;
@@ -70,7 +83,15 @@ async function handle(req: IncomingMessage, res: ServerResponse, root: string): 
   try {
     // Resolve symbolic links so a link inside public/ cannot lead outside it.
     const real = await realpath(target);
-    if (!real.startsWith((await realpath(root)) + path.sep) || !(await stat(real)).isFile()) {
+    const realRoot = await realpath(root);
+    // Re-check the resolved long name: Windows 8.3 short names (ENV-SE~1) and
+    // links can reach a dot-file whose requested spelling looked harmless.
+    const segments = path.relative(realRoot, real).split(path.sep);
+    if (
+      !real.startsWith(realRoot + path.sep) ||
+      segments.some((segment) => segment.startsWith('.')) ||
+      !(await stat(real)).isFile()
+    ) {
       sendText(res, 404, 'Not Found');
       return;
     }
@@ -106,8 +127,10 @@ function isMainModule(): boolean {
 
 // Start only when run directly (npm start), not when a test imports this module.
 if (isMainModule()) {
-  const port = portFromEnvironment();
-  createAppServer().listen(port, HOST, () => {
-    console.log('Serving ' + PUBLIC_DIR + ' at http://' + HOST + ':' + port + '/ (Ctrl+C to stop)');
+  const server = createAppServer();
+  server.listen(portFromEnvironment(), HOST, () => {
+    // Report the bound port, which differs from PORT when PORT=0 asks for any free port.
+    const bound = (server.address() as AddressInfo).port;
+    console.log('Serving ' + PUBLIC_DIR + ' at http://' + HOST + ':' + bound + '/ (Ctrl+C to stop)');
   });
 }

@@ -1,0 +1,53 @@
+# -*- coding: utf-8 -*-
+"""Revit API compatibility helpers for the web host (generated, managed file).
+
+``ElementId`` changed shape across Revit releases. Use these helpers in tool
+code that crosses a version boundary; the module imports cleanly under CPython
+because the Revit API is imported lazily.
+"""
+from __future__ import absolute_import, print_function
+
+
+def eid_int(element_id):
+    """Return the integer value of an ElementId across Revit versions.
+
+    Revit 2026 removed ``ElementId.IntegerValue`` (deprecated since 2024).
+    ``ElementId.Value`` (Int64) exists from Revit 2024; older releases only have
+    ``IntegerValue``.
+    """
+    try:
+        return int(element_id.Value)
+    except AttributeError:
+        return int(element_id.IntegerValue)
+
+
+_EID_MODE = None  # resolved once per session: "int64" (2024+) or "int32" (older)
+
+
+def eid(value):
+    """Construct an ElementId from an integer across Revit versions.
+
+    Revit 2026 removed the ``ElementId(Int32)`` constructor. A plain Python int
+    then matches ``ElementId(Int64)``, ``ElementId(BuiltInParameter)`` and
+    ``ElementId(BuiltInCategory)`` equally well, so IronPython cannot pick an
+    overload and raises "Multiple targets could match". This forces the Int64
+    overload where it exists (Revit 2024 and later) and falls back to the Int32
+    constructor on older releases.
+    """
+    global _EID_MODE
+    from Autodesk.Revit.DB import ElementId
+
+    number = int(value)
+    if _EID_MODE is None:
+        try:
+            from System import Int64
+
+            ElementId(Int64(-1))  # probe: the Int64 overload exists on 2024+
+            _EID_MODE = "int64"
+        except Exception:
+            _EID_MODE = "int32"
+    if _EID_MODE == "int64":
+        from System import Int64
+
+        return ElementId(Int64(number))
+    return ElementId(number)

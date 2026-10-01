@@ -16,6 +16,7 @@ ADAPTER_ID = "pyrevit-sample"
 ICON_SIZE = 96
 TOOLTIP = "Displays a read-only summary of the active Revit project and its views."
 UI_KIT_DEMO_DESCRIPTION = "Read-only demonstration of the generated UI kit with a chooser, a searchable selector over view names, and a result dialog."
+WEB_TOOL_DEMO_DESCRIPTION = "Read-only HTML report console in a WebView2 window: view and template counts by view type, a client-side filter, and a copy-summary action."
 DESCRIPTION = "Displays a read-only greeting with the active project, active view, and non-template view count."
 
 
@@ -69,7 +70,8 @@ def render(profile: Profile) -> RenderResult:
         "tool_title": layout.SAMPLE_TOOL_TITLE,
         "description": DESCRIPTION,
         "button_path": button_dir,
-        "extra_tools": _ui_kit_demo_spec(profile) if "ui-kit" in config.surfaces else "",
+        "extra_tools": (_ui_kit_demo_spec(profile) if "ui-kit" in config.surfaces else "")
+        + (_web_tool_demo_spec(profile) if "web-host" in config.surfaces else ""),
     }
     result.files.append(text_file(layout.SPEC_FRAGMENT, render_file("spec-fragment.md.tmpl", values), ADAPTER_ID))
     result.files.append(
@@ -100,6 +102,19 @@ def _ui_kit_demo_spec(profile: Profile) -> str:
         title=layout.UI_KIT_DEMO_TITLE,
         description=UI_KIT_DEMO_DESCRIPTION,
         path=layout.ui_kit_demo_dir(profile.config.technical),
+    )
+
+
+def _web_tool_demo_spec(profile: Profile) -> str:
+    """Further tool entry in the managed spec fragment; present only with the web-host surface."""
+    return (
+        "\n  - id: {id}\n    display_name: {title}\n    type: PushButton\n    category: utility\n"
+        "    risk: Low\n    lifecycle_stage: sandbox\n    description: {description}\n    source_path: {path}"
+    ).format(
+        id=layout.WEB_TOOL_DEMO_TOOL_ID,
+        title=layout.WEB_TOOL_DEMO_TITLE,
+        description=WEB_TOOL_DEMO_DESCRIPTION,
+        path=layout.web_tool_demo_dir(profile.config.technical),
     )
 
 

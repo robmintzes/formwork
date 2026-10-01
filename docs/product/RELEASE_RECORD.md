@@ -137,9 +137,90 @@ the source. Written into `toolkit_engine/adapters/ui_kit.py`,
   loading, `clr` references, event handlers and `Window.GetWindow(...).DragMove()`
   are unverified there.
 
+## R06 - Rockwell web tool host (`web-host` surface)
+
+Ported 2026-10-01 under Rob Mintzes's scoped permission (ADR 0005). Rob authored
+the source. Written into `toolkit_engine/adapters/web_host.py` and
+`toolkit_engine/templates/web_host/`.
+
+- **Source repository:** Rockwell Group `design-technology`, commit
+  `96fbafeada60d3c62b632b8d8014242cb9ef2fd9` (the working tree had untracked files
+  only; none of the sources below were modified).
+- **Source files used** (paths below `DT Tools/DT Tools.extension/lib/` unless noted;
+  SHA-256):
+
+  | Source file | SHA-256 | Became |
+  | --- | --- | --- |
+  | `rgdt_web/bridge.py` | `5bfe4875148f10679c1d1a65c7b5983c3c3314f0fbd52de39efa770039a82cab` | `bridge.py` (text and byte hardening kept; envelope no longer carries a traceback; request validation, `on_error` callback) |
+  | `rgdt_web/session.py` | `53ee021c56c7140ff11c05aee72320950853577dba121bcbeb16efc937ef34b5` | `session.py` (`ToolSession`; same chunking and result shape; comments reduced to the corrected threading statement) |
+  | `rgdt_web/log.py` | `3e0ca559b5f3970f8661ad87cea5281375122cf3aea0bb0678d21ecf2898f303` | `log.py` (firm-namespaced folder; truncation instead of rename and delete) |
+  | `rgdt_web/RgdtWebView.py` | `1e7b030faf6009d895d79e2614891f35e05e4ac76ff7e51b00aeccc1de0bdef7` | `host.py` (rewritten, see below) |
+  | `rgdt_web/RgdtWebViewShell.xaml` | `a87f5b28c208c65a3ebb1cd788076b258d6f5e16c5553fa8b6f8e5c3363ff7f1` | `ShellWindow.xaml` |
+  | `rgdt_web/assets/rgdt-bridge.js` | `291cbbaeef3bc11e8bacc5a0dbeb47b1b1d5ff6bab7b18b45cf37bda5be6650b` | `assets/bridge.js` (plain-browser detection, positional arguments, no traceback field) |
+  | `rgdt_web/__init__.py` | `da723f88edad86c296ce866098f87b046bb889e2dd16d136b6f53c584432b5b4` | concept only: the package `__init__` loads nothing instead of swallowing an import error |
+  | `rgdt_web/dlls/README.md` | `c7d8b1317c7d478df501d4e1c879bf2c5441b266c8c714a06d68436bd8062ca5` | read for the reasons the source vendors wrappers; nothing copied (see section 8.5) |
+  | `rg_compat.py` | `1f10f0e7c21c81f575188d915607e699258303dd5917dc3506a191607c76a503` | `compat.py` (`eid_int`, `eid`, near-verbatim) |
+  | `rgdt-design-system/rgdt-ui.js` | `3311076af50ebfd10461a136e7791c65a899565b8dd2dee885547ef762dabbc3` | `assets/tool-ui.js` (lifecycle state, progress, copy, countdown, `primaryAction`, usage badge; the rest not ported) |
+  | `rgdt-design-system/rgdt-components.css` | `d30c76c9674f700c3608306460a520df88a1682fc0ca9768144723994b6e95b2` | structure and class roles only; `assets/tool.css` is re-derived from the firm's tokens |
+  | `rgdt-design-system/specimens/m5-report.html`, `m5_report_host.py` | `abd8e7bcfef071ebcf3ba59a0423d63b5118a8e8637bb89438a60e0d2ecf877a`, `e138e93d1812dec03dca7d84ad6741436c1d176689ad352cb773e75633def303` | layout and behaviour of the report console (`tool.html`, `tool.js`); none of its fake data or text |
+  | `DT Tools.tab/Template.panel/View Templates.pulldown/CopyViewTemplateSettings.pushbutton/script.py` | `3b7681d5dac3ee748da34c08c968b84ca2d9e74e09426656005c56b95929e345` | the `init_data` and window-subclass pattern only; its write behaviour is not ported |
+  | `rgdt_web/external_event.py` | `111198d09633697364472e3133bf2ceef6a99d0e5efbf2b1f37bf4c1294374ec` | read; not ported (no picks or worker threads in the demo) |
+  | repository `docs/design/rgdt/tool-ui-modules.md` | `caa46c296cdc5d203efdd6560aa6969e72b05b3cff83e45792cf4237c01bcc98` | module families, size classes, action-row order, lifecycle states, button morph, platform rubric |
+
+- **Neutralization and rewrites:**
+  - `Rgdt`/`rgdt`/`rg-` identifiers became the firm namespace: Python package
+    `technical.namespace + "_web"`, JavaScript globals `window.<namespace>` and
+    `window.<namespace>ui`, custom properties `--<namespace>-*`, log folder
+    `%LOCALAPPDATA%\<namespace>\`. Class and file names lost the prefix (`WebToolWindow`,
+    `ShellWindow.xaml`, `bridge.js`, `tool-ui.js`, `tool.css`); CSS classes are unprefixed
+    (`.tool-header`, `.step`, `.metrics`, `.tbl`, `.log`, with the shared `.btn` and `.badge`).
+  - The source's `rgdt.local` and `rgdt-assets.local` virtual hosts became
+    `<namespace>-tool.test` and `<namespace>-assets.test`. The source mapped the design
+    system folder and the assets folder and navigated tools as `file:///`; the host maps
+    the tool's own folder and the package assets folder and navigates to `https://`, and
+    refuses every other address.
+  - `host.py` is a rewrite, not an edit. The vendored-DLL selection, shadow cache,
+    broken-SDK pin table and `PATH` change are gone (the host uses Revit's own assemblies
+    and creates the WebView2 environment itself, section 8.5). New: the navigation,
+    new-window, download and permission policy, a source check on incoming messages, a
+    fail-closed policy attach, the per-Core-version data folder, `WebView2HostError`,
+    assembly search in `webview2_support.py`. Kept: the modeless window pumped by a
+    `DispatcherFrame`, `show_dialog` redirected to `show`, Escape closing the window, one
+    guarded reload after a renderer failure, the pre-initialization message queue and the
+    initialization watchdog (message text rewritten).
+  - The source's shared design-system fonts and Adobe typefaces are replaced by the
+    firm's packaged fonts, resolved through `tool.css`.
+  - Inline `style`, `onclick` and `onerror` fallbacks in the source pages are gone; the
+    page loads scripts and styles by URL under a strict CSP meta tag.
+  - New: the `Web Tool Demo` button (script, page, icons, document) and its spec entry;
+    `webview2_support.py` and the log, bridge and session tests.
+- **Exclusions:** every WebView2 binary (`rgdt_web/dlls/`, including the vendored Wpf,
+  Core and `WebView2Loader.dll` folders, none copied, none downloaded); IvyPresto,
+  Proxima Nova, Auger Mono, Cartograph (Adobe or office-licensed) and the design-system
+  font folder; Rockwell and RGDT names, wordmarks, initial marks and logos; internal
+  paths (`G:\...`, `D:\design-technology`) and the `%LOCALAPPDATA%\RGDT` folders (a
+  firm-namespaced folder replaces them); project and client data, including the
+  specimen's fake sheet paths; Lucide icon geometry (the usage badge is text only);
+  the picking primitives, `external_event.py`, the page close-guard, `rgUI` motion
+  primitives, `gate` and the grouped check list.
+- **Licence notice:** nothing third-party was added: no Lucide geometry, no vendored
+  binary. Code is MIT with the rest of the repository.
+- **Verification:** `tests/test_web_host_surface.py` (both profiles generated; pure
+  modules imported under CPython and exercised: dispatch, unknown method, exceptions as
+  message-only envelopes, non-ASCII round trip, chunking and cancel, log, assembly search
+  and navigation policy; generated files checked for external URLs, inline code, foreign
+  names and ASCII; design assertions on `host.py`; `bridge.js` and `tool-ui.js` run
+  against stubs in Node; Core, Wpf and a native loader found in every installed Revit
+  2024 or later; foundation validators; repeat render is a no-op; fragment byte-identical
+  without the surface). The page was rendered in headless Edge with a stub bridge for both
+  profiles. Offline inspection of the Revit 2024-2027 WebView2 files is recorded in
+  section 8.5. **Not run in Revit/pyRevit**: no WebView2 window has been opened, the host
+  class has not been imported under IronPython, and the IronPython delegate conversions
+  and the WebView2 policy handlers are unverified there.
+
 ## Not imported
 
-Rockwell Group `design-technology` repository: beyond R05, reference only
+Rockwell Group `design-technology` repository: beyond R05 and R06, reference only
 (ADR 0005). From the BIMxBert ZIP: React/JSX components,
 provisional XAML, uploads (RGDT sources), PDFs, exploratory boards, and
 `support.js`.

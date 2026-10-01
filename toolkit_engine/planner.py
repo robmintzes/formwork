@@ -8,7 +8,7 @@ from typing import Any
 
 from toolkit_engine import MANIFEST_SCHEMA_VERSION
 from toolkit_engine.jsonio import JsonInputError, dumps_canonical, load_strict
-from toolkit_engine.outputs import OWNERSHIP_MANAGED, OWNERSHIP_SEED, OutputFile, content_hash
+from toolkit_engine.outputs import OWNERSHIP_MANAGED, OWNERSHIP_SEED, OutputFile, content_hash, is_reserved_path
 from toolkit_engine.paths import UnsafePathError, check_relative_path, guard_target
 
 MANIFEST_PATH = ".toolkit/manifest.json"
@@ -71,7 +71,7 @@ class Plan:
         return dict(sorted(result.items()))
 
 
-def load_manifest(root: Path) -> dict[str, Any] | None:
+def load_manifest(root: Path, known_adapters: frozenset[str] | None = None) -> dict[str, Any] | None:
     """Return the manifest dict, None when absent; raise ManifestError when unusable."""
     path = root / ".toolkit" / "manifest.json"
     if not path.exists():
@@ -95,12 +95,18 @@ def load_manifest(root: Path) -> dict[str, Any] | None:
         raise ManifestError("manifest.invalid", "Manifest has no files mapping.")
     for rel, entry in files.items():
         problem = check_relative_path(rel)
-        if problem or rel.startswith(("firm/", ".toolkit/")):
+        if problem or is_reserved_path(rel):
             raise ManifestError("manifest.invalid", "Manifest lists an unsafe path {!r}.".format(rel))
         if not isinstance(entry, dict) or entry.get("ownership") not in (OWNERSHIP_MANAGED, OWNERSHIP_SEED):
             raise ManifestError("manifest.invalid", "Manifest entry for {!r} is malformed.".format(rel))
         if entry["ownership"] == OWNERSHIP_MANAGED and not isinstance(entry.get("sha256"), str):
             raise ManifestError("manifest.invalid", "Managed entry {!r} has no hash.".format(rel))
+        if known_adapters is not None and entry.get("adapter") not in known_adapters:
+            # A retired file may only be deleted on behalf of an adapter this
+            # engine knows; an unknown adapter means the manifest was edited.
+            raise ManifestError(
+                "manifest.invalid", "Manifest entry {!r} names unknown adapter {!r}.".format(rel, entry.get("adapter"))
+            )
     return data
 
 

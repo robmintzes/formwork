@@ -67,6 +67,9 @@ class WizardServer(HTTPServer):
     def __init__(self, port: int = 0, session: WizardSession | None = None, token: str | None = None) -> None:
         self.session = session or WizardSession()
         self.token = token or secrets.token_urlsafe(32)
+        # Separate secret for the preview cookie: cookies are not port-scoped,
+        # so another local server could receive it; it must not unlock the API.
+        self.preview_secret = secrets.token_urlsafe(32)
         self.stop_requested = threading.Event()
         super().__init__(("127.0.0.1", port), WizardHandler)
 
@@ -99,6 +102,8 @@ class WizardHandler(BaseHTTPRequestHandler):
     server: WizardServer
     server_version = "toolkit-wizard"
     sys_version = ""
+    # The server is single-threaded; a stalled client must not block it forever.
+    timeout = 15
 
     # ----- plumbing ---------------------------------------------------------
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A002 - stdlib signature
@@ -138,7 +143,7 @@ class WizardHandler(BaseHTTPRequestHandler):
     def _cookie_ok(self) -> bool:
         for part in self.headers.get("Cookie", "").split(";"):
             name, _, value = part.strip().partition("=")
-            if name == COOKIE and value and hmac.compare_digest(value, self.server.token):
+            if name == COOKIE and value and hmac.compare_digest(value, self.server.preview_secret):
                 return True
         return False
 
@@ -154,7 +159,7 @@ class WizardHandler(BaseHTTPRequestHandler):
         raw = self.rfile.read(length) if length else b"{}"
         try:
             return json.loads(raw.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        except (UnicodeDecodeError, ValueError, RecursionError) as exc:
             raise WizardError("request.json", "Request body is not valid JSON.") from exc
 
     # ----- dispatch ---------------------------------------------------------
@@ -230,6 +235,9 @@ class WizardHandler(BaseHTTPRequestHandler):
         except WizardError as exc:
             self._error(HTTPStatus.BAD_REQUEST, exc.code, str(exc))
             return
+        except Exception:  # noqa: BLE001 - report a stable error, never a traceback
+            self._error(HTTPStatus.INTERNAL_SERVER_ERROR, "server.error", "The wizard hit an unexpected error; see the terminal.")
+            raise
         self._json(status, payload, extra)
 
 
@@ -243,7 +251,7 @@ def _obj(body: Any) -> dict[str, Any]:
 
 
 def _session_route(handler: WizardHandler, body: Any) -> tuple[int, Any, dict[str, str] | None]:
-    cookie = "{}={}; HttpOnly; SameSite=Strict; Path=/preview".format(COOKIE, handler.server.token)
+    cookie = "{}={}; HttpOnly; SameSite=Strict; Path=/preview".format(COOKIE, handler.server.preview_secret)
     return HTTPStatus.OK, {"ok": True}, {"Set-Cookie": cookie}
 
 

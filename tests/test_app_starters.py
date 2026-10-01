@@ -403,7 +403,9 @@ class RunWebAppTests(AppCase):
                     timeout=300,
                 )
                 self.assertEqual(completed.returncode, 0, completed.stdout + completed.stderr)
-                self.assertRegex(completed.stdout, r"\bpass 7\b")
+                passed = re.search(r"\bpass (\d+)\b", completed.stdout)
+                self.assertIsNotNone(passed, completed.stdout)
+                self.assertGreaterEqual(int(passed.group(1)), 8)  # includes the Host (rebinding) test
                 self.assertRegex(completed.stdout, r"\bfail 0\b")
 
 

@@ -69,6 +69,7 @@ proves identity is data.
 | `governance` | agent instructions, branch policy, hooks, CI, ruleset (section 8) | hooks exercised in a temporary repository; ruleset activation is a maintainer action |
 | `mcp-bridge` | read-only Revit MCP bridge: pyRevit Routes side in the firm extension, external FastMCP server, guide (section 8.1) | static checks and extension runtime tests **and** a live Revit/pyRevit run behind the mandatory reset rule |
 | `ui-kit` | themed WPF dialog kit in the firm extension (`lib/<namespace>_ui`): result, chooser, selector, controls, icons, plus a read-only `UI Kit Demo` button (section 8.2) | static key-resolution and runtime-contract tests, a native WPF render of every dialog **and** a live Revit/pyRevit run |
+| `web-host` | HTML tool host for pyRevit in the firm extension (`lib/<namespace>_web`): WebView2 in a WPF window using the WebView2 assemblies that ship with Revit, bridge, session helpers, token-built assets, plus a read-only `Web Tool Demo` button (section 8.5) | pure-module and static tests, a browser render with a stub bridge **and** a live Revit/pyRevit run on each supported Revit version (no WebView2 window has been opened in Revit) |
 | `revit-addin` | C# Revit add-in starter under `addins/<Extension>.Addin/`: SDK-style project, ribbon button, read-only command with a themed WPF window, manifest with a stable `AddInId`, README (section 8.3) | `dotnet build` succeeds offline against the installed Revit API (build evidence) **and** the add-in loads and its command runs in a live Revit (host evidence); neither implies the other |
 | `python-app` | stdlib-only Python CLI under `apps/<namespace>-report/` that renders a CSV or JSON table as a branded offline HTML report: PEP 621 project, `src/<namespace>_report`, generated `theme.css`, unittest suite, sample table, README (section 8.4) | the generated unittest suite and the CLI on the sample table pass in CPython (tested by the engine's suite); host-independent, so no Revit run applies |
 | `web-app` | dependency-free TypeScript web starter under `apps/<namespace>-web/`: loopback-only `node:http` static server, `node:test` suite, branded app shell, generated `theme.css`, packaged fonts, README (section 8.4) | the generated `node --test` suite passes on Node 22.18+ (tested by the engine's suite when Node is present); types are **not** checked (no `tsc`) |
@@ -574,9 +575,9 @@ Transaction has finished. A dialog is never shown while a Transaction is open.
 
 **Module families.** Covered: M0 (chooser), M1 (result), M2-lite (searchable
 single or multiple selection over `(label, value)` pairs). Not ported: M2 with
-detail panes and the M3-M7 families that need a WebView2 host. The source UI's WebView2
-host package is deferred because its DLLs must come from NuGet and are not
-redistributed here ([backlog](BACKLOG.md), B20). The licensed Adobe/office
+detail panes and the M3-M7 families that need a WebView2 host. The WebView2 host is the
+`web-host` surface (section 8.5); it references the WebView2 assemblies Revit ships, so
+no DLL is redistributed here ([backlog](BACKLOG.md), B20). The licensed Adobe/office
 fonts used by the source UI are never packaged; fonts come from the firm profile.
 
 **Notices.** Icon geometry derives from Lucide (ISC, portions MIT from Feather).
@@ -678,6 +679,149 @@ start. The scan is a guard, not a JavaScript parser.
 render reports `web-app.typecheck-not-run` (info): `tsc` is neither installed nor run, so a type error would not
 be caught. There is no `python-app` verification diagnostic because the app does not touch Revit.
 
+### 8.5 Web tool host (`web-host` surface)
+
+Opt-in surface (`"web-host"` in `surfaces`) that requires `pyrevit-sample`: the host
+lives in the extension that surface generates and the demo button joins its sample
+panel. It is the HTML counterpart of the WPF kit (8.2) and does not need it. All
+outputs are `managed`. Ported from the Rockwell `rgdt_web` library under ADR 0005
+(R06); the WebView2 assemblies are **not** ported, see "Host assemblies" below.
+
+| Output | Notes |
+| --- | --- |
+| `extensions/<Extension>.extension/lib/<namespace>_web/` | IronPython 2.7 package. Pure (importable under CPython): `bridge` (`expose`, `Bridge`, JSON dispatch with IronPython 2 text and byte hardening, an error envelope that carries a message and never a traceback), `session` (`ToolSession`: cancel flag, `run_chunked` with `progress` events), `log` (pyRevit output plus `%LOCALAPPDATA%\<namespace>\logs\web.log`), `compat` (`eid_int`, `eid`), `webview2_support` (assembly search, native-loader probe, navigation policy, plain-language messages). Needs WPF: `host` (`WebToolWindow`, `WebView2HostError`). Importing the package loads nothing. |
+| `.../<namespace>_web/ShellWindow.xaml` | A bare window around the `WebView2` control; standard OS chrome, the page carries the branding. |
+| `.../<namespace>_web/assets/bridge.js`, `tool-ui.js`, `tool.css`, `symbol-light.svg`, `fonts/<family>/` | Served at `https://<namespace>-assets.test/`. `bridge.js` is `window.<namespace>` (`call`, `on`, `off`, `close`, `hosted`); `tool-ui.js` is `window.<namespace>ui` (`setState`, `setProgress`, `copyText`, `wireCopyButtons`, `startCountdown`, `primaryAction`, usage badge). `tool.css` is built from the firm's tokens by `web_theme` (tokens as `--<namespace>-*`, the shared button and badge rules) plus the shell: tool header with the firm symbol, numbered steps, metrics, filter field, fixed table, progress, log, notices, action row. Packaged fonts and their licences are copied here. No file contains an absolute URL except the two virtual hosts. |
+| `.../<Panel>.panel/WebToolDemo.pushbutton/` (`bundle.yaml`, `script.py`, `tool.html`, `tool.js`, light and dark 96 px icons), `docs/toolbar/tools/web-tool-demo.md` | Read-only M5 report console. It validates the document first (no document: message and quiet exit; family document: alert), then `init_data` counts views and view templates by `View.ViewType` (one `FilteredElementCollector`, no transaction). The page shows four metrics, a fixed table with status pills, a client-side filter, an activity log and a **Copy summary** action that uses the browser clipboard API; there is no export and nothing writes. Its entry appears in `docs/toolbar/spec.d/foundation-sample.md` only when the surface is enabled; without it that fragment is byte-identical to before. |
+
+**Host assemblies: what was found, and the design that follows.** The Rockwell
+library vendors version-matched WPF wrappers (`Microsoft.Web.WebView2.Wpf.dll` and a
+native loader, one folder per Revit-bundled Core version) and selects one at run
+time. Its README gives four reasons: (1) Revit loads its own Core, so a vendored Wpf is
+paired with whichever Core assembly resolution hands it, and a mixed pair throws
+`MissingMethodException`; (2) the Wpf that Revit 2024 bundles (SDK 1.0.1343.22) is
+broken against its own Core; (3) Revit 2022 and 2023 ship no WebView2 at all; (4)
+deployed DLLs must not be locked, hence a shadow copy. Checked on this workstation
+(offline, by file inspection and .NET reflection; nothing was downloaded or run in
+Revit):
+
+| Revit | Core, Wpf, WinForms version | `WebView2Loader.dll` |
+| --- | --- | --- |
+| 2024 | 1.0.1343.22 | only in `runtimes\win-x64\native\` |
+| 2025 | 1.0.2045.28 | beside `Revit.exe` and in `runtimes\win-x64\native\` |
+| 2026, 2027 | 1.0.2478.35 | beside `Revit.exe`, in `runtimes\win-x64\native\` and in `Sentiment\` |
+
+- **Every installed Revit 2024-2027 ships the Core and Wpf assemblies**, in the folder
+  of `Revit.exe`. A running Revit 2026 on this workstation had Core, Wpf and
+  `WebView2Loader.dll` loaded from that folder, so Revit itself uses them in process.
+  The generated host references those files and finds the folder at run time from the
+  running process (`Process.MainModule.FileName`), never from a written path.
+- **The source's PATH change for Revit 2024 is unnecessary.** Its README says 2024
+  ships no loader, which is true of the program folder itself. The managed Core also
+  probes `runtimes\win-<arch>\native` relative to its own location (IL of
+  `CoreWebView2Environment.LoadWebView2LoaderDll` and `GetProcessArchSubFolder` in both
+  1.0.1343.22 and 1.0.2478.35; 2478 also tries the app-domain base and running-DLL
+  folders), and 2024 ships a loader there. The host changes nothing about `PATH` and
+  only logs where the loader is.
+- **The 1.0.1343.22 defect is real, and it has one location.** A MemberRef sweep of
+  its Wpf assembly (264 resolve) leaves exactly one that does not: the 5-argument
+  `CoreWebView2EnvironmentOptions` constructor, called from
+  `CoreWebView2CreationProperties.CreateEnvironmentAsync`. The control reaches that
+  method only when `CreationProperties` is set and no environment was passed to
+  `EnsureCoreWebView2Async`. The Wpf assemblies of Revit 2025 and later are .NET builds
+  that a .NET Framework harness cannot sweep; they are same-version pairs that Revit
+  loads itself.
+- **Design.** The host never sets `CreationProperties`. It creates the environment with
+  `CoreWebView2Environment.CreateAsync(None, <user data folder>, None)` (a Core method
+  present in every shipped version), marshals the result to the UI thread and passes it
+  to `EnsureCoreWebView2Async`. That avoids the one broken path on 2024 and uses the same
+  code on every release. No DLL is vendored, so there is no shadow copy, no version table
+  and no pin list to maintain, and a Revit update changes nothing in the toolkit. The
+  user data folder is `%LOCALAPPDATA%\<namespace>\WebView2\<Core version>`: Revit
+  releases that run side by side use different SDK defaults, which WebView2 rejects when
+  they share one folder.
+- **Loading.** `ensure_webview2_assemblies` keeps any Core or Wpf assembly Revit already
+  loaded (the loaded one wins, as in the source), otherwise loads the file from the Revit
+  folder, otherwise from the override folder. It logs each assembly's version and path and
+  warns when the Core and Wpf versions differ. A failure raises `WebView2HostError` with a
+  message naming the missing files and the folders searched; the tool's `main` shows it
+  and exits. An initialization failure or the 20-second watchdog shows a message that
+  names the Edge WebView2 Runtime as the likely cause.
+- **Residual cases a firm handles itself.** (a) Revit 2022 and 2023 ship no WebView2:
+  the firm obtains a matching Core and Wpf set (and the loader, beside them or under
+  `runtimes\win-x64\native`) from the `Microsoft.Web.WebView2` package under its own
+  licence review, avoids SDK 1.0.1343.22, and points `<NAMESPACE>_WEBVIEW2_DIR` (the
+  namespace in capitals) at the folder. The toolkit ships and downloads nothing, and this
+  surface is built and tested for 2024 and later. (b) The Evergreen WebView2 Runtime must
+  be installed and not blocked by policy; a fixed-version runtime is chosen with
+  `WEBVIEW2_BROWSER_EXECUTABLE_FOLDER`. (c) If another add-in loaded a different Core or
+  Wpf first, that assembly wins; the log shows the versions. The pairing risk in the
+  source's reason (1) is reduced (the host uses only the Core API plus
+  `EnsureCoreWebView2Async`) but not removed.
+
+**Security posture.** The page can load only from two virtual hosts, one per folder
+(WebView2 maps a single folder to a host name): `https://<namespace>-tool.test/` for the
+tool's own folder and `https://<namespace>-assets.test/` for the package's `assets`
+folder. `.test` is reserved (RFC 6761); Microsoft advises against `.local` because it
+can delay navigations. A mapping serves http and https, iframes and workers, and needs a
+reload to change. The tool host is mapped `Deny` (nothing outside the page reads it);
+the assets host is mapped `Allow` because the stylesheet's `@font-face` requests are CORS
+fetches from the tool page's origin. A tool's folder is readable by that tool's own
+origin, `script.py` included, so it must hold nothing secret.
+
+- `NavigationStarting` and `FrameNavigationStarting` cancel anything that is not `https`
+  on those two hosts (an anchored full-match pattern with a literal host and no port,
+  user information or backslash, so a parser that disagrees with the browser gains
+  nothing); `NewWindowRequested` is handled (no window), `DownloadStarting` is
+  cancelled, `PermissionRequested` is denied. The first three are required: if they
+  cannot be attached the host closes the window rather than load the page.
+- `WebMessageReceived` drops a message whose source is not an allowed address.
+- DevTools, default context menus, status bar, zoom control, browser accelerator keys,
+  autofill and password save are off (`allow_devtools = True` in a subclass is the
+  developer switch).
+- The demo page carries `Content-Security-Policy: default-src 'self'
+  https://<namespace>-assets.test https://<namespace>-tool.test; base-uri 'none';
+  object-src 'none'; form-action 'none'` and has no inline script or style, no inline
+  handler, no `eval` and no markup built from data. The offline output check
+  (`output.external-resource`) exempts exactly the two names
+  `https://<namespace>-tool.test` and `https://<namespace>-assets.test`; any other
+  address still fails.
+- The user data folder is under `%LOCALAPPDATA%`, never beside `Revit.exe`.
+
+**Bridge and session.** Requests are `{id, method, args | kwargs}`; replies are
+`{id, ok, result}` or `{id, ok: false, error}`; events are `{event, data}`. Only methods
+marked `@expose` and not starting with an underscore are callable.
+`ToolSession.run_chunked` returns the shared result shape (`status`, `summary`, `counts`,
+`log`, `items`) and emits `progress` events. WebView2 events are not reentrant, so a
+cancel cannot arrive while one handler runs: `cancel` is honoured only by a tool that
+returns to the message loop between chunks (the module says so). A tool that changes the
+model keeps one short transaction per chunk, with rollback, and never holds one across
+input; the demo has none.
+
+**Not ported from the source.** Picking (`pick_point`, `pick_element`, `pick_elements`,
+hide-while-picking `go_modeless` and `go_modal`), the page close-guard
+(`swallow_escape`), `external_event.MarshaledCallable`, the vendored-DLL selection,
+shadow cache and broken-SDK pin table, the `rgUI` motion primitives, `gate`, the grouped
+check list, `countUp` and `reveal`, the Lucide usage icons (a text badge only, so no icon
+notice is needed), and the M2, M3, M4, M6 and M7 scaffolds. The host supports those
+families; the toolkit does not ship a scaffold for them.
+
+**Evidence and gaps.** `tests/test_web_host_surface.py` generates both profiles and
+imports the pure modules under CPython (dispatch, error envelopes, non-ASCII round trip,
+chunking and cancel, log, assembly search, navigation policy), checks every file for
+external URLs, inline code and foreign names, asserts the design on the source of
+`host.py` (no fixed Revit path, no `CreationProperties`, policy handlers present and
+attached before navigation), runs `bridge.js` and `tool-ui.js` against stubs in Node when
+it is present and, on a machine with Revit installed, finds Core, Wpf and a native
+loader in every installed Revit 2024 or later. The page was also viewed in a browser
+with a stub bridge. **Not verified**: any WebView2 window opened in Revit; the
+IronPython delegate conversions (`System.Action[Task]`, `ContinueWith`), event attach through `__iadd__`, and the
+`EnsureCoreWebView2Async` overload under IronPython 2.7; the `.test` mapping, the `Deny`
+and `Allow` access kinds, the CSP and clipboard writes inside WebView2; Escape handling
+with browser accelerator keys off; the Wpf assemblies of Revit 2025 and later; behaviour
+next to other add-ins' Core versions; the per-Core-version data folder. Every render
+reports `web-host.not-live-verified` (info) until a live run is recorded.
+
 ## 9. Notices, attribution, and provenance
 
 - Foundation code is MIT (copyright Rob Mintzes). Every workspace receives a
@@ -695,7 +839,7 @@ be caught. There is no `python-app` verification diagnostic because the app does
 - Rob-authored Rockwell repository material may be ported under the scoped
   permission in [ADR 0005](../decisions/0005-source-extraction-and-assets.md);
   each port is recorded in the release record with source commit, files, and
-  changes (first port: R05, the `ui-kit` surface). Earlier code was written
+  changes (R05, the `ui-kit` surface; R06, the `web-host` surface). Earlier code was written
   from concepts only and is unchanged.
 
 ---

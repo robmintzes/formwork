@@ -1,0 +1,182 @@
+/* Tool shell: header, steps, metrics, filter, fixed table, progress, log, action row.
+   Built on the shared button, badge and base rules above. Colours, type, space and
+   strokes come only from the firm's tokens; there are no literal values here. */
+[hidden] { display: none !important; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+html, body { height: 100%; }
+body.tool {
+  display: flex; flex-direction: column;
+  height: 100%; overflow: hidden;
+}
+
+/* Header: tool name, state, usage badge, firm symbol at the far right. */
+.tool-header {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: {{ space_md }};
+  padding: {{ space_sm }} {{ space_xl }};
+  background: {{ color_surface_card }};
+  border-bottom: {{ stroke_hairline }} solid {{ color_line_strong }};
+}
+.tool-header__title {
+  margin: 0; padding: 0; border: 0;
+  font-family: {{ font_display }};
+  font-weight: {{ font_weight_display }};
+  font-size: {{ font_size_title }};
+  line-height: 1.2;
+}
+.tool-header__state, .usage, .eyebrow, .metric__k, .tbl th, .progress-label {
+  font-family: {{ font_label }};
+  font-size: {{ font_size_label }};
+  font-weight: {{ font_weight_label }};
+  letter-spacing: calc({{ tracking_label }} * 1em);
+  text-transform: uppercase;
+  color: {{ color_text_secondary }};
+}
+.usage {
+  padding: 2px {{ space_sm }};
+  border: {{ stroke_hairline }} solid {{ color_line_strong }};
+}
+.tool-header__end { margin-left: auto; display: flex; align-items: center; gap: {{ space_md }}; }
+.tool-header__mark { display: block; height: 24px; width: auto; }
+body[data-state="waiting"] .tool-header__state { color: {{ color_accent_default }}; }
+body[data-state="done"] .tool-header__state { color: {{ color_status_success_fg }}; }
+body[data-state="partial"] .tool-header__state { color: {{ color_status_warning_fg }}; }
+body[data-state="failure"] .tool-header__state { color: {{ color_status_danger_fg }}; }
+
+/* Body: scrolls on its own so the action row never leaves the window. */
+.tool__body {
+  flex: 1 1 auto; min-height: 0; overflow: auto;
+  display: flex; flex-direction: column; gap: {{ space_md }};
+  padding: {{ space_lg }} {{ space_xl }};
+}
+.eyebrow { margin: 0; }
+.heading-row {
+  display: flex; align-items: baseline; flex-wrap: wrap; gap: {{ space_md }};
+  padding-bottom: {{ space_sm }};
+  border-bottom: {{ stroke_hairline }} solid {{ color_line_subtle }};
+}
+.heading-row h2 { margin: 0; padding: 0; border: 0; }
+.summary-line { color: {{ color_text_secondary }}; font-size: {{ font_size_small }}; }
+.caption { margin: 0; color: {{ color_text_secondary }}; font-size: {{ font_size_small }}; }
+
+/* Steps: an ordered group with a numbered title. A single group needs no number. */
+.step { display: flex; flex-direction: column; gap: {{ space_sm }}; }
+.step__head { display: flex; align-items: baseline; gap: {{ space_sm }}; }
+.step__num {
+  font-family: {{ font_label }};
+  font-size: {{ font_size_label }};
+  font-weight: {{ font_weight_strong }};
+  min-width: 1.8em; padding: 1px 0; text-align: center;
+  color: {{ color_text_primary }};
+  border: {{ stroke_control }} solid {{ color_line_strong }};
+}
+.step__title {
+  margin: 0; padding: 0; border: 0;
+  font-family: {{ font_display }};
+  font-weight: {{ font_weight_display }};
+  font-size: {{ font_size_body }};
+}
+
+/* Metrics. */
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: {{ space_sm }}; }
+.metric {
+  padding: {{ space_sm }} {{ space_md }};
+  background: {{ color_surface_card }};
+  border: {{ stroke_hairline }} solid {{ color_line_subtle }};
+}
+.metric__k { margin: 0; }
+.metric__v {
+  margin: 0;
+  font-family: {{ font_display }};
+  font-weight: {{ font_weight_display }};
+  font-size: {{ font_size_title }};
+  font-variant-numeric: tabular-nums;
+}
+
+/* Filter row and fields. */
+.filter-row { display: flex; align-items: center; flex-wrap: wrap; gap: {{ space_sm }}; }
+.field {
+  font: inherit;
+  min-height: {{ control_height }};
+  padding: 0 {{ space_md }};
+  color: {{ color_text_primary }};
+  background: {{ color_surface_card }};
+  border: {{ stroke_control }} solid {{ color_line_strong }};
+  border-radius: {{ field_radius }};
+}
+.field:focus-visible { outline: {{ stroke_focus }} solid {{ color_focus_ring }}; outline-offset: 1px; border-color: {{ color_accent_default }}; }
+.field--search { flex: 1 1 200px; max-width: 360px; }
+
+/* Fixed table: long values ellipsize (put the full value in title) and never reshape the layout. */
+.tbl-wrap {
+  flex: 1 1 auto; min-height: 140px; overflow: auto;
+  background: {{ color_surface_card }};
+  border: {{ stroke_hairline }} solid {{ color_line_strong }};
+}
+.tbl { table-layout: fixed; width: 100%; border-collapse: collapse; }
+.tbl th {
+  position: sticky; top: 0;
+  padding: {{ space_sm }};
+  text-align: left;
+  background: {{ color_surface_sunken }};
+  border-bottom: {{ stroke_control }} solid {{ color_line_strong }};
+}
+.tbl td {
+  padding: {{ space_sm }};
+  vertical-align: middle;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border-bottom: {{ stroke_hairline }} solid {{ color_line_subtle }};
+}
+.tbl .c-num { text-align: right; font-variant-numeric: tabular-nums; }
+.tbl th.c-num { text-align: right; }
+.tbl tr[hidden] { display: none; }
+col.c-num { width: 110px; }
+col.c-pill { width: 180px; }
+.tbl-empty { padding: {{ space_lg }}; color: {{ color_text_secondary }}; text-align: center; }
+
+/* Progress and log reserve their height so the layout does not jump while running. */
+.progress-row { display: flex; align-items: center; gap: {{ space_md }}; min-height: 28px; }
+.progress {
+  -webkit-appearance: none; appearance: none;
+  flex: 1 1 auto; height: 6px; border: 0;
+  background: {{ color_surface_sunken }};
+}
+.progress::-webkit-progress-bar { background: {{ color_surface_sunken }}; }
+.progress::-webkit-progress-value { background: {{ color_accent_default }}; }
+.progress-label { min-width: 0; }
+.log {
+  margin: 0; min-height: 96px; max-height: 200px; overflow-y: auto;
+  padding: {{ space_sm }} {{ space_md }};
+  font-family: {{ font_code }};
+  font-size: {{ font_size_code }};
+  white-space: pre-wrap; overflow-wrap: anywhere;
+  background: {{ color_surface_sunken }};
+  border: {{ stroke_hairline }} solid {{ color_line_subtle }};
+}
+
+/* Notices: use only where a state is real. */
+.notice {
+  margin: 0; padding: {{ space_sm }} {{ space_md }};
+  font-size: {{ font_size_small }};
+  background: {{ color_surface_sunken }};
+  border-left: 3px solid {{ color_accent_default }};
+}
+.notice--warning { border-left-color: {{ color_status_warning_fg }}; background: {{ color_status_warning_bg }}; }
+.notice--danger { border-left-color: {{ color_status_danger_fg }}; background: {{ color_status_danger_bg }}; }
+
+/* Action row, left to right: dismiss, secondary, then the primary at the far right. */
+.tool__actions {
+  flex: 0 0 auto;
+  display: flex; align-items: center; gap: {{ space_md }};
+  padding: {{ space_md }} {{ space_xl }};
+  background: {{ color_surface_card }};
+  border-top: {{ stroke_hairline }} solid {{ color_line_strong }};
+}
+.tool__actions .spacer { flex: 1 1 auto; }
+.btn--success { background: {{ color_status_success_bg }}; color: {{ color_status_success_fg }}; border-color: {{ color_status_success_fg }}; }
+.btn--failure { background: {{ color_status_danger_bg }}; color: {{ color_status_danger_fg }}; border-color: {{ color_status_danger_fg }}; }
+[data-cancel] { opacity: 0.45; }
+body[data-state="waiting"] [data-cancel] { opacity: 1; }

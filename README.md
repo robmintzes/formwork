@@ -50,12 +50,13 @@ live-verified in Revit yet.
 | `governance` | `AGENTS.md` and thin agent pointers, branch policy, hooks, CI, GitHub ruleset JSON |
 | `mcp-bridge` | Read-only pyRevit Routes bridge and external FastMCP server |
 | `ui-kit` | Themed WPF dialogs (chooser, selector, result), controls, icons, `UI Kit Demo` button |
+| `web-host` | HTML tool host for pyRevit (WebView2 in a WPF window, using the WebView2 files that ship with Revit), a bridge, themed assets and a read-only `Web Tool Demo` button |
 | `revit-addin` | C# add-in project for Revit 2025-2027 (ribbon button, read-only themed command, stable `AddInId`); builds offline with the .NET SDK |
 | `python-app` | Stdlib-only Python CLI (`apps/<namespace>-report`) that turns a CSV or JSON table into a branded offline HTML report; no install step |
 | `web-app` | Dependency-free TypeScript web starter (`apps/<namespace>-web`): loopback-only static server, branded app shell, `node --test` suite; Node 22.18+, no install step |
 
 Not built yet: managed firm-wide
-deployment, authenticated remote MCP, and the WebView2 tool host. See the
+deployment and authenticated remote MCP. See the
 [backlog](docs/product/BACKLOG.md) and the [toolkit roadmap](docs/ROADMAP.md).
 
 This checkout also still carries the original neutral sample extension

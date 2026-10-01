@@ -19,9 +19,9 @@ let server: Server;
 let port = 0;
 
 // node:http sends the request target exactly as written, unlike fetch(), which normalises '..' away first.
-function raw(method: string, target: string): Promise<Reply> {
+function raw(method: string, target: string, headers: Record<string, string> = {}): Promise<Reply> {
   return new Promise((resolve, reject) => {
-    const req = request({ host: HOST, port, method, path: target }, (res) => {
+    const req = request({ host: HOST, port, method, path: target, headers }, (res) => {
       const chunks: Buffer[] = [];
       res.on('data', (chunk: Buffer) => chunks.push(chunk));
       res.on('end', () =>
@@ -85,6 +85,13 @@ describe('server', () => {
     const reply = await raw('GET', '/no-such-file.txt');
     assert.equal(reply.status, 404);
     assert.equal(reply.headers['x-content-type-options'], 'nosniff');
+  });
+
+  it('refuses foreign Host headers (DNS rebinding)', async () => {
+    const reply = await raw('GET', '/', { Host: 'attacker.example:' + port });
+    assert.equal(reply.status, 421);
+    const local = await raw('GET', '/', { Host: 'localhost:' + port });
+    assert.equal(local.status, 200);
   });
 
   it('rejects methods other than GET', async () => {

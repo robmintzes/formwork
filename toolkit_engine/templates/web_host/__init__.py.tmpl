@@ -1,0 +1,17 @@
+# -*- coding: utf-8 -*-
+"""HTML tool host for pyRevit (generated, managed file: regenerate, do not edit).
+
+Tools whose interface is HTML run inside a WebView2 control in a WPF window.
+Import what you need explicitly. Importing the package loads nothing, so the
+pure modules stay usable from plain CPython tests:
+
+    from {{ package }}.bridge import expose
+    from {{ package }}.session import ToolSession
+    from {{ package }}.host import WebToolWindow, WebView2HostError
+
+Modules: ``bridge`` (JSON dispatch and the ``expose`` decorator), ``session``
+(cancel flag and chunked work), ``log`` (pyRevit output plus a log file),
+``compat`` (ElementId helpers), ``webview2_support`` (where the host's WebView2
+assemblies are found, and which addresses the window may show) and ``host``
+(the window; needs WPF and the host's WebView2 assemblies).
+"""

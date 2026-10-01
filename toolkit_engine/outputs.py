@@ -11,6 +11,15 @@ OWNERSHIPS = (OWNERSHIP_MANAGED, OWNERSHIP_SEED)
 RESERVED_PREFIXES = ("firm/", ".toolkit/")
 
 
+def is_reserved_path(path: str) -> bool:
+    """True for paths inside the inputs or engine state folders, in any letter case.
+
+    Windows and macOS default filesystems are case-insensitive, so ``FIRM/firm.json``
+    is the same file as ``firm/firm.json``.
+    """
+    return path.casefold().startswith(RESERVED_PREFIXES)
+
+
 @dataclass(frozen=True)
 class OutputFile:
     """One file an adapter wants in the workspace."""

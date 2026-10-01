@@ -34,6 +34,7 @@ def _registry() -> dict[str, Adapter]:
         python_app,
         revit_addin,
         ui_kit,
+        web_host,
         web_app,
         wpf_specimen,
     )
@@ -46,10 +47,16 @@ def _registry() -> dict[str, Adapter]:
         "governance": governance.render,
         "mcp-bridge": mcp_bridge.render,
         "ui-kit": ui_kit.render,
+        "web-host": web_host.render,
         "revit-addin": revit_addin.render,
         "python-app": python_app.render,
         "web-app": web_app.render,
     }
+
+
+def known_adapters() -> frozenset[str]:
+    """Adapter ids a manifest may legitimately name."""
+    return frozenset(_registry())
 
 
 def render_all(profile: Profile) -> RenderResult:

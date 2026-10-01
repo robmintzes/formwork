@@ -48,6 +48,7 @@ The checks cover:
 - tooltip and F1 help URL;
 - no-document, family, and project contexts;
 - the read-only proof (nothing in Undo);
+- the generated WebView2 tool host inside Revit (Web Tool Demo);
 - the generated WPF UI kit inside Revit (UI Kit Demo: chooser, selector,
   result dialog, fonts, Esc and Enter handling);
 - a clean shutdown;

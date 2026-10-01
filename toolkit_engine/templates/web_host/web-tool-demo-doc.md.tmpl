@@ -1,0 +1,72 @@
+# Web Tool Demo
+
+Web Tool Demo is a read-only reference tool for the generated web host
+(`lib/{{ package }}/`). It opens an HTML report console inside a WebView2 window,
+in the firm's own tokens, so a developer can see and copy the pattern for a tool
+whose interface is HTML.
+
+## User workflow
+
+1. Open any Revit project document.
+2. On **{{ tab_display }}**, in **{{ panel_display }}**, click **Web Tool Demo**.
+3. The window reads the model once and shows the number of views and view
+   templates for each view type, with four summary metrics.
+4. Type in the filter box to narrow the table. Filtering happens in the page only.
+5. **Copy summary** puts a plain-text version on the clipboard. **Read model**
+   (later **Update counts**) reads the model again. **Close**, or Esc, closes the
+   window.
+
+The tool exits with a message when no document is open, and refuses a family
+document. It does not write anything: there is no export, only the clipboard.
+
+## Technical design
+
+- **Minimum pyRevit version:** 4.8.10
+- **Document context:** an open project document
+- **Revit API query:** `FilteredElementCollector(doc).OfClass(DB.View)`, grouped by
+  `View.ViewType`; view templates are counted separately from views
+- **User interface:** `{{ package }}.host.WebToolWindow` (WPF window, WebView2 control,
+  IronPython 2.7), page in `tool.html` and `tool.js` beside `script.py`
+- **Bridge verbs:** `init_data` (read the counts), `cancel`, and the framework's
+  `close_window`
+- **WebView2:** the assemblies that ship with Revit (2024 and later); see the
+  foundation specification, section 8.5
+- **External dependencies:** none beyond pyRevit, the Revit API and the Microsoft
+  Edge WebView2 Runtime
+- **Linked models:** not accessed
+
+## Pattern for tools that change the model
+
+Expose `validate`, then `execute`; run `execute` chunked with
+`ToolSession.run_chunked`, one short Transaction (with rollback on failure) per
+chunk, and show the outcome after the Transaction has finished. Never keep a
+Transaction open while the page waits for input. This demo has no Transaction.
+
+## Risk and transactions
+
+- **Risk classification:** Low / read-only
+- **Modifies the Revit database:** No
+- **Transaction:** None
+
+## Support
+
+Firm support: <{{ support_url }}>
+
+## Troubleshooting
+
+- **A message says the WebView2 assemblies were not found:** this Revit release
+  does not ship them (Revit 2022 and 2023). Repair a 2024 or later installation, or
+  see the web host section of the foundation specification for the folder a firm
+  can supply.
+- **A message says the browser view timed out or could not start:** the Microsoft
+  Edge WebView2 Runtime is missing or blocked. Check Settings > Apps, then reopen
+  the tool. Details are in `%LOCALAPPDATA%\{{ ns }}\logs\web.log`.
+- **The window opens blank:** the pyRevit output panel and the log show whether
+  navigation was blocked. Only `https://{{ tool_host }}/` and
+  `https://{{ assets_host }}/` can be shown.
+- **The button is missing:** reload the extension or restart Revit after
+  confirming that the extension is installed and enabled.
+
+## Changelog
+
+- **1.0.0:** Initial read-only demonstration of the generated web host.

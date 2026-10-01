@@ -165,7 +165,7 @@
       "type": "array",
       "minItems": 1,
       "uniqueItems": true,
-      "items": {"enum": ["pyrevit-sample", "wpf-specimen", "html-guide", "governance", "mcp-bridge", "ui-kit", "revit-addin", "python-app", "web-app"]}
+      "items": {"enum": ["pyrevit-sample", "wpf-specimen", "html-guide", "governance", "mcp-bridge", "ui-kit", "web-host", "revit-addin", "python-app", "web-app"]}
     },
     "maintainers": {
       "type": "array",
