@@ -2,7 +2,7 @@
 
 Automated checks prove the workspace is current and valid and that pyRevit
 can see it; the human checklist records what only a person in Revit can
-observe (ribbon, icons, contexts, read-only behaviour). Evidence carries
+observe (ribbon, icons, contexts, read-only behavior). Evidence carries
 outcomes and versions only: no absolute paths, user names, or model data.
 """
 

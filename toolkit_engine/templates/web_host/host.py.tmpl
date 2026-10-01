@@ -277,7 +277,7 @@ class WebToolWindow(forms.WPFWindow):
             return
         task = self._env_task
         if task.IsFaulted or task.IsCanceled:
-            detail = "cancelled"
+            detail = "canceled"
             try:
                 detail = task.Exception.GetBaseException().Message
             except Exception:

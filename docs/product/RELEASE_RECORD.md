@@ -22,7 +22,7 @@ Updated September 30, 2026 (America/New_York). See
   manifest and its namespace declaration; paths and fills unchanged. PNG
   variants were rasterized from the cleaned SVGs with headless Microsoft Edge
   (wordmark 480x202, symbol 240x160, transparent background).
-- **Release scope / licence:** Rob's own brand, approved for this public
+- **Release scope / license:** Rob's own brand, approved for this public
   repository on 2026-09-30. **Not MIT-licensed**; see
   `profiles/bimxbert/NOTICE-brand.md`.
 - **Verification:** well-formed XML; engine SVG safety checks pass; rendered in
@@ -31,12 +31,12 @@ Updated September 30, 2026 (America/New_York). See
 ## R02 - BIMxBert token values (profiles/bimxbert/tokens.tokens.json)
 
 - **Source:** same ZIP, `themes/bimxbert.css` and `tokens/scale.css` (values
-  only: neutral and brand ramps, status colours, type scale, spacing).
+  only: neutral and brand ramps, status colors, type scale, spacing).
 - **Changes:** transcribed into DTCG 2025.10 structured data; semantic roles
   re-mapped to the foundation contract (`color.action.*` added). WPF and CSS
   now share one value per token (the export's WPF dictionary was 2 DIP smaller).
-- **Licence:** factual values from Rob's design system; covered by the
-  repository MIT licence as data, while the BIMxBert brand itself remains
+- **License:** factual values from Rob's design system; covered by the
+  repository MIT license as data, while the BIMxBert brand itself remains
   reserved.
 
 ## R03 - Fonts (profiles/bimxbert/fonts/)
@@ -78,7 +78,7 @@ the source. Written into `toolkit_engine/adapters/ui_kit.py`,
   | `lib/rgdt_ui/result_model.py` | `1ee754afa56bcc44c4fe52ed1f9c2ea3ce6b382c26200bb0d6bacc27ff149a19` | `result_model.py` (near-verbatim) |
   | `lib/rgdt_ui/result_dialog.py` | `6f0ffeb17914af22de4a22b98eb4e54d3921f0ec92abc94761b7daee54ec73d1` | `result_dialog.py` |
   | `lib/rgdt_ui/RgdtResultDialog.xaml` | `2fa4fd09a4c9c816c0f40849a45ca8b0f590bfeafa1ed785bfb6ea84b28b7bc8` | `ResultDialog.xaml` |
-  | `lib/rgdt_ui/chooser_dialog.py` | `bf8c2c33af703dfc87a46f68878d49dc0a418eebbc33cd78a3cccb62a88813a3` | `chooser_dialog.py` (`normalize_options` unchanged in behaviour) |
+  | `lib/rgdt_ui/chooser_dialog.py` | `bf8c2c33af703dfc87a46f68878d49dc0a418eebbc33cd78a3cccb62a88813a3` | `chooser_dialog.py` (`normalize_options` unchanged in behavior) |
   | `lib/rgdt_ui/RgdtChooserDialog.xaml` | `6b4ae684b4d0e3f2f36c3e90ffcb165afcc4b3b6ab1dd80365eda31b6bab77d4` | `ChooserDialog.xaml` |
   | `DT Tools.tab/Template.panel/Match Extents.pushbutton/selection_dialog.py` | `9475133c1abc6356076486967f910cb22d01a8e0d1118eb1e686e6092c95146e` | `selection_dialog.py` (generalized to M2-lite) |
   | `DT Tools.tab/Template.panel/Match Extents.pushbutton/RgdtSelectionDialog.xaml` | `0346fbc172a26f54781cd82746b561444aa9165aad3b8385d390c26c7f2dd8a3` | `SelectionDialog.xaml` |
@@ -120,8 +120,8 @@ the source. Written into `toolkit_engine/adapters/ui_kit.py`,
   DLLs (deferred, backlog B20); internal paths and deployment destinations;
   project and client data and fixtures; `check_theme.py` (a source-repo linter
   for its own theme keys).
-- **Licence notice:** `RGDT.Icons.xaml` carried Lucide geometry. Lucide is ISC
-  (portions MIT from Feather); the licence texts live in
+- **License notice:** `RGDT.Icons.xaml` carried Lucide geometry. Lucide is ISC
+  (portions MIT from Feather); the license texts live in
   `toolkit_engine/resources/LUCIDE_LICENSE.txt` and are added to every
   workspace's `THIRD_PARTY_NOTICES.md` when `ui-kit` is enabled. Code is MIT with
   the rest of the repository.
@@ -162,8 +162,8 @@ the source. Written into `toolkit_engine/adapters/web_host.py` and
   | `rg_compat.py` | `1f10f0e7c21c81f575188d915607e699258303dd5917dc3506a191607c76a503` | `compat.py` (`eid_int`, `eid`, near-verbatim) |
   | `rgdt-design-system/rgdt-ui.js` | `3311076af50ebfd10461a136e7791c65a899565b8dd2dee885547ef762dabbc3` | `assets/tool-ui.js` (lifecycle state, progress, copy, countdown, `primaryAction`, usage badge; the rest not ported) |
   | `rgdt-design-system/rgdt-components.css` | `d30c76c9674f700c3608306460a520df88a1682fc0ca9768144723994b6e95b2` | structure and class roles only; `assets/tool.css` is re-derived from the firm's tokens |
-  | `rgdt-design-system/specimens/m5-report.html`, `m5_report_host.py` | `abd8e7bcfef071ebcf3ba59a0423d63b5118a8e8637bb89438a60e0d2ecf877a`, `e138e93d1812dec03dca7d84ad6741436c1d176689ad352cb773e75633def303` | layout and behaviour of the report console (`tool.html`, `tool.js`); none of its fake data or text |
-  | `DT Tools.tab/Template.panel/View Templates.pulldown/CopyViewTemplateSettings.pushbutton/script.py` | `3b7681d5dac3ee748da34c08c968b84ca2d9e74e09426656005c56b95929e345` | the `init_data` and window-subclass pattern only; its write behaviour is not ported |
+  | `rgdt-design-system/specimens/m5-report.html`, `m5_report_host.py` | `abd8e7bcfef071ebcf3ba59a0423d63b5118a8e8637bb89438a60e0d2ecf877a`, `e138e93d1812dec03dca7d84ad6741436c1d176689ad352cb773e75633def303` | layout and behavior of the report console (`tool.html`, `tool.js`); none of its fake data or text |
+  | `DT Tools.tab/Template.panel/View Templates.pulldown/CopyViewTemplateSettings.pushbutton/script.py` | `3b7681d5dac3ee748da34c08c968b84ca2d9e74e09426656005c56b95929e345` | the `init_data` and window-subclass pattern only; its write behavior is not ported |
   | `rgdt_web/external_event.py` | `111198d09633697364472e3133bf2ceef6a99d0e5efbf2b1f37bf4c1294374ec` | read; not ported (no picks or worker threads in the demo) |
   | repository `docs/design/rgdt/tool-ui-modules.md` | `caa46c296cdc5d203efdd6560aa6969e72b05b3cff83e45792cf4237c01bcc98` | module families, size classes, action-row order, lifecycle states, button morph, platform rubric |
 
@@ -203,7 +203,7 @@ the source. Written into `toolkit_engine/adapters/web_host.py` and
   specimen's fake sheet paths; Lucide icon geometry (the usage badge is text only);
   the picking primitives, `external_event.py`, the page close-guard, `rgUI` motion
   primitives, `gate` and the grouped check list.
-- **Licence notice:** nothing third-party was added: no Lucide geometry, no vendored
+- **License notice:** nothing third-party was added: no Lucide geometry, no vendored
   binary. Code is MIT with the rest of the repository.
 - **Verification:** `tests/test_web_host_surface.py` (both profiles generated; pure
   modules imported under CPython and exercised: dispatch, unknown method, exceptions as

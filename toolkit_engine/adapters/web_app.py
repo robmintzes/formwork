@@ -2,7 +2,7 @@
 
 Generates ``apps/<namespace>-web/``: ``server.ts`` (a loopback-only static server), its
 ``node:test`` tests, and ``public/`` (an app shell, the generated ``theme.css``, a small
-plain-JavaScript module, the brand SVGs, and packaged fonts with their licences).
+plain-JavaScript module, the brand SVGs, and packaged fonts with their licenses).
 
 Node strips types itself, so everything TypeScript here is *erasable* syntax only. Browsers
 cannot run TypeScript, so client code is plain JavaScript. ``tsc`` is never run; the

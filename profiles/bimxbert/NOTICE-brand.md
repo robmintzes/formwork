@@ -6,7 +6,7 @@ covers this foundation's code and templates.
 
 You may use this profile to evaluate the foundation and to generate the
 reference BIMxBert workspace. To make the foundation your own, replace this
-profile (name, marks, colours, and links) with your firm's identity. Do not
+profile (name, marks, colors, and links) with your firm's identity. Do not
 present your firm's tools under the BIMxBert name or marks.
 
 The fonts packaged with this profile (Barlow Condensed, Geist, Geist Mono) are

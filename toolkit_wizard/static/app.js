@@ -18,7 +18,7 @@ const STEPS = [
   { id: 'identity', title: 'Identity' },
   { id: 'technical', title: 'Technical identity' },
   { id: 'logos', title: 'Logos' },
-  { id: 'colour', title: 'Colour and type' },
+  { id: 'color', title: 'Color and type' },
   { id: 'components', title: 'Components' },
   { id: 'preview', title: 'Preview' },
   { id: 'generate', title: 'Generate' },
@@ -519,7 +519,7 @@ function renderTechnical(root) {
     'These become folder names, CSS and XAML key prefixes, and the workspace manifest identity. Renaming them after a workspace exists is a migration (old managed files become obsolete), not a rebrand.'));
   const fields = [
     { label: 'Namespace', path: ['technical', 'namespace'], mono: true, maxlength: 24, help: 'Lowercase letters and digits, 2-24 characters, starting with a letter. Prefixes CSS custom properties and XAML keys.' },
-    { label: 'Workspace id', path: ['technical', 'workspace_id'], mono: true, maxlength: 64, help: 'Kebab-case, up to 64 characters. Identifies the workspace; rendering refuses a workspace initialised for another id.' },
+    { label: 'Workspace id', path: ['technical', 'workspace_id'], mono: true, maxlength: 64, help: 'Kebab-case, up to 64 characters. Identifies the workspace; rendering refuses a workspace initialized for another id.' },
     { label: 'pyRevit extension', path: ['technical', 'pyrevit', 'extension'], mono: true, maxlength: 40, help: 'Letters and digits, starting with a letter. Becomes the <name>.extension folder.' },
     { label: 'pyRevit tab', path: ['technical', 'pyrevit', 'tab'], mono: true, maxlength: 40, help: 'Letters, digits, single spaces. Becomes the <name>.tab folder that pyRevit shows on the ribbon.' },
     { label: 'pyRevit sample panel', path: ['technical', 'pyrevit', 'sample_panel'], mono: true, maxlength: 40, help: 'Same rules as the tab. Becomes the panel folder for the foundation sample.' },
@@ -606,7 +606,7 @@ function renderTechnical(root) {
 const SLOTS = [['wordmark', 'Wordmark'], ['symbol', 'Symbol']];
 const VARIANTS = [
   ['light', 'Light', 'For light surfaces.'],
-  ['inverse', 'Inverse', 'For dark and brand-colour surfaces. Optional; falls back to light with a warning.'],
+  ['inverse', 'Inverse', 'For dark and brand-color surfaces. Optional; falls back to light with a warning.'],
 ];
 
 function assetPath(slot, variant, format) {
@@ -742,7 +742,7 @@ function removeInverse(slot, rerender) {
   rerender();
 }
 
-/* ---- step 5: colour and type ----------------------------------------------- */
+/* ---- step 5: color and type ----------------------------------------------- */
 
 function runUpdaters(skip) {
   const palette = T.paletteTokens(app.tokens);
@@ -753,7 +753,7 @@ function runUpdaters(skip) {
 function colorRow(path, options) {
   const hexId = uid('hex');
   const swatch = h('div', { class: 'swatch', 'aria-hidden': 'true' });
-  const picker = h('input', { type: 'color', 'aria-label': path + ' colour picker' });
+  const picker = h('input', { type: 'color', 'aria-label': path + ' color picker' });
   const hexInput = h('input', {
     type: 'text', id: hexId, class: 'mono', maxlength: 7, spellcheck: 'false', autocomplete: 'off',
     'aria-describedby': hexId + '-diag',
@@ -836,17 +836,17 @@ function contrastRow(pair) {
 }
 
 function renderColour(root) {
-  append(root, pageHead('Colour and type', 'Semantic roles are what generated tools use. Most are aliases into the palette. Editing a role writes a literal colour into that role; editing a palette colour changes every role aliased to it.'));
+  append(root, pageHead('Color and type', 'Semantic roles are what generated tools use. Most are aliases into the palette. Editing a role writes a literal color into that role; editing a palette color changes every role aliased to it.'));
   const doc = app.tokens;
 
-  root.append(h('h3', { text: 'Colour roles' }));
+  root.append(h('h3', { text: 'Color roles' }));
   for (const group of T.COLOR_GROUPS) {
     root.append(h('h4', { class: 'label', text: group.title }));
     root.append(h('div', { class: 'role-grid' }, group.roles.map((role) => colorRow(role, { label: role.replace('color.', '') }))));
   }
 
   root.append(h('h3', { text: 'Palette' }));
-  root.append(h('p', { class: 'help', text: 'Primitive colours. Changing one updates every role that aliases it.' }));
+  root.append(h('p', { class: 'help', text: 'Primitive colors. Changing one updates every role that aliases it.' }));
   const palette = T.paletteTokens(doc);
   const groups = [];
   for (const item of palette) {
@@ -935,7 +935,7 @@ function renderColour(root) {
   root.append(sizeGrid);
 
   root.append(h('h3', { text: 'Contrast' }));
-  root.append(h('p', { class: 'help', text: 'WCAG 2.x ratios computed here from the resolved colours (alpha ignored). Text needs 4.5:1; the focus ring needs 3:1 against the default surface. The server\'s a11y.contrast diagnostics are authoritative.' }));
+  root.append(h('p', { class: 'help', text: 'WCAG 2.x ratios computed here from the resolved colors (alpha ignored). Text needs 4.5:1; the focus ring needs 3:1 against the default surface. The server\'s a11y.contrast diagnostics are authoritative.' }));
   const body = h('tbody');
   for (const pair of T.CONTRAST_PAIRS) body.append(contrastRow(pair));
   root.append(h('div', { class: 'table-wrap' }, h('table', null,
@@ -963,7 +963,7 @@ const CASES = [
 ];
 const APPEARANCE = [
   { path: ['button', 'primary'], legend: 'Primary button', options: [
-    ['solid', 'Solid', 'Filled with the primary action colours.'],
+    ['solid', 'Solid', 'Filled with the primary action colors.'],
     ['outline', 'Outline', 'Transparent fill with a bordered edge.'],
   ] },
   { path: ['button', 'secondary'], legend: 'Secondary button', options: [
@@ -974,8 +974,8 @@ const APPEARANCE = [
   { path: ['button', 'shape'], legend: 'Button shape', options: SHAPES },
   { path: ['button', 'label_case'], legend: 'Button label case', options: CASES },
   { path: ['badge', 'style'], legend: 'Badge style', options: [
-    ['soft', 'Soft', 'Tinted background with coloured text.'],
-    ['solid', 'Solid', 'Filled with the foreground colour.'],
+    ['soft', 'Soft', 'Tinted background with colored text.'],
+    ['solid', 'Solid', 'Filled with the foreground color.'],
     ['outline', 'Outline', 'Border only.'],
   ] },
   { path: ['badge', 'shape'], legend: 'Badge shape', options: SHAPES },
@@ -1297,7 +1297,7 @@ const RENDERERS = {
   identity: renderIdentity,
   technical: renderTechnical,
   logos: renderLogos,
-  colour: renderColour,
+  color: renderColour,
   components: renderComponents,
   preview: renderPreview,
   generate: renderGenerate,

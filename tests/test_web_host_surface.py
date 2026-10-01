@@ -343,13 +343,13 @@ class PythonModuleTests(WebHostCase):
             self.assertIn("item two failed", partial["log"][0])
             self.assertEqual(tool.run_chunked([1], lambda item: 1 / 0)["status"], "failed")
 
-            def cancelling(item):
+            def canceling(item):
                 tool.cancel()
                 return {"id": item, "status": "ok"}
 
-            cancelled = tool.run_chunked([1, 2, 3], cancelling)
-            self.assertEqual(cancelled["status"], "cancelled")
-            self.assertEqual(len(cancelled["items"]), 1)
+            canceled = tool.run_chunked([1, 2, 3], canceling)
+            self.assertEqual(canceled["status"], "canceled")
+            self.assertEqual(len(canceled["items"]), 1)
             self.assertEqual(tool.run_chunked([], lambda item: item)["status"], "success")
         finally:
             forget("quillmoor_web")
@@ -716,7 +716,7 @@ class PageTests(WebHostCase):
         self.assertEqual(completed.returncode, 0, completed.stderr)
         out = json.loads(completed.stdout)
         self.assertEqual(out[:7], ["waiting", "waiting", "Reusable", "Run audit", "Run audit", "Update audit", True])
-        self.assertEqual(out[7], ["idle", "waiting", "partial", "failure", "cancelled", "done"])
+        self.assertEqual(out[7], ["idle", "waiting", "partial", "failure", "canceled", "done"])
 
     def test_the_offline_check_exempts_only_the_virtual_hosts(self) -> None:
         def errors(path: str, text: str) -> list[str]:

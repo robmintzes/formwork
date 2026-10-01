@@ -99,7 +99,7 @@ class RevitClient:
 
 
 def build_error_result(tool: str, exc: RevitClientError) -> dict[str, Any]:
-    """Build a normalised MCP tool result dict from a RevitClientError."""
+    """Build a normalized MCP tool result dict from a RevitClientError."""
     return {
         "status": "error",
         "tool": tool,

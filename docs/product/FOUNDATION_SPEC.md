@@ -24,7 +24,7 @@ The product is **Formwork**, a BIMxBert project **[confirmed]**
 | Boundary | Lives in | Owner | Contents |
 | --- | --- | --- | --- |
 | Reusable foundation | this repository | foundation maintainers | `toolkit_engine/` (generator), `toolkit_cli/` (commands), `schemas/`, validators, templates, docs |
-| Firm configuration | `firm/` inside a firm workspace | the adopting firm | `firm.json`, a DTCG token file, brand assets, font files and their licences |
+| Firm configuration | `firm/` inside a firm workspace | the adopting firm | `firm.json`, a DTCG token file, brand assets, font files and their licenses |
 | Platform adapters | `toolkit_engine/adapters/` | foundation maintainers | pure functions: resolved profile -> rendered files for one surface |
 | Generated firm workspace | a separate directory/repository | the adopting firm | managed generated files, seeded files the firm then owns, firm-owned tools, `.toolkit/manifest.json` |
 
@@ -161,7 +161,7 @@ rebrand. Not Windows reserved names, and not the template sample's own extension
   contain scripts; PNGs must pass the structural PNG check.
 - All paths are relative to `firm/`, forward-slash, no `..`, and must exist.
 - `fonts`: every font file the outputs reference. `license_file` is required and
-  copied with the font. Licences outside a known-redistributable list
+  copied with the font. Licenses outside a known-redistributable list
   (`OFL-1.1`, `Apache-2.0`, `MIT`) produce warning `font.license-unrecognized`.
   Families named by tokens but not packaged produce warning
   `font.not-packaged`; outputs then rely on the token's fallback stack.
@@ -205,7 +205,7 @@ Group Report, 2025-10-28) **[proposed]** ([ADR 0003](../decisions/0003-config-an
   Other DTCG types are rejected with `token.type-unsupported` (not silently
   dropped).
 - `color`: `{"colorSpace": "srgb", "components": [r, g, b], "alpha"?, "hex"?}`,
-  components 0-1. Other colour spaces are rejected in v1. If `hex` is present it
+  components 0-1. Other color spaces are rejected in v1. If `hex` is present it
   must agree with `components` (within one 8-bit step).
 - `dimension`: `{"value": n, "unit": "px"}`. `rem` is rejected in v1 because WPF
   has no root font size; adapters need absolute device-independent pixels.
@@ -280,7 +280,7 @@ dictionary runs 2 DIP smaller than its CSS; v1 profiles use one value.)
 
 ### 4.1 Ownership classes
 
-| Class | Examples | Generator behaviour |
+| Class | Examples | Generator behavior |
 | --- | --- | --- |
 | **input** | `firm/**` | read only. Never written after `init`. |
 | **managed** | extension manifest, sample bundle, theme/controls XAML, guide HTML, copied fonts, notices | written and hash-tracked. Regenerated from inputs every run. |
@@ -582,7 +582,7 @@ no DLL is redistributed here ([backlog](BACKLOG.md), B20). The licensed Adobe/of
 fonts used by the source UI are never packaged; fonts come from the firm profile.
 
 **Notices.** Icon geometry derives from Lucide (ISC, portions MIT from Feather).
-The licence texts are added to `THIRD_PARTY_NOTICES.md` by the always-on `common`
+The license texts are added to `THIRD_PARTY_NOTICES.md` by the always-on `common`
 adapter whenever the surface is enabled, independent of branding. Origin and
 changes of the ported code are in [RELEASE_RECORD.md](RELEASE_RECORD.md) (R05).
 Every render reports `ui-kit.not-live-verified` (info) until a live Revit run is
@@ -664,9 +664,9 @@ parameter properties or decorators. Browsers cannot run TypeScript, so client co
 | --- | --- |
 | `package.json` | `"type": "module"`, `start` is `node server.ts`, `test` is `node --test`, no dependencies, `engines.node` `>=22.18`. |
 | `server.ts` | `node:http` static server bound to 127.0.0.1 only, port from `PORT` (default 5173), serves `public/` through a fixed content-type map. Rejects non-GET (405 with `Allow: GET`), traversal (`..`, `%2e%2e`, encoded separators, backslashes, colons, dot-files, symbolic links that resolve outside `public/`) with 404. Every response sends `Content-Security-Policy: default-src 'self'` and `X-Content-Type-Options: nosniff`. Starts only when run directly, so tests import it. |
-| `test/server.test.ts` | `node:test` and `node:assert`: ephemeral-port server, headers, loopback bind, traversal sent as raw request targets (fetch would normalise `..` away), method rejection, and a no-inline-script/style check on the shell. |
+| `test/server.test.ts` | `node:test` and `node:assert`: ephemeral-port server, headers, loopback bind, traversal sent as raw request targets (fetch would normalize `..` away), method rejection, and a no-inline-script/style check on the shell. |
 | `public/index.html`, `theme.css`, `app.js` | Branded shell (inverse wordmark band, a card with primary and secondary buttons, selectable chips, status badges, support footer). No inline script or style, which the CSP would block. |
-| `public/assets/*.svg`, `public/fonts/<family>/*` | Brand SVGs; packaged fonts with their licence files, referenced by `@font-face` in `theme.css`. |
+| `public/assets/*.svg`, `public/fonts/<family>/*` | Brand SVGs; packaged fonts with their license files, referenced by `@font-face` in `theme.css`. |
 | `tsconfig.json`, `README.md`, `.gitignore` | `tsconfig.json` is for editors only (`erasableSyntaxOnly`); type-checking needs the optional `npm install -D typescript @types/node`. |
 
 **Checks.** `.toml` outputs must parse (`output.toml-invalid`; skipped on CPython 3.10, which has no `tomllib`).
@@ -692,7 +692,7 @@ outputs are `managed`. Ported from the Rockwell `rgdt_web` library under ADR 000
 | --- | --- |
 | `extensions/<Extension>.extension/lib/<namespace>_web/` | IronPython 2.7 package. Pure (importable under CPython): `bridge` (`expose`, `Bridge`, JSON dispatch with IronPython 2 text and byte hardening, an error envelope that carries a message and never a traceback), `session` (`ToolSession`: cancel flag, `run_chunked` with `progress` events), `log` (pyRevit output plus `%LOCALAPPDATA%\<namespace>\logs\web.log`), `compat` (`eid_int`, `eid`), `webview2_support` (assembly search, native-loader probe, navigation policy, plain-language messages). Needs WPF: `host` (`WebToolWindow`, `WebView2HostError`). Importing the package loads nothing. |
 | `.../<namespace>_web/ShellWindow.xaml` | A bare window around the `WebView2` control; standard OS chrome, the page carries the branding. |
-| `.../<namespace>_web/assets/bridge.js`, `tool-ui.js`, `tool.css`, `symbol-light.svg`, `fonts/<family>/` | Served at `https://<namespace>-assets.test/`. `bridge.js` is `window.<namespace>` (`call`, `on`, `off`, `close`, `hosted`); `tool-ui.js` is `window.<namespace>ui` (`setState`, `setProgress`, `copyText`, `wireCopyButtons`, `startCountdown`, `primaryAction`, usage badge). `tool.css` is built from the firm's tokens by `web_theme` (tokens as `--<namespace>-*`, the shared button and badge rules) plus the shell: tool header with the firm symbol, numbered steps, metrics, filter field, fixed table, progress, log, notices, action row. Packaged fonts and their licences are copied here. No file contains an absolute URL except the two virtual hosts. |
+| `.../<namespace>_web/assets/bridge.js`, `tool-ui.js`, `tool.css`, `symbol-light.svg`, `fonts/<family>/` | Served at `https://<namespace>-assets.test/`. `bridge.js` is `window.<namespace>` (`call`, `on`, `off`, `close`, `hosted`); `tool-ui.js` is `window.<namespace>ui` (`setState`, `setProgress`, `copyText`, `wireCopyButtons`, `startCountdown`, `primaryAction`, usage badge). `tool.css` is built from the firm's tokens by `web_theme` (tokens as `--<namespace>-*`, the shared button and badge rules) plus the shell: tool header with the firm symbol, numbered steps, metrics, filter field, fixed table, progress, log, notices, action row. Packaged fonts and their licenses are copied here. No file contains an absolute URL except the two virtual hosts. |
 | `.../<Panel>.panel/WebToolDemo.pushbutton/` (`bundle.yaml`, `script.py`, `tool.html`, `tool.js`, light and dark 96 px icons), `docs/toolbar/tools/web-tool-demo.md` | Read-only M5 report console. It validates the document first (no document: message and quiet exit; family document: alert), then `init_data` counts views and view templates by `View.ViewType` (one `FilteredElementCollector`, no transaction). The page shows four metrics, a fixed table with status pills, a client-side filter, an activity log and a **Copy summary** action that uses the browser clipboard API; there is no export and nothing writes. Its entry appears in `docs/toolbar/spec.d/foundation-sample.md` only when the surface is enabled; without it that fragment is byte-identical to before. |
 
 **Host assemblies: what was found, and the design that follows.** The Rockwell
@@ -751,7 +751,7 @@ Revit):
 - **Residual cases a firm handles itself.** (a) Revit 2022 and 2023 ship no WebView2:
   the firm obtains a matching Core and Wpf set (and the loader, beside them or under
   `runtimes\win-x64\native`) from the `Microsoft.Web.WebView2` package under its own
-  licence review, avoids SDK 1.0.1343.22, and points `<NAMESPACE>_WEBVIEW2_DIR` (the
+  license review, avoids SDK 1.0.1343.22, and points `<NAMESPACE>_WEBVIEW2_DIR` (the
   namespace in capitals) at the folder. The toolkit ships and downloads nothing, and this
   surface is built and tested for 2024 and later. (b) The Evergreen WebView2 Runtime must
   be installed and not blocked by policy; a fixed-version runtime is chosen with
@@ -774,7 +774,7 @@ origin, `script.py` included, so it must hold nothing secret.
   on those two hosts (an anchored full-match pattern with a literal host and no port,
   user information or backslash, so a parser that disagrees with the browser gains
   nothing); `NewWindowRequested` is handled (no window), `DownloadStarting` is
-  cancelled, `PermissionRequested` is denied. The first three are required: if they
+  canceled, `PermissionRequested` is denied. The first three are required: if they
   cannot be attached the host closes the window rather than load the page.
 - `WebMessageReceived` drops a message whose source is not an allowed address.
 - DevTools, default context menus, status bar, zoom control, browser accelerator keys,
@@ -819,15 +819,15 @@ with a stub bridge. **Not verified**: any WebView2 window opened in Revit; the
 IronPython delegate conversions (`System.Action[Task]`, `ContinueWith`), event attach through `__iadd__`, and the
 `EnsureCoreWebView2Async` overload under IronPython 2.7; the `.test` mapping, the `Deny`
 and `Allow` access kinds, the CSP and clipboard writes inside WebView2; Escape handling
-with browser accelerator keys off; the Wpf assemblies of Revit 2025 and later; behaviour
+with browser accelerator keys off; the Wpf assemblies of Revit 2025 and later; behavior
 next to other add-ins' Core versions; the per-Core-version data folder. Every render
 reports `web-host.not-live-verified` (info) until a live run is recorded.
 
 ## 9. Notices, attribution, and provenance
 
 - Foundation code is MIT (copyright Rob Mintzes). Every workspace receives a
-  managed `THIRD_PARTY_NOTICES.md` listing the foundation licence and each
-  packaged font with its licence file, independent of branding.
+  managed `THIRD_PARTY_NOTICES.md` listing the foundation license and each
+  packaged font with its license file, independent of branding.
 - The BIMxBert name and marks are **not** licensed under MIT **[confirmed]**;
   `profiles/bimxbert/NOTICE-brand.md` says so and is copied into BIMxBert
   workspaces. Adopters replace the profile.
@@ -836,7 +836,7 @@ reports `web-host.not-live-verified` (info) until a live run is recorded.
   rebranded output, and rebranding cannot remove notices (they are not derived
   from display identity).
 - Imported items are recorded in [RELEASE_RECORD.md](RELEASE_RECORD.md) with
-  source, hash, changes, licence, and verification.
+  source, hash, changes, license, and verification.
 - Rob-authored Rockwell repository material may be ported under the scoped
   permission in [ADR 0005](../decisions/0005-source-extraction-and-assets.md);
   each port is recorded in the release record with source commit, files, and

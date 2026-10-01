@@ -426,7 +426,7 @@ def _brand(r: _Reader, value: Any) -> tuple[str, dict[tuple[str, str], dict[str,
             r.diags.warning(
                 "font.license-unrecognized",
                 r.loc(pointer + "/license"),
-                "Licence {!r} is not on the known-redistributable list ({}).".format(
+                "License {!r} is not on the known-redistributable list ({}).".format(
                     license_id, ", ".join(REDISTRIBUTABLE_FONT_LICENSES)
                 ),
                 "Confirm the firm may copy these files into every workspace and repository it publishes.",

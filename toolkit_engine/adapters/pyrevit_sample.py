@@ -130,7 +130,7 @@ def _corner_radius(profile: Profile, height: float) -> float:
 def draw_icon(profile: Profile, *, dark: bool) -> bytes:
     """A speech-bubble glyph whose corners follow the button shape choice.
 
-    Light variant: text colour outline with accent dots (for the light ribbon).
+    Light variant: text color outline with accent dots (for the light ribbon).
     Dark variant: light-surface outline with soft-accent dots.
     """
     tokens = profile.tokens

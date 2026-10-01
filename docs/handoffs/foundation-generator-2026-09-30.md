@@ -171,7 +171,7 @@ Findings worth Rob's attention:
   sizing the bootstrap test's nested-suite timeout (`79c60d8`).
 
 - **2026-09-30:** Created branch; merged PR #2 into the planning branch,
-  resolving AGENTS/README/INDEX/onboarding conflicts in favour of the policy
+  resolving AGENTS/README/INDEX/onboarding conflicts in favor of the policy
   text with stabilization's neutral author wording (`5699926`).
 - **2026-09-30:** Wrote spec, ADRs, backlog (`79a5a60`).
 - **2026-09-30:** Implemented engine, CLI, schema, validator changes, and

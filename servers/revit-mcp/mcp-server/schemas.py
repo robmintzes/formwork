@@ -23,7 +23,7 @@ class ErrorDetail(BaseModel):
 class RevitResponse(BaseModel):
     """
     Standard response envelope returned by all pyRevit Routes endpoints
-    and normalised by the MCP server before returning to clients.
+    and normalized by the MCP server before returning to clients.
     """
 
     status: str  # "ok" | "warning" | "error"

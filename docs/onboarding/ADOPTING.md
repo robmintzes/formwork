@@ -108,7 +108,7 @@ Steps, in order:
    sample panel; maintainers and branch prefixes. Choose carefully; see
    [section 6](#6-rebranding-later-versus-changing-technical-identity).
 4. **Logos**: wordmark and symbol, light and inverse, each as SVG and PNG.
-5. **Colour and type**: design tokens, with live contrast ratios.
+5. **Color and type**: design tokens, with live contrast ratios.
 6. **Components**: button and badge treatments, and which surfaces to generate.
 7. **Preview**: the HTML guide with your draft applied. The WPF preview is a
    browser approximation; the native render only happens on Windows.
@@ -136,10 +136,10 @@ Edit in `D:\Firm Inputs\acme`:
   "did you mean" hint; keys starting `x-` are yours and are ignored.
   [`schemas/firm-config.v1.schema.json`](../../schemas/firm-config.v1.schema.json)
   gives editors completion.
-- `tokens.tokens.json`: your colours, fonts, sizes. Every required role must
+- `tokens.tokens.json`: your colors, fonts, sizes. Every required role must
   exist; see [spec section 3](../product/FOUNDATION_SPEC.md#3-design-token-contract-firmtokenstokensjson).
 - `assets/`: your four logo files as SVG and PNG, referenced from `firm.json`.
-- Fonts: optional. Packaged fonts need a licence file; unpackaged families fall
+- Fonts: optional. Packaged fonts need a license file; unpackaged families fall
   back to the token's fallback stack.
 
 Then:
@@ -397,9 +397,9 @@ where one exists. Codes below are the ones you will meet first.
 | `brand.inverse-fallback` (warning) | No inverse logo supplied | Add inverse variants, or accept the light one. |
 | `token.role-missing` | A required design role is absent | Add it; see spec section 3.3. |
 | `token.alias-missing`, `token.alias-cycle`, `token.alias-type-mismatch` | A `{group.token}` alias is broken | Follow the chain named in the message. |
-| `token.type-unsupported`, `token.color-space-unsupported`, `token.unit-unsupported` | A token type, colour space, or unit outside the supported subset (colours are sRGB; dimensions are `px`, not `rem`) | Convert it. |
-| `a11y.contrast` (warning) | A pairing is below 4.5:1 (3:1 for focus) | Adjust colours. It does not block generation. |
-| `font.license-unrecognized`, `font.not-packaged` (warnings) | Unknown font licence, or a family used by tokens but not packaged | Check redistribution rights; or accept the fallback stack. |
+| `token.type-unsupported`, `token.color-space-unsupported`, `token.unit-unsupported` | A token type, color space, or unit outside the supported subset (colors are sRGB; dimensions are `px`, not `rem`) | Convert it. |
+| `a11y.contrast` (warning) | A pairing is below 4.5:1 (3:1 for focus) | Adjust colors. It does not block generation. |
+| `font.license-unrecognized`, `font.not-packaged` (warnings) | Unknown font license, or a family used by tokens but not packaged | Check redistribution rights; or accept the fallback stack. |
 | `workspace.not-empty` | `init` target has files | Choose a new or empty folder. |
 | `workspace.overlaps-foundation`, `workspace.unsafe` | Workspace is inside the checkout, contains it, or is a drive root or home folder | Pick a different location. |
 | `workspace.not-initialized` | No `.toolkit/workspace.json` | Run `init` first. |

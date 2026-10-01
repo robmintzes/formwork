@@ -145,7 +145,7 @@ class ChooserDialog(forms.WPFWindow):
     @classmethod
     def ask(cls, options, tool_name, heading, prompt=None, eyebrow=None,
             action_label="Continue", selected=None, usage=None):
-        """Show modally; return the chosen key, or None if cancelled."""
+        """Show modally; return the chosen key, or None if canceled."""
         dialog = cls(
             options,
             tool_name,

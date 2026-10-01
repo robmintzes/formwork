@@ -30,7 +30,7 @@ NUMBER = re.compile(r"^-?\d+(?:\.\d+)?$")
 TONES = {
     "success": ("approved", "complete", "completed", "done", "issued", "ok", "pass", "passed", "published", "resolved"),
     "warning": ("draft", "hold", "in review", "on hold", "open", "partial", "pending", "review", "warning"),
-    "danger": ("blocked", "cancelled", "error", "fail", "failed", "overdue", "rejected", "void"),
+    "danger": ("blocked", "canceled", "error", "fail", "failed", "overdue", "rejected", "void"),
 }
 
 PAGE = Template(
@@ -66,7 +66,7 @@ $table
 </main>
 <footer>
   <img src="$symbol" alt="$logo_alt">
-  <span>Support: <a href="$support_url">$support_url</a>. Licences and notices: THIRD_PARTY_NOTICES.md at the workspace root.</span>
+  <span>Support: <a href="$support_url">$support_url</a>. Licenses and notices: THIRD_PARTY_NOTICES.md at the workspace root.</span>
 </footer>
 </body>
 </html>

@@ -53,5 +53,5 @@ instances (WPF handles variable fonts poorly) are vendored from the official
 upstream repositories with their OFL texts and recorded hashes. The fictional
 profile deliberately uses only system fonts to exercise the fallback path.
 Commercial or office-licensed fonts (for example Rockwell's) are never
-vendored; a firm profile may reference them with a non-redistributable licence,
+vendored; a firm profile may reference them with a non-redistributable license,
 which produces a warning.
