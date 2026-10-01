@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="320" height="320" viewBox="0 0 320 320">
+  <title>Quillmoor Studio (fictional)</title>
+  <g id="symbol">
+    <circle cx="160" cy="160" r="150" fill="#FBF7F0"/>
+    <path d="M196 62 C 258 112 246 214 168 262 C 120 214 122 120 196 62 Z" fill="#2F5D50"/>
+    <path d="M190 84 L 150 262" stroke="#FBF7F0" stroke-width="10" stroke-linecap="round" fill="none"/>
+    <path d="M150 262 L 128 284" stroke="#2F5D50" stroke-width="12" stroke-linecap="round" fill="none"/>
+  </g>
+</svg>
