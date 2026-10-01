@@ -12,9 +12,10 @@ Labels used below:
 - **[proposed]** an engineering choice made during specification; reversible.
 - **[pending]** needs a human decision; independent work continues around it.
 
-Working product name BIMxBert Foundry remains a proposal **[pending]**. Package
-names in this document (`toolkit_engine`, `toolkit` CLI) are technical and
-provisional; they do not rename the repository.
+The product is **Formwork**, a BIMxBert project **[confirmed]**
+([ADR 0008](../decisions/0008-product-name.md)). Package names in this document
+(`toolkit_engine`, the `toolkit` CLI) are technical and are scheduled to become
+`formwork` in a separate change (backlog B21).
 
 ---
 

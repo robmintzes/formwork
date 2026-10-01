@@ -13,3 +13,4 @@ reversible until someone depends on it), **superseded**.
 | [0005](0005-source-extraction-and-assets.md) | Rockwell reuse with scoped records; BIMxBert marks reserved; OFL fonts vendored | accepted |
 | [0006](0006-wizard-stack.md) | Wizard is a stdlib loopback service with static UI | proposed |
 | [0007](0007-pyrevit-icon-contract.md) | 96x96 light/dark PNG icons; validator accepts 32 or 96 | proposed |
+| [0008](0008-product-name.md) | Product name: Formwork, a BIMxBert project; repository robmintzes/formwork | accepted |

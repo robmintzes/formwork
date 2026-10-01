@@ -1,6 +1,12 @@
-# pyRevit Toolbar Template: a design technology foundation
+# Formwork
 
-**What this is now:** a foundation that generates a firm's own design
+*A design technology foundation. A BIMxBert project.*
+
+Formwork is named after the temporary mold that shapes a permanent structure
+and is then stripped away. It shapes your firm's workspace, and its default
+BIMxBert identity comes off when your own goes on.
+
+**What this is:** a foundation that generates a firm's own design
 technology workspace (branded pyRevit toolbar, WPF UI kit, HTML guides,
 agent-neutral governance, and a read-only MCP bridge) from a small
 configuration. You do not rebrand this repository; you generate a separate
@@ -68,7 +74,7 @@ validators and bridge from here.
 ## Repository layout
 
 ```text
-pyrevit-toolbar-template/
+formwork/
 ├── .agents/skills/pyrevit-tool/       # pyRevit authoring playbook
 ├── .github/workflows/                 # CI and development-policy pipelines
 ├── docs/

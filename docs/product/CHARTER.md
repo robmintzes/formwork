@@ -1,8 +1,9 @@
 # Design technology foundation - product charter
 
 Status: draft for Rob Mintzes's review. Updated September 30, 2026.
-Working product name: **BIMxBert Foundry**. The permanent name is undecided;
-this proposal does not rename the repository.
+Product name: **Formwork**, a BIMxBert project (decided 2026-10-01,
+[ADR 0008](../decisions/0008-product-name.md)). The earlier working name
+"BIMxBert Foundry" was not adopted.
 
 ## Purpose
 
