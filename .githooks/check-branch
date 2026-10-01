@@ -1,0 +1,12 @@
+#!/bin/sh
+# Git for Windows supplies this shell; Python is only used outside Revit.
+root=$(git rev-parse --show-toplevel) || exit 1
+if command -v py >/dev/null 2>&1; then
+    exec py -3 "$root/validators/check_branch_policy.py" "$@"
+elif command -v python3 >/dev/null 2>&1; then
+    exec python3 "$root/validators/check_branch_policy.py" "$@"
+elif command -v python >/dev/null 2>&1; then
+    exec python "$root/validators/check_branch_policy.py" "$@"
+fi
+echo "ERROR: Install CPython 3.10+ to run the branch policy guard." >&2
+exit 1

@@ -3,6 +3,10 @@
 An early-stage, firm-neutral foundation for teams building a governed pyRevit
 toolbar and a local, read-only Revit MCP bridge with AI coding agents.
 
+Live Revit/pyRevit verification remains outstanding. See the [September 2026 repository assessment](docs/reviews/repository-state-2026-09-30.md) for the distinction between `main` and the unmerged stabilization work.
+
+Before developing, install the local Git guards and follow the [branch policy](docs/onboarding/BRANCH_POLICY.md). All contributions use a human-owned branch and a pull request.
+
 > **Alpha status:** the repository has static validation and automated Python
 > tests, but it has not yet completed an end-to-end test inside a live Revit and
 > pyRevit session. Treat it as a development foundation, not a production-ready
