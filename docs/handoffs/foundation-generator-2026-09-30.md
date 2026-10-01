@@ -1,6 +1,6 @@
 # Handoff - foundation workspace generator (first slice)
 
-Branch: `robmintzes/foundation-generator` (local; not pushed at handoff).
+Branch: `robmintzes/foundation-generator`, pushed; draft PR [#4](https://github.com/robmintzes/pyrevit-toolbar-template/pull/4).
 Stacked on `robmintzes/foundation-charter` (policy PR #3 lineage) plus a merge
 of `origin/robmintzes/runtime-stabilization` (PR #2 at `573c382`). Neither PR
 is merged; this branch's eventual PR is stacked on both.
@@ -47,8 +47,8 @@ is merged; this branch's eventual PR is stacked on both.
 
 ## Open
 
-1. **Rob:** review and merge PR #3, then PR #2; then push this branch and open
-   its PR (it will show their diffs until they merge).
+1. **Rob:** review and merge PR #3, then PR #2, then draft PR #4
+   (its diff includes theirs until they merge).
 2. **Live gate (B11):** install a generated BIMxBert workspace's extension on
    Revit 2026 + pyRevit 6.5.5 (IronPython 2.7.12) and record ribbon load,
    light/dark icons, `help_url`, no-document/family/project contexts. The
