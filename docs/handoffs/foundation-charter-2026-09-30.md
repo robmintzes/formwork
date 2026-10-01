@@ -13,6 +13,10 @@
   This deliberately preserves the executable guards and records the dependency.
 - Source repositories/export were inspected read-only; no assets or code were
   imported from the Rockwell repository or brand ZIP.
+- Rob is transferring specification and initial implementation to Claude.
+  [The comprehensive continuation prompt](claude-foundation-prompt-2026-09-30.md)
+  records exact transcript/share locations, verified branch/PR state, source
+  candidates, architecture proposals, and implementation/verification tasks.
 
 ## Open
 
@@ -29,3 +33,6 @@
 - **2026-09-30**: Documented confirmed user intent separately from engineering
   proposals. Inventoried initial reusable candidates and defined a two-brand,
   three-surface proof with repeatability and custom-tool preservation gates.
+- **2026-09-30**: Prepared the Claude continuation prompt at Rob's request;
+  located the local Codex JSONL transcript and created an immutable conversation
+  snapshot. No runtime/source imports or PR merges were part of the handoff.
