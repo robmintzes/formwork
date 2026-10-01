@@ -517,6 +517,22 @@ class HostDesignTests(WebHostCase):
         )
         self.assertIn("except ImportError as exc:", host)  # an import failure is not reported as a missing runtime
 
+    def test_host_avoids_ironpython_calls_that_failed_or_are_unproven_in_revit(self) -> None:
+        # Live Revit 2026 (2026-10-01): ContinueWith(Action[Task]) on Task<T> was an
+        # ambiguous overload. Environment creation is polled on the UI thread instead,
+        # and events attach with += (the form Revit tools rely on), not __iadd__ calls.
+        root = self.workspace(BIMXBERT, "ironpython calls")
+        host = self.host_source(root, "BIMxBert", "bimxbert")
+        code_only = "\n".join(line for line in host.splitlines() if not line.lstrip().startswith("#"))
+        for unproven in ("ContinueWith", ".__iadd__(", ".__isub__(", "System.Action[Task]"):
+            self.assertNotIn(unproven, code_only)
+        self.assertIn("self._env_poll.Tick += self._on_env_poll", host)
+        self.assertIn("if not task.IsCompleted:", host)
+        for stopper in ("def _fail", "def _cleanup"):
+            body = host[host.index(stopper):]
+            body = body[: body.index("\n    def ", 1)]
+            self.assertIn("self._stop_env_poll()", body, stopper)
+
     def test_environment_is_created_by_the_host_never_through_creation_properties(self) -> None:
         root = self.workspace(QUILLMOOR, "environment")
         host = self.host_source(root, "Quillmoor", "quillmoor")

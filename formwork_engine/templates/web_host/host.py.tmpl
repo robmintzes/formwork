@@ -58,7 +58,6 @@ clr.AddReference("System.Xaml")
 import System
 from System import TimeSpan, Uri
 from System.Diagnostics import Process
-from System.Threading.Tasks import Task
 from System.Windows.Input import Key
 from System.Windows.Threading import Dispatcher, DispatcherFrame, DispatcherTimer
 from pyrevit import forms
@@ -76,6 +75,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SHELL_XAML = os.path.join(HERE, "ShellWindow.xaml")
 ASSETS_DIR = os.path.join(HERE, "assets")
 INIT_TIMEOUT_SECONDS = 20
+ENV_POLL_MILLISECONDS = 50
 
 # WebView2 needs a writable user data folder; the default (beside the host
 # executable) is read-only under Revit's install folder. A sub-folder per Core
@@ -224,6 +224,7 @@ class WebToolWindow(forms.WPFWindow):
         self._disposed = False
         self._init_watchdog = None
         self._env_task = None
+        self._env_poll = None
         self._process_recovery_attempted = False
         self._core_handlers = []
 
@@ -275,18 +276,36 @@ class WebToolWindow(forms.WPFWindow):
                        "assemblies.".format(exc))
             return
         try:
-            task = CoreWebView2Environment.CreateAsync(None, folder, None)
-            self._env_task = task
-            task.ContinueWith(System.Action[Task](self._on_environment_task))
+            self._env_task = CoreWebView2Environment.CreateAsync(None, folder, None)
+            # Poll on the UI thread rather than task.ContinueWith: IronPython cannot
+            # choose between ContinueWith(Action<Task<T>>) and the contravariant
+            # ContinueWith(Action<Task>) (live Revit 2026, 2026-10-01). The init
+            # watchdog still bounds the wait.
+            self._env_poll = DispatcherTimer()
+            self._env_poll.Interval = TimeSpan.FromMilliseconds(ENV_POLL_MILLISECONDS)
+            self._env_poll.Tick += self._on_env_poll
+            self._env_poll.Start()
         except Exception as exc:
             self._fail("WebView2 initialization failed: {0}\n\n{1}".format(exc, support.runtime_hint()))
 
-    def _on_environment_task(self, task):
-        """Runs on a pool thread when environment creation ends; hop to the UI thread."""
-        try:
-            self.Dispatcher.BeginInvoke(System.Action(self._on_environment_ready))
-        except Exception as exc:
-            log("ERROR: could not marshal the environment result to the UI thread: {0}", exc)
+    def _on_env_poll(self, sender, args):
+        task = self._env_task
+        if self._disposed or task is None:
+            self._stop_env_poll()
+            return
+        if not task.IsCompleted:
+            return
+        self._stop_env_poll()
+        self._on_environment_ready()
+
+    def _stop_env_poll(self):
+        if self._env_poll is not None:
+            try:
+                self._env_poll.Stop()
+                self._env_poll.Tick -= self._on_env_poll
+            except Exception:
+                pass
+            self._env_poll = None
 
     def _on_environment_ready(self):
         if self._disposed:
@@ -315,6 +334,7 @@ class WebToolWindow(forms.WPFWindow):
     def _fail(self, message):
         """Stop, tell the user plainly, and close: a window without a browser is unusable."""
         self._stop_watchdog()
+        self._stop_env_poll()
         log("ERROR: {0}", message)
         try:
             forms.alert(message, title=self.title)
@@ -369,8 +389,14 @@ class WebToolWindow(forms.WPFWindow):
         self._pre_init_queue = []
 
     def _subscribe(self, core, event_name, handler):
-        """Attach a CoreWebView2 event handler and remember it for cleanup."""
-        getattr(core, event_name).__iadd__(handler)
+        """Attach a CoreWebView2 event handler and remember it for cleanup.
+
+        Spelled as get, ``+=``, set: the steps ``core.Event += handler`` performs,
+        the form Revit tools rely on. A direct ``__iadd__`` call is not that form.
+        """
+        event = getattr(core, event_name)
+        event += handler
+        setattr(core, event_name, event)
         self._core_handlers.append((event_name, handler))
 
     def _configure_core(self, core):
@@ -465,6 +491,7 @@ class WebToolWindow(forms.WPFWindow):
         self._disposed = True
         log("Cleaning up WebToolWindow resources...")
         self._stop_watchdog()
+        self._stop_env_poll()
         for step in (
             self._detach_window_handlers,
             self._detach_control_handlers,
@@ -494,7 +521,9 @@ class WebToolWindow(forms.WPFWindow):
             return
         for event_name, handler in self._core_handlers:
             try:
-                getattr(core, event_name).__isub__(handler)
+                event = getattr(core, event_name)
+                event -= handler
+                setattr(core, event_name, event)
             except Exception:
                 pass
 

@@ -823,8 +823,8 @@ attached before navigation), runs `bridge.js` and `tool-ui.js` against stubs in 
 it is present and, on a machine with Revit installed, finds Core, Wpf and a native
 loader in every installed Revit 2024 or later. The page was also viewed in a browser
 with a stub bridge. **Not verified**: any WebView2 window opened in Revit; the
-IronPython delegate conversions (`System.Action[Task]`, `ContinueWith`), event attach through `__iadd__`, and the
-`EnsureCoreWebView2Async` overload under IronPython 2.7; the `.test` mapping, the `Deny`
+`EnsureCoreWebView2Async` overload under IronPython; the polled environment task and
+event attach through `+=` inside Revit. the `.test` mapping, the `Deny`
 and `Allow` access kinds, the CSP and clipboard writes inside WebView2; Escape handling
 with browser accelerator keys off; the Wpf assemblies of Revit 2025 and later; behavior
 next to other add-ins' Core versions; the per-Core-version data folder. Every render
