@@ -15,6 +15,7 @@ from toolkit_engine.tokens import Color
 ADAPTER_ID = "pyrevit-sample"
 ICON_SIZE = 96
 TOOLTIP = "Displays a read-only summary of the active Revit project and its views."
+UI_KIT_DEMO_DESCRIPTION = "Read-only demonstration of the generated UI kit with a chooser, a searchable selector over view names, and a result dialog."
 DESCRIPTION = "Displays a read-only greeting with the active project, active view, and non-template view count."
 
 
@@ -68,6 +69,7 @@ def render(profile: Profile) -> RenderResult:
         "tool_title": layout.SAMPLE_TOOL_TITLE,
         "description": DESCRIPTION,
         "button_path": button_dir,
+        "extra_tools": _ui_kit_demo_spec(profile) if "ui-kit" in config.surfaces else "",
     }
     result.files.append(text_file(layout.SPEC_FRAGMENT, render_file("spec-fragment.md.tmpl", values), ADAPTER_ID))
     result.files.append(
@@ -86,6 +88,19 @@ def render(profile: Profile) -> RenderResult:
     )
     result.files.append(text_file(layout.SPEC_SEED, render_file("toolbar_spec.md.tmpl", {}), ADAPTER_ID, OWNERSHIP_SEED))
     return result
+
+
+def _ui_kit_demo_spec(profile: Profile) -> str:
+    """Second tool entry in the managed spec fragment; present only with the ui-kit surface."""
+    return (
+        "\n  - id: {id}\n    display_name: {title}\n    type: PushButton\n    category: utility\n"
+        "    risk: Low\n    lifecycle_stage: sandbox\n    description: {description}\n    source_path: {path}"
+    ).format(
+        id=layout.UI_KIT_DEMO_TOOL_ID,
+        title=layout.UI_KIT_DEMO_TITLE,
+        description=UI_KIT_DEMO_DESCRIPTION,
+        path=layout.ui_kit_demo_dir(profile.config.technical),
+    )
 
 
 def _corner_radius(profile: Profile, height: float) -> float:

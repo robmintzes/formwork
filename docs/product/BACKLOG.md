@@ -25,6 +25,8 @@ decision. Specification: [FOUNDATION_SPEC.md](FOUNDATION_SPEC.md).
 | B16 | Engine distribution to adopters (pip, pinned checkout, vendored) | B8 | H | todo |
 | B17 | Permanent product/repository name | - | H | todo |
 | B18 | Later surfaces: ~~MCP bridge in workspaces~~ (done: `mcp-bridge` surface, spec 8.1; live run pending), C# add-in starter, Python app, TypeScript app | B12 | C (scope), P (order) | todo (MCP bridge part done) |
+| B19 | `ui-kit` surface: themed WPF dialog kit (M0 chooser, M1 result, M2-lite selector), controls, icons, `UI Kit Demo` button; ported under ADR 0005 (R05); native renders recorded | B6, B12 | C | done (live Revit run pending, with B11) |
+| B20 | Port the WebView2 HTML tool host (M2-M7 families): NuGet-sourced DLLs, bridge verbs, session and result shape, offline assets | B19 | P | todo |
 
 Pending human decisions: B11's live run (requires Rob in Revit), B16, B17,
 and merge order of PR #3 -> PR #2 -> this branch.

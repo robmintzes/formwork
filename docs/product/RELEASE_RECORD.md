@@ -60,9 +60,86 @@ Independently authored for this repository on 2026-09-30; fictional firm, no
 external source. Marks are simple vector drawings plus SVG text set in
 Georgia (a system font, not packaged). MIT with the rest of the repository.
 
+## R05 - Rockwell tool UI kit (`ui-kit` surface)
+
+Ported 2026-09-30 under Rob Mintzes's scoped permission (ADR 0005). Rob authored
+the source. Written into `toolkit_engine/adapters/ui_kit.py`,
+`toolkit_engine/adapters/wpf_common.py`, and `toolkit_engine/templates/ui_kit/`.
+
+- **Source repository:** Rockwell Group `design-technology`, commit
+  `96fbafeada60d3c62b632b8d8014242cb9ef2fd9` (working tree had only untracked
+  files; none of the sources below were modified).
+- **Source files used** (paths below `DT Tools/DT Tools.extension/` unless
+  noted; SHA-256):
+
+  | Source file | SHA-256 | Became |
+  | --- | --- | --- |
+  | `lib/rgdt_ui/bootstrap.py` | `284800bc20af95ecc9a7fdc3e6ca604ccf6237d9d24ca8bc78427d74e10780fb` | `bootstrap.py` (rewritten, see below) |
+  | `lib/rgdt_ui/result_model.py` | `1ee754afa56bcc44c4fe52ed1f9c2ea3ce6b382c26200bb0d6bacc27ff149a19` | `result_model.py` (near-verbatim) |
+  | `lib/rgdt_ui/result_dialog.py` | `6f0ffeb17914af22de4a22b98eb4e54d3921f0ec92abc94761b7daee54ec73d1` | `result_dialog.py` |
+  | `lib/rgdt_ui/RgdtResultDialog.xaml` | `2fa4fd09a4c9c816c0f40849a45ca8b0f590bfeafa1ed785bfb6ea84b28b7bc8` | `ResultDialog.xaml` |
+  | `lib/rgdt_ui/chooser_dialog.py` | `bf8c2c33af703dfc87a46f68878d49dc0a418eebbc33cd78a3cccb62a88813a3` | `chooser_dialog.py` (`normalize_options` unchanged in behaviour) |
+  | `lib/rgdt_ui/RgdtChooserDialog.xaml` | `6b4ae684b4d0e3f2f36c3e90ffcb165afcc4b3b6ab1dd80365eda31b6bab77d4` | `ChooserDialog.xaml` |
+  | `DT Tools.tab/Template.panel/Match Extents.pushbutton/selection_dialog.py` | `9475133c1abc6356076486967f910cb22d01a8e0d1118eb1e686e6092c95146e` | `selection_dialog.py` (generalized to M2-lite) |
+  | `DT Tools.tab/Template.panel/Match Extents.pushbutton/RgdtSelectionDialog.xaml` | `0346fbc172a26f54781cd82746b561444aa9165aad3b8385d390c26c7f2dd8a3` | `SelectionDialog.xaml` |
+  | `lib/rgdt_ui/RGDT.Icons.xaml` | `baea07c9c3aa08eca71b7f1328425a634774d2cd266554385f22aeff2a96e7e7` | `Icons.xaml` (geometry unchanged, re-keyed) |
+  | `lib/rgdt_ui/RGDT.Controls.xaml` | `e9811a1c44221fe8b69109f51acc45b8b149c0f0872dfd06bb8454a5cfe451a8` | extra styles in `Controls.xaml` (subset, re-derived from tokens) |
+  | `lib/rgdt_ui/RGDT.Theme.Light.xaml` | `f49bedee592643aba96fe33119f19f4274d293baaa7eb71ac61b95846441d78c` | structure only; values come from the firm's tokens |
+  | `lib/rgdt_ui/tests/test_result_model.py`, `test_chooser_dialog_contract.py`, `test_result_dialog_contract.py` | `7330e234...`, `4301c023...`, `5e88d552...` | concepts adapted into the generated `test_ui_kit_contract.py` and `tests/test_ui_kit_surface.py` |
+  | repository `docs/design/rgdt/tool-ui-modules.md`, `component-recipes.md` | `caa46c29...`, `9b83f701...` | module families, size classes, button order, usage-badge wording, transaction rule |
+
+- **Neutralization and rewrites:**
+  - `Rgdt`/`rgdt`/`RGDT` identifiers became the firm namespace: XAML keys use
+    `pascal(technical.namespace)` (`<Ns>.Titlebar`, `<Ns>.Color.Surface.Default`),
+    the Python package is `technical.namespace + "_ui"`. Window and class names
+    lost the prefix (`ResultDialog`, `ChooserDialog`, `SelectionDialog`).
+  - The source's flat token names (`SurfaceDefault`, `TextPrimary`, `FsBody`) are
+    replaced by the foundation's generated token keys; the source's hand-written
+    light theme is gone. Controls reuse the specimen's styles and shape rules
+    (`wpf_common`), so appearance choices (button shape and fill, badge style,
+    label case) drive the dialogs.
+  - Font registration (`register_fonts`, a shared fonts folder outside the
+    extension) is replaced by relative font URIs in `Theme.xaml` resolved through
+    the parser's `BaseUri`; packaged fonts are copied into the extension.
+  - Titlebar mark: the source's vector initial mark is replaced by the firm's
+    packaged `symbol-inverse.png`, set from `bootstrap.set_brand_mark`.
+  - Implicit-relative imports became package-qualified imports with
+    `from __future__ import absolute_import`; the `ModuleNotFoundError` guard in
+    the package `__init__` was removed (Python 3 only name); the package imports
+    nothing that needs WPF.
+  - The result dialog honours its countdown only for the `one-time` usage; the
+    selector gained `tool_name`, `eyebrow` and `usage` arguments in place of
+    hard-coded Match Extents text and uses one list model for single and multi
+    selection; every dynamic caption goes through label-case helpers.
+  - New: control families not in the specimen (callouts, progress, steps, stat
+    tiles, hairline, section) re-expressed against firm tokens; the demo button,
+    its docs and icons; the generated contract test.
+- **Exclusions:** IvyPresto, Proxima Nova, Auger Mono, Cartograph (Adobe or
+  office-licensed); Rockwell and RGDT names, logos, the initial-mark vector, the
+  wordmark and brand-header XAML; the WebView2 host package (`rgdt_web`) and its
+  DLLs (deferred, backlog B20); internal paths and deployment destinations;
+  project and client data and fixtures; `check_theme.py` (a source-repo linter
+  for its own theme keys).
+- **Licence notice:** `RGDT.Icons.xaml` carried Lucide geometry. Lucide is ISC
+  (portions MIT from Feather); the licence texts live in
+  `toolkit_engine/resources/LUCIDE_LICENSE.txt` and are added to every
+  workspace's `THIRD_PARTY_NOTICES.md` when `ui-kit` is enabled. Code is MIT with
+  the rest of the repository.
+- **Verification:** `tests/test_ui_kit_surface.py` (key resolution against the
+  generated dictionaries, typo-catching negative test, no source names in any
+  generated kit file, IronPython syntax guard, stubbed import of every module,
+  foundation validators, repeat render is a no-op, appearance propagation) and
+  the generated `test_ui_kit_contract.py` in both profiles. Native WPF renders of
+  every dialog and a control gallery for both profiles are in
+  `docs/verification/foundation-generator/ui-kit-*.png` (packaged Barlow
+  Condensed, Geist and Geist Mono resolved through the `BaseUri` mechanism;
+  Quillmoor uses system fonts). **Not run in Revit/pyRevit**: `WPFWindow`
+  loading, `clr` references, event handlers and `Window.GetWindow(...).DragMove()`
+  are unverified there.
+
 ## Not imported
 
-Rockwell Group `design-technology` repository: reference only, no files
-copied (clean-room; ADR 0005). From the BIMxBert ZIP: React/JSX components,
+Rockwell Group `design-technology` repository: beyond R05, reference only
+(ADR 0005). From the BIMxBert ZIP: React/JSX components,
 provisional XAML, uploads (RGDT sources), PDFs, exploratory boards, and
 `support.js`.

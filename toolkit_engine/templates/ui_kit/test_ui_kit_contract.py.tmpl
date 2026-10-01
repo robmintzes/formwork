@@ -1,0 +1,139 @@
+# -*- coding: utf-8 -*-
+"""Contract checks for the generated UI kit; plain CPython, no Revit or WPF.
+
+Run from the workspace root:
+    py -3.11 -m unittest discover -s extensions/{{ extension }}.extension/tests
+
+WPF only reports a missing resource key when a window is shown, so this test
+parses every kit XAML file and proves each referenced key is defined.
+"""
+from __future__ import print_function
+
+import ast
+import os
+import re
+import sys
+import unittest
+import xml.etree.ElementTree as ElementTree
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+LIB = os.path.join(os.path.dirname(HERE), "lib")
+PACKAGE = "{{ package }}"
+PACKAGE_DIR = os.path.join(LIB, PACKAGE)
+KEY = "{http://schemas.microsoft.com/winfx/2006/xaml}Key"
+REFERENCE = re.compile(r"\{(?:Dynamic|Static)Resource\s+([^}\s]+)\}")
+DICTIONARIES = ("Theme.xaml", "Controls.xaml", "Icons.xaml")
+DIALOGS = ("ResultDialog.xaml", "ChooserDialog.xaml", "SelectionDialog.xaml")
+KIT_KEY = re.compile(r"^{{ ns }}\.[A-Za-z0-9.]+$")
+
+if LIB not in sys.path:
+    sys.path.insert(0, LIB)
+
+
+def parse(name):
+    return ElementTree.parse(os.path.join(PACKAGE_DIR, name)).getroot()
+
+
+def defined_keys():
+    keys = []
+    for name in DICTIONARIES:
+        for node in parse(name).iter():
+            if KEY in node.attrib:
+                keys.append(node.attrib[KEY])
+    return keys
+
+
+def referenced_keys(root):
+    found = []
+    for node in root.iter():
+        for value in list(node.attrib.values()) + [node.text or ""]:
+            found.extend(REFERENCE.findall(value))
+    return found
+
+
+def function_source(file_name, function_name):
+    """Compile one top-level function out of a module that imports clr."""
+    with open(os.path.join(PACKAGE_DIR, file_name), "rb") as handle:
+        source = handle.read().decode("utf-8")
+    for node in ast.parse(source).body:
+        if isinstance(node, ast.FunctionDef) and node.name == function_name:
+            namespace = {}
+            code = compile(ast.Module(body=[node], type_ignores=[]), file_name, "exec")
+            exec(code, namespace)
+            return namespace[function_name]
+    raise AssertionError("{0} not found in {1}".format(function_name, file_name))
+
+
+class XamlContract(unittest.TestCase):
+    def test_every_file_parses(self):
+        for name in DICTIONARIES + DIALOGS:
+            parse(name)
+
+    def test_keys_are_unique(self):
+        keys = defined_keys()
+        self.assertEqual(sorted(keys), sorted(set(keys)))
+
+    def test_every_referenced_key_is_defined(self):
+        keys = set(defined_keys())
+        for name in DICTIONARIES + DIALOGS:
+            for key in referenced_keys(parse(name)):
+                self.assertIn(key, keys, "{0} references undefined key {1}".format(name, key))
+
+    def test_python_resource_keys_are_defined(self):
+        keys = set(defined_keys())
+        for file_name in sorted(os.listdir(PACKAGE_DIR)):
+            if not file_name.endswith(".py"):
+                continue
+            with open(os.path.join(PACKAGE_DIR, file_name), "rb") as handle:
+                tree = ast.parse(handle.read().decode("utf-8"))
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Constant) and isinstance(node.value, str) and KIT_KEY.match(node.value):
+                    self.assertIn(node.value, keys, "{0} uses undefined key {1}".format(file_name, node.value))
+
+    def test_dialog_names_used_by_code_exist(self):
+        wanted = {
+            "ResultDialog.xaml": ("TitlebarBorder", "TitlebarTextBlock", "CloseXBtn", "CopyLogBtn", "CloseBtn", "ActionBtn", "StatusHeadingBlock", "SummaryBlock", "LogBox", "EyebrowBlock", "UsageBadgePanel", "UsageLabel", "UsageIcon", "BrandMark"),
+            "ChooserDialog.xaml": ("TitlebarBorder", "TitlebarTextBlock", "CloseXBtn", "CancelBtn", "ConfirmBtn", "HeadingBlock", "PromptBlock", "EyebrowBlock", "OptionPanel", "UsageBadgePanel", "UsageLabel", "UsageIcon", "BrandMark"),
+            "SelectionDialog.xaml": ("TitlebarBorder", "TitlebarTextBlock", "CloseXBtn", "CancelBtn", "PrimaryBtn", "HeadingBlock", "InstructionBlock", "EyebrowBlock", "SearchBox", "ChoiceList", "CountBlock", "MultiActions", "CheckAllBtn", "ClearAllBtn", "UsageBadgePanel", "UsageLabel", "UsageIcon", "BrandMark"),
+        }
+        name_attribute = "{http://schemas.microsoft.com/winfx/2006/xaml}Name"
+        for file_name, names in wanted.items():
+            present = set(node.attrib[name_attribute] for node in parse(file_name).iter() if name_attribute in node.attrib)
+            for name in names:
+                self.assertIn(name, present, "{0} lacks x:Name {1}".format(file_name, name))
+
+    def test_packaged_assets_exist(self):
+        self.assertTrue(os.path.isfile(os.path.join(PACKAGE_DIR, "assets", "symbol-inverse.png")))
+
+
+class PureLogic(unittest.TestCase):
+    def test_tool_result_statuses(self):
+        from {{ package }}.result_model import ToolResult
+
+        result = ToolResult.from_dict({"status": "partial", "summary": "2 ok", "counts": {"ok": 2}, "log": ["a", "b"]})
+        self.assertEqual(result.heading, "Partial success")
+        self.assertEqual(result.counts["warn"], 0)
+        self.assertEqual(result.log_text, "a\nb")
+        self.assertEqual(ToolResult.from_dict({"status": "nonsense"}).heading, "Failed")
+        self.assertEqual(ToolResult.from_dict({}).items, [])
+
+    def test_normalize_options_shapes(self):
+        normalize = function_source("chooser_dialog.py", "normalize_options")
+        self.assertEqual(normalize(["a"]), [("a", u"a", u"")])
+        self.assertEqual(normalize([("k", "Label")]), [("k", u"Label", u"")])
+        self.assertEqual(normalize([("k", "Label", "More")]), [("k", u"Label", u"More")])
+        self.assertEqual(normalize([{"key": "k", "label": "L", "detail": "D"}]), [("k", u"L", u"D")])
+        self.assertEqual(normalize([{"label": "no key"}]), [])
+        self.assertEqual(normalize(None), [])
+
+    def test_filter_labels(self):
+        keep = function_source("selection_dialog.py", "filter_labels")
+        labels = ["Level 01", "Level 02", "Roof"]
+        self.assertEqual(keep(labels, ""), [0, 1, 2])
+        self.assertEqual(keep(labels, " level "), [0, 1])
+        self.assertEqual(keep(labels, "ROOF"), [2])
+        self.assertEqual(keep(labels, "zzz"), [])
+
+
+if __name__ == "__main__":
+    unittest.main()

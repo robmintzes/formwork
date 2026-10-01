@@ -1,0 +1,90 @@
+# -*- coding: utf-8 -*-
+"""Read-only demo of the UI kit: chooser (M0), selector (M2-lite), result (M1)."""
+
+from pyrevit import DB, revit, script
+
+from {{ package }} import chooser_dialog, result_dialog, selection_dialog
+from {{ package }}.result_model import ToolResult
+
+__author__ = {{ author_literal }}
+
+TOOL_NAME = "UI Kit Demo"
+EYEBROW = "Demo / UI kit"
+MAX_VIEWS = 50
+MODES = [
+    ("one", "Choose one view", "A searchable list; pick a single row."),
+    ("many", "Choose several views", "Checkboxes, with Check visible and Clear all."),
+]
+
+
+def _view_names(doc):
+    """Names of up to MAX_VIEWS non-template views, sorted. Read-only."""
+    names = []
+    for view in DB.FilteredElementCollector(doc).OfClass(DB.View):
+        try:
+            if view.IsTemplate:
+                continue
+            name = view.Name
+        except Exception:
+            continue
+        if name:
+            names.append(name)
+    names.sort(key=lambda value: value.lower())
+    return names[:MAX_VIEWS]
+
+
+def _show(status, summary, log):
+    counts = {"ok": 0, "warn": 0, "fail": 0}
+    result = ToolResult(status, summary, counts, log, [])
+    result_dialog.show_result(result, TOOL_NAME, eyebrow=EYEBROW, usage="reusable")
+
+
+def main():
+    # Validate context before collecting data or opening any dialog. The demo
+    # only reads a title and view names, so any open document will do.
+    doc = revit.doc
+    if doc is None:
+        script.exit()
+
+    names = _view_names(doc)
+    title = str(getattr(doc, "Title", "") or "Untitled")
+    if not names:
+        _show("failed", "This document has no views to choose from.", ["Document: " + title])
+        return
+
+    mode = chooser_dialog.ask(
+        MODES,
+        TOOL_NAME,
+        "Which selector would you like to try?",
+        prompt="Nothing in your model changes.",
+        eyebrow=EYEBROW,
+        action_label="Open selector",
+        usage="reusable",
+    )
+    if mode is None:
+        return
+    multiselect = mode == "many"
+
+    chosen = selection_dialog.show(
+        [(name, name) for name in names],
+        "Choose views" if multiselect else "Choose a view",
+        "Type to filter, then select. Showing up to {0} view names.".format(MAX_VIEWS),
+        "Use selection",
+        multiselect=multiselect,
+        tool_name=TOOL_NAME,
+        eyebrow=EYEBROW,
+        usage="reusable",
+    )
+
+    log = ["Document: " + title, "Views offered: {0}".format(len(names))]
+    if chosen is None:
+        _show("cancelled", "No selection was made.", log)
+        return
+    picked = chosen if multiselect else [chosen]
+    log.extend("Selected: " + name for name in picked)
+    summary = "Selected {0} of {1} views. No changes were made to the model.".format(len(picked), len(names))
+    _show("success", summary, log)
+
+
+if __name__ == "__main__":
+    main()

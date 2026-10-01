@@ -64,6 +64,7 @@ proves identity is data.
 | `html-guide` | self-contained Hello Button guide with brand header and component specimen | browser render inspected; offline (no external URL) check automated |
 | `governance` | agent instructions, branch policy, hooks, CI, ruleset (section 8) | hooks exercised in a temporary repository; ruleset activation is a maintainer action |
 | `mcp-bridge` | read-only Revit MCP bridge: pyRevit Routes side in the firm extension, external FastMCP server, guide (section 8.1) | static checks and extension runtime tests **and** a live Revit/pyRevit run behind the mandatory reset rule |
+| `ui-kit` | themed WPF dialog kit in the firm extension (`lib/<namespace>_ui`): result, chooser, selector, controls, icons, plus a read-only `UI Kit Demo` button (section 8.2) | static key-resolution and runtime-contract tests, a native WPF render of every dialog **and** a live Revit/pyRevit run |
 
 Compiled Revit add-ins and Python/TypeScript app starters are later surfaces
 ([backlog](BACKLOG.md)). The adapter interface (section 6) is shared so those
@@ -509,6 +510,50 @@ can destabilize or crash Revit. `--routes-reset-confirmed` on the verifier is a
 human assertion that this reset happened; the tool cannot check it. Every render
 reports `mcp-bridge.not-live-verified` (info) until live evidence is recorded.
 
+### 8.2 UI kit (`ui-kit` surface)
+
+Opt-in surface (`"ui-kit"` in `surfaces`) that requires `pyrevit-sample`: the kit
+lives in the extension that surface generates and the demo button joins its
+sample panel. All outputs are `managed`.
+
+| Output | Notes |
+| --- | --- |
+| `extensions/<Extension>.extension/lib/<namespace>_ui/` | IronPython 2.7 package: `bootstrap`, `result_model` (ToolResult), `result_dialog` (M1), `chooser_dialog` (M0), `selection_dialog` (M2-lite). Importing the package loads no WPF, so `result_model` runs under plain CPython. |
+| `.../<namespace>_ui/Theme.xaml`, `Controls.xaml`, `Icons.xaml` | `Theme.xaml` is the specimen's token dictionary (same `<Ns>.Color.Surface.Default` key scheme, shared logic in `wpf_common`). `Controls.xaml` is the specimen's styles plus field, check, radio, callout, progress, output log, titlebar, step, caption, hairline, section, stat-tile and list-box styles. `Icons.xaml` holds Lucide-derived line geometry (`<Ns>.Icon.*`). |
+| `.../<namespace>_ui/ResultDialog.xaml`, `ChooserDialog.xaml`, `SelectionDialog.xaml` | Inverse-surface titlebar with the firm symbol, tool title, usage badge, close; no minimize on modal dialogs. Sizes: compact 560 wide for M0/M1, selector 640 x 560 with a 560 x 440 minimum. |
+| `.../<namespace>_ui/fonts/<family>/`, `assets/symbol-inverse.png` | Packaged fonts (with their OFL texts) and the brand symbol, copied **into** the extension: pyRevit loads the extension folder, so extension code never reaches into the workspace's top-level `assets/`. |
+| `extensions/<Extension>.extension/tests/test_ui_kit_contract.py` | Generated CPython test: parses every kit XAML file, resolves every `{DynamicResource}`/`{StaticResource}` key and every key named in kit Python, checks the `x:Name` elements the code uses, and exercises `ToolResult`, `normalize_options` and the selector filter. |
+| `.../<Panel>.panel/UIKitDemo.pushbutton/`, `docs/toolbar/tools/ui-kit-demo.md` | Read-only demo: validate context, chooser, selector over up to 50 view names, result dialog. No transactions. Its entry appears in `docs/toolbar/spec.d/foundation-sample.md` only when the surface is enabled; without it that fragment is unchanged. |
+
+**Fonts, one mechanism.** `Theme.xaml` names packaged fonts by relative URI
+(`fonts/<family>/#<Family>`); `bootstrap.apply_theme` parses it with a
+`ParserContext` whose `BaseUri` is the package folder, so the URIs resolve to the
+copies shipped in the extension. There is no separate font registration step. A
+workspace path containing `#` would break the URI.
+
+**Labels.** WPF has no text transform, so the firm's button and badge label-case
+choices are applied to generated XAML text and, through `bootstrap.button_text`
+and `badge_text`, to text a dialog sets at run time. Caller-supplied captions go
+through the same helpers.
+
+**Transaction rule.** Collect input, show the input dialog, run **one short
+Transaction** (rollback on failure), then show the M1 result dialog after the
+Transaction has finished. A dialog is never shown while a Transaction is open.
+
+**Module families.** Covered: M0 (chooser), M1 (result), M2-lite (searchable
+single or multiple selection over `(label, value)` pairs). Not ported: M2 with
+detail panes and the M3-M7 families that need a WebView2 host. The source UI's WebView2
+host package is deferred because its DLLs must come from NuGet and are not
+redistributed here ([backlog](BACKLOG.md), B20). The licensed Adobe/office
+fonts used by the source UI are never packaged; fonts come from the firm profile.
+
+**Notices.** Icon geometry derives from Lucide (ISC, portions MIT from Feather).
+The licence texts are added to `THIRD_PARTY_NOTICES.md` by the always-on `common`
+adapter whenever the surface is enabled, independent of branding. Origin and
+changes of the ported code are in [RELEASE_RECORD.md](RELEASE_RECORD.md) (R05).
+Every render reports `ui-kit.not-live-verified` (info) until a live Revit run is
+recorded.
+
 ## 9. Notices, attribution, and provenance
 
 - Foundation code is MIT (copyright Rob Mintzes). Every workspace receives a
@@ -523,9 +568,11 @@ reports `mcp-bridge.not-live-verified` (info) until live evidence is recorded.
   from display identity).
 - Imported items are recorded in [RELEASE_RECORD.md](RELEASE_RECORD.md) with
   source, hash, changes, licence, and verification.
-- **[proposed]** Rockwell repository material is used as reference for concepts
-  only (module families, role vocabulary); no files are copied
-  ([ADR 0005](../decisions/0005-source-extraction-and-assets.md)).
+- Rob-authored Rockwell repository material may be ported under the scoped
+  permission in [ADR 0005](../decisions/0005-source-extraction-and-assets.md);
+  each port is recorded in the release record with source commit, files, and
+  changes (first port: R05, the `ui-kit` surface). Earlier code was written
+  from concepts only and is unchanged.
 
 ---
 

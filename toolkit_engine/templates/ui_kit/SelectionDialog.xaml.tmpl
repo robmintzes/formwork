@@ -1,0 +1,115 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Select"
+        Width="640"
+        Height="560"
+        MinWidth="560"
+        MinHeight="440"
+        MaxHeight="720"
+        WindowStyle="None"
+        ResizeMode="CanResizeWithGrip"
+        WindowStartupLocation="CenterScreen"
+        Background="{DynamicResource {{ ns }}.Color.Surface.Default}"
+        TextOptions.TextFormattingMode="Display"
+        TextOptions.TextRenderingMode="ClearType"
+        UseLayoutRounding="True">
+
+  <!-- M2-lite selector (generated, managed): searchable single or multiple
+       choice. Opaque and resizable (no transparency), so ClearType text is
+       available here. The window minimum is the compact size class. -->
+  <Border Style="{DynamicResource {{ ns }}.Window.Frame}">
+    <Grid>
+      <Grid.RowDefinitions>
+        <RowDefinition Height="Auto"/>
+        <RowDefinition Height="*"/>
+      </Grid.RowDefinitions>
+
+      <Border Grid.Row="0" x:Name="TitlebarBorder" Style="{DynamicResource {{ ns }}.Titlebar}">
+        <Grid>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+          <TextBlock x:Name="TitlebarTextBlock" Grid.Column="0" Style="{DynamicResource {{ ns }}.Titlebar.Label}"
+                     Text="Tool" AutomationProperties.Name="Window title"/>
+          <StackPanel x:Name="UsageBadgePanel" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center"
+                      Visibility="Collapsed" Margin="12,0,0,0">
+            <Path x:Name="UsageIcon" Style="{DynamicResource {{ ns }}.Usage.Icon}"/>
+            <TextBlock x:Name="UsageLabel" Style="{DynamicResource {{ ns }}.Usage.Label}" Margin="4,0,0,0"/>
+          </StackPanel>
+          <Border Grid.Column="2" Style="{DynamicResource {{ ns }}.Titlebar.Divider}"/>
+          <Image x:Name="BrandMark" Grid.Column="3" Height="20" Margin="12,0,8,0" RenderOptions.BitmapScalingMode="HighQuality"
+                 AutomationProperties.Name="{{ logo_alt }}"/>
+          <Button x:Name="CloseXBtn" Grid.Column="4" Style="{DynamicResource {{ ns }}.Titlebar.CloseButton}"
+                  Content="&#xD7;" AutomationProperties.Name="Close window"/>
+        </Grid>
+      </Border>
+
+      <Border Grid.Row="1" Style="{DynamicResource {{ ns }}.Pane.Main}">
+        <Grid>
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+
+          <TextBlock x:Name="EyebrowBlock" Grid.Row="0" Style="{DynamicResource {{ ns }}.Text.Eyebrow}"
+                     Margin="0,0,0,8" Visibility="Collapsed" AutomationProperties.Name="Workflow family"/>
+          <TextBlock x:Name="HeadingBlock" Grid.Row="1" Style="{DynamicResource {{ ns }}.Text.Title}"
+                     Margin="0,0,0,8" TextWrapping="Wrap" Text="Select" AutomationProperties.Name="Selector heading"/>
+          <TextBlock x:Name="InstructionBlock" Grid.Row="2" Style="{DynamicResource {{ ns }}.Text.Small}"
+                     Margin="0,0,0,16" AutomationProperties.Name="Selector instruction"/>
+
+          <TextBlock Grid.Row="3" Style="{DynamicResource {{ ns }}.Field.Label}" Text="{{ label_filter }}"/>
+          <TextBox x:Name="SearchBox" Grid.Row="4" Style="{DynamicResource {{ ns }}.Field}"
+                   Margin="0,0,0,12" AutomationProperties.Name="Filter choices"/>
+
+          <ListBox x:Name="ChoiceList" Grid.Row="5" Style="{DynamicResource {{ ns }}.ListBox}"
+                   Margin="0,0,0,12" SelectionMode="Single" AutomationProperties.Name="Available choices"/>
+
+          <Grid Grid.Row="6" Margin="0,0,0,12">
+            <Grid.ColumnDefinitions>
+              <ColumnDefinition Width="*"/>
+              <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock x:Name="CountBlock" Grid.Column="0" Style="{DynamicResource {{ ns }}.Text.Small}"
+                       VerticalAlignment="Center" Text="0 shown"/>
+            <StackPanel x:Name="MultiActions" Grid.Column="1" Orientation="Horizontal">
+              <Button x:Name="CheckAllBtn" Style="{DynamicResource {{ ns }}.Button.Secondary}"
+                      Content="{{ label_check_visible }}" Margin="0,0,8,0"/>
+              <Button x:Name="ClearAllBtn" Style="{DynamicResource {{ ns }}.Button.Secondary}"
+                      Content="{{ label_clear_all }}" Margin="0"/>
+            </StackPanel>
+          </Grid>
+
+          <Grid Grid.Row="7">
+            <Grid.RowDefinitions>
+              <RowDefinition Height="Auto"/>
+              <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <Border Grid.Row="0" Style="{DynamicResource {{ ns }}.Hairline}"/>
+            <Grid Grid.Row="1" Margin="0,16,0,0">
+              <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+              </Grid.ColumnDefinitions>
+              <Button x:Name="CancelBtn" Grid.Column="1" Style="{DynamicResource {{ ns }}.Button.Secondary}"
+                      Content="{{ label_cancel }}" MinWidth="96" Margin="0,0,8,0"/>
+              <Button x:Name="PrimaryBtn" Grid.Column="2" Style="{DynamicResource {{ ns }}.Button.Primary}"
+                      Content="{{ label_use_selection }}" MinWidth="128" Margin="0" IsEnabled="False"/>
+            </Grid>
+          </Grid>
+        </Grid>
+      </Border>
+    </Grid>
+  </Border>
+</Window>

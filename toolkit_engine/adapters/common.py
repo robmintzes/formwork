@@ -13,6 +13,7 @@ from toolkit_engine.textutil import md, render_file
 
 ADAPTER_ID = "common"
 LICENSE_RESOURCE = Path(__file__).resolve().parents[1] / "resources" / "FOUNDATION_LICENSE.txt"
+LUCIDE_RESOURCE = Path(__file__).resolve().parents[1] / "resources" / "LUCIDE_LICENSE.txt"
 
 
 def render(profile: Profile) -> RenderResult:
@@ -54,6 +55,18 @@ def render(profile: Profile) -> RenderResult:
         result.files.append(text_file(target, profile.files[rel].decode("utf-8-sig"), ADAPTER_ID))
         notice_lines.append("- [{}]({})".format(target, target))
 
+    if "ui-kit" in config.surfaces:
+        lucide = LUCIDE_RESOURCE.read_text(encoding="utf-8").replace("\r\n", "\n").strip()
+        icon_notices = (
+            "The `ui-kit` surface packages line-icon geometry derived from Lucide "
+            "(<https://lucide.dev>) in `{}/Icons.xaml`. Lucide is licensed ISC, with "
+            "portions MIT from Feather; the licence texts follow.\n\n```text\n{}\n```".format(
+                layout.ui_kit_dir(config.technical), lucide
+            )
+        )
+    else:
+        icon_notices = "_No icon sets are packaged._"
+
     license_text = LICENSE_RESOURCE.read_text(encoding="utf-8").replace("\r\n", "\n").strip()
     result.files.append(
         text_file(
@@ -64,6 +77,7 @@ def render(profile: Profile) -> RenderResult:
                     "foundation_version": __version__,
                     "foundation_license": license_text,
                     "font_rows": "\n".join(font_rows) if font_rows else "| _No fonts are packaged; outputs use system fonts._ | | | |",
+                    "icon_notices": icon_notices,
                     "brand_notices": "\n".join(notice_lines) if notice_lines else "_This profile supplies no brand notices._",
                 },
             ),

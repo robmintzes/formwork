@@ -67,7 +67,8 @@
     "wpf-specimen",
     "html-guide",
     "governance",
-    "mcp-bridge"
+    "mcp-bridge",
+    "ui-kit"
   ],
   "technical": {
     "namespace": "quillmoor",

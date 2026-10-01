@@ -1,0 +1,349 @@
+
+  <!-- ============================================================
+       UI kit additions: captions, steps, fields, check and radio,
+       callouts, progress, output log, window chrome, hairline and
+       section, stat tile, list box. Shape and stroke values come from
+       the firm appearance choices; colours and type come from Theme.xaml.
+       ============================================================ -->
+
+  <Style x:Key="{{ ns }}.Text.Eyebrow" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource {{ ns }}.Font.Label}"/>
+    <Setter Property="FontSize" Value="{DynamicResource {{ ns }}.FontSize.Label}"/>
+    <Setter Property="FontWeight" Value="{DynamicResource {{ ns }}.FontWeight.Label}"/>
+    <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Text.Secondary}"/>
+    <Setter Property="TextWrapping" Value="Wrap"/>
+  </Style>
+  <Style x:Key="{{ ns }}.Caption" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource {{ ns }}.Font.Body}"/>
+    <Setter Property="FontSize" Value="{DynamicResource {{ ns }}.FontSize.Label}"/>
+    <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Text.Secondary}"/>
+    <Setter Property="TextWrapping" Value="Wrap"/>
+  </Style>
+
+  <Style x:Key="{{ ns }}.Step.Title" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource {{ ns }}.Font.Body}"/>
+    <Setter Property="FontSize" Value="{DynamicResource {{ ns }}.FontSize.Body}"/>
+    <Setter Property="FontWeight" Value="{DynamicResource {{ ns }}.FontWeight.Strong}"/>
+    <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Text.Primary}"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+  <Style x:Key="{{ ns }}.Step.Number" TargetType="ContentControl">
+    <Setter Property="FontFamily" Value="{DynamicResource {{ ns }}.Font.Label}"/>
+    <Setter Property="FontSize" Value="{DynamicResource {{ ns }}.FontSize.Label}"/>
+    <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Text.Inverse}"/>
+    <Setter Property="Background" Value="{DynamicResource {{ ns }}.Color.Surface.Inverse}"/>
+    <Setter Property="Width" Value="22"/>
+    <Setter Property="Height" Value="22"/>
+    <Setter Property="Margin" Value="0,0,{{ space_sm }},0"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ContentControl">
+          <Grid>
+            <Ellipse Fill="{TemplateBinding Background}"/>
+            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="{{ ns }}.Field.Label" TargetType="TextBlock" BasedOn="{StaticResource {{ ns }}.Text.Label}">
+    <Setter Property="Margin" Value="0,0,0,4"/>
+  </Style>
+  <Style x:Key="{{ ns }}.Field" TargetType="TextBox">
+    <Setter Property="FontFamily" Value="{DynamicResource {{ ns }}.Font.Body}"/>
+    <Setter Property="FontSize" Value="{DynamicResource {{ ns }}.FontSize.Body}"/>
+    <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Text.Primary}"/>
+    <Setter Property="Background" Value="{DynamicResource {{ ns }}.Color.Surface.Card}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource {{ ns }}.Color.Line.Strong}"/>
+    <Setter Property="BorderThickness" Value="{{ control_stroke }}"/>
+    <Setter Property="Padding" Value="{{ space_sm }},4"/>
+    <Setter Property="MinHeight" Value="{{ control_height }}"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Setter Property="SnapsToDevicePixels" Value="True"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="TextBox">
+          <Border x:Name="Chrome" CornerRadius="{{ field_radius }}"
+                  Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="True">
+            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}" VerticalAlignment="Center"
+                          Focusable="False" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+          </Border>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="Chrome" Property="BorderBrush" Value="{DynamicResource {{ ns }}.Color.Focus.Ring}"/>
+              <Setter TargetName="Chrome" Property="BorderThickness" Value="2"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter TargetName="Chrome" Property="Opacity" Value="0.5"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="{{ ns }}.Field.Mono" TargetType="TextBox" BasedOn="{StaticResource {{ ns }}.Field}">
+    <Setter Property="FontFamily" Value="{DynamicResource {{ ns }}.Font.Code}"/>
+    <Setter Property="FontSize" Value="{DynamicResource {{ ns }}.FontSize.Code}"/>
+  </Style>
+
+  <Style x:Key="{{ ns }}.Check" TargetType="CheckBox">
+    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+    <Setter Property="FontFamily" Value="{DynamicResource {{ ns }}.Font.Body}"/>
+    <Setter Property="FontSize" Value="{DynamicResource {{ ns }}.FontSize.Small}"/>
+    <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Text.Primary}"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Setter Property="SnapsToDevicePixels" Value="True"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="CheckBox">
+          <StackPanel Orientation="Horizontal" Background="Transparent">
+            <Border x:Name="Box" Width="16" Height="16" CornerRadius="{{ check_radius }}"
+                    Background="{DynamicResource {{ ns }}.Color.Surface.Card}"
+                    BorderBrush="{DynamicResource {{ ns }}.Color.Line.Strong}"
+                    BorderThickness="{{ control_stroke }}" VerticalAlignment="Center" SnapsToDevicePixels="True">
+              <Path x:Name="Tick" Data="M 3,8 L 6.5,11.5 L 12.5,4.5" Stroke="{DynamicResource {{ ns }}.Color.Text.Inverse}"
+                    StrokeThickness="1.75" StrokeStartLineCap="Round" StrokeEndLineCap="Round" StrokeLineJoin="Round"
+                    Visibility="Collapsed"/>
+            </Border>
+            <ContentPresenter Margin="{{ space_sm }},0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+          </StackPanel>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="Box" Property="Background" Value="{DynamicResource {{ ns }}.Color.Accent.Default}"/>
+              <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource {{ ns }}.Color.Accent.Default}"/>
+              <Setter TargetName="Tick" Property="Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource {{ ns }}.Color.Accent.Default}"/>
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="Box" Property="BorderBrush" Value="{DynamicResource {{ ns }}.Color.Focus.Ring}"/>
+              <Setter TargetName="Box" Property="BorderThickness" Value="2"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Opacity" Value="0.5"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+  <Style x:Key="{{ ns }}.Radio" TargetType="RadioButton">
+    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+    <Setter Property="FontFamily" Value="{DynamicResource {{ ns }}.Font.Body}"/>
+    <Setter Property="FontSize" Value="{DynamicResource {{ ns }}.FontSize.Body}"/>
+    <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Text.Primary}"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="VerticalContentAlignment" Value="Center"/>
+    <Setter Property="SnapsToDevicePixels" Value="True"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="RadioButton">
+          <StackPanel Orientation="Horizontal" Background="Transparent">
+            <Grid Width="16" Height="16" VerticalAlignment="Center">
+              <Ellipse x:Name="Ring" Fill="{DynamicResource {{ ns }}.Color.Surface.Card}"
+                       Stroke="{DynamicResource {{ ns }}.Color.Line.Strong}" StrokeThickness="{{ control_stroke }}"/>
+              <Ellipse x:Name="Dot" Width="8" Height="8" Fill="{DynamicResource {{ ns }}.Color.Accent.Default}" Visibility="Collapsed"/>
+            </Grid>
+            <ContentPresenter Margin="{{ space_sm }},0,0,0" VerticalAlignment="Center" RecognizesAccessKey="True"/>
+          </StackPanel>
+          <ControlTemplate.Triggers>
+            <Trigger Property="IsChecked" Value="True">
+              <Setter TargetName="Ring" Property="Stroke" Value="{DynamicResource {{ ns }}.Color.Accent.Default}"/>
+              <Setter TargetName="Dot" Property="Visibility" Value="Visible"/>
+            </Trigger>
+            <Trigger Property="IsMouseOver" Value="True">
+              <Setter TargetName="Ring" Property="Stroke" Value="{DynamicResource {{ ns }}.Color.Accent.Default}"/>
+            </Trigger>
+            <Trigger Property="IsKeyboardFocused" Value="True">
+              <Setter TargetName="Ring" Property="Stroke" Value="{DynamicResource {{ ns }}.Color.Focus.Ring}"/>
+              <Setter TargetName="Ring" Property="StrokeThickness" Value="2"/>
+            </Trigger>
+            <Trigger Property="IsEnabled" Value="False">
+              <Setter Property="Opacity" Value="0.5"/>
+            </Trigger>
+          </ControlTemplate.Triggers>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="{{ ns }}.Callout.Base" TargetType="Border">
+    <Setter Property="Background" Value="{DynamicResource {{ ns }}.Color.Surface.Card}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource {{ ns }}.Color.Line.Subtle}"/>
+    <Setter Property="BorderThickness" Value="3,1,1,1"/>
+    <Setter Property="Padding" Value="{{ space_md }},{{ space_sm }}"/>
+    <Setter Property="Margin" Value="0,0,0,{{ space_md }}"/>
+  </Style>
+  <Style x:Key="{{ ns }}.Callout.Info" TargetType="Border" BasedOn="{StaticResource {{ ns }}.Callout.Base}">
+    <Setter Property="BorderBrush" Value="{DynamicResource {{ ns }}.Color.Status.Info.Fg}"/>
+  </Style>
+  <Style x:Key="{{ ns }}.Callout.Warn" TargetType="Border" BasedOn="{StaticResource {{ ns }}.Callout.Base}">
+    <Setter Property="BorderBrush" Value="{DynamicResource {{ ns }}.Color.Status.Warning.Fg}"/>
+  </Style>
+  <Style x:Key="{{ ns }}.Callout.Danger" TargetType="Border" BasedOn="{StaticResource {{ ns }}.Callout.Base}">
+    <Setter Property="BorderBrush" Value="{DynamicResource {{ ns }}.Color.Status.Danger.Fg}"/>
+  </Style>
+  <Style x:Key="{{ ns }}.Callout.Success" TargetType="Border" BasedOn="{StaticResource {{ ns }}.Callout.Base}">
+    <Setter Property="BorderBrush" Value="{DynamicResource {{ ns }}.Color.Status.Success.Fg}"/>
+  </Style>
+
+  <Style x:Key="{{ ns }}.Progress" TargetType="ProgressBar">
+    <Setter Property="Height" Value="6"/>
+    <Setter Property="Background" Value="{DynamicResource {{ ns }}.Color.Surface.Sunken}"/>
+    <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Accent.Default}"/>
+    <Setter Property="BorderThickness" Value="0"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="ProgressBar">
+          <Grid>
+            <Border Background="{TemplateBinding Background}"/>
+            <Border x:Name="PART_Track"/>
+            <Border x:Name="PART_Indicator" HorizontalAlignment="Left" Background="{TemplateBinding Foreground}"/>
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
+
+  <Style x:Key="{{ ns }}.Output.Log" TargetType="TextBox">
+    <Setter Property="IsReadOnly" Value="True"/>
+    <Setter Property="Background" Value="{DynamicResource {{ ns }}.Color.Surface.Card}"/>
+    <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Text.Primary}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource {{ ns }}.Color.Line.Strong}"/>
+    <Setter Property="BorderThickness" Value="{{ control_stroke }}"/>
+    <Setter Property="Padding" Value="{{ space_md }}"/>
+    <Setter Property="FontFamily" Value="{DynamicResource {{ ns }}.Font.Code}"/>
+    <Setter Property="FontSize" Value="{DynamicResource {{ ns }}.FontSize.Code}"/>
+    <Setter Property="AcceptsReturn" Value="True"/>
+    <Setter Property="TextWrapping" Value="Wrap"/>
+    <Setter Property="VerticalScrollBarVisibility" Value="Auto"/>
+    <Setter Property="HorizontalScrollBarVisibility" Value="Disabled"/>
+    <Setter Property="SnapsToDevicePixels" Value="True"/>
+    <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+    <Setter Property="TextOptions.TextRenderingMode" Value="Grayscale"/>
+    <Setter Property="TextOptions.TextHintingMode" Value="Fixed"/>
+  </Style>
+
+  <Style x:Key="{{ ns }}.Hairline" TargetType="Border">
+    <Setter Property="Height" Value="{DynamicResource {{ ns }}.Stroke.Hairline}"/>
+    <Setter Property="Background" Value="{DynamicResource {{ ns }}.Color.Line.Subtle}"/>
+    <Setter Property="SnapsToDevicePixels" Value="True"/>
+  </Style>
+  <Style x:Key="{{ ns }}.Section" TargetType="StackPanel">
+    <Setter Property="Orientation" Value="Vertical"/>
+    <Setter Property="Margin" Value="0,0,0,{{ space_md }}"/>
+  </Style>
+
+  <Style x:Key="{{ ns }}.Stat.Tile" TargetType="StackPanel">
+    <Setter Property="Orientation" Value="Vertical"/>
+    <Setter Property="Margin" Value="0,0,{{ space_md }},{{ space_sm }}"/>
+  </Style>
+  <Style x:Key="{{ ns }}.Stat.Key" TargetType="TextBlock" BasedOn="{StaticResource {{ ns }}.Text.Eyebrow}">
+    <Setter Property="Margin" Value="0,0,0,2"/>
+  </Style>
+  <Style x:Key="{{ ns }}.Stat.Value" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource {{ ns }}.Font.Display}"/>
+    <Setter Property="FontSize" Value="{DynamicResource {{ ns }}.FontSize.Title}"/>
+    <Setter Property="FontWeight" Value="{DynamicResource {{ ns }}.FontWeight.Display}"/>
+    <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Text.Primary}"/>
+  </Style>
+
+  <Style x:Key="{{ ns }}.ListBox" TargetType="ListBox">
+    <Setter Property="Background" Value="{DynamicResource {{ ns }}.Color.Surface.Card}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource {{ ns }}.Color.Line.Subtle}"/>
+    <Setter Property="BorderThickness" Value="{{ control_stroke }}"/>
+    <Setter Property="Padding" Value="{{ space_sm }}"/>
+    <Setter Property="FontFamily" Value="{DynamicResource {{ ns }}.Font.Body}"/>
+    <Setter Property="FontSize" Value="{DynamicResource {{ ns }}.FontSize.Small}"/>
+    <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Text.Primary}"/>
+    <Setter Property="ItemContainerStyle" Value="{StaticResource {{ ns }}.ListItem}"/>
+    <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled"/>
+    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+    <Setter Property="SnapsToDevicePixels" Value="True"/>
+  </Style>
+
+  <Style x:Key="{{ ns }}.Window.Frame" TargetType="Border">
+    <Setter Property="Background" Value="{DynamicResource {{ ns }}.Color.Surface.Default}"/>
+    <Setter Property="BorderBrush" Value="{DynamicResource {{ ns }}.Color.Line.Strong}"/>
+    <Setter Property="BorderThickness" Value="{{ control_stroke }}"/>
+  </Style>
+  <Style x:Key="{{ ns }}.Pane.Main" TargetType="Border">
+    <Setter Property="Background" Value="{DynamicResource {{ ns }}.Color.Surface.Default}"/>
+    <Setter Property="Padding" Value="{{ space_xl }},{{ space_xl }},{{ space_xl }},{{ space_md }}"/>
+  </Style>
+
+  <Style x:Key="{{ ns }}.Titlebar" TargetType="Border">
+    <Setter Property="Background" Value="{DynamicResource {{ ns }}.Color.Surface.Inverse}"/>
+    <Setter Property="Height" Value="48"/>
+    <Setter Property="Padding" Value="{{ space_md }},0,{{ space_sm }},0"/>
+  </Style>
+  <Style x:Key="{{ ns }}.Titlebar.Label" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource {{ ns }}.Font.Body}"/>
+    <Setter Property="FontSize" Value="{DynamicResource {{ ns }}.FontSize.Body}"/>
+    <Setter Property="FontWeight" Value="{DynamicResource {{ ns }}.FontWeight.Strong}"/>
+    <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Text.Inverse}"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+    <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+  </Style>
+  <Style x:Key="{{ ns }}.Titlebar.Divider" TargetType="Border">
+    <Setter Property="Width" Value="1"/>
+    <Setter Property="Height" Value="20"/>
+    <Setter Property="Margin" Value="{{ space_md }},0,0,0"/>
+    <Setter Property="Background" Value="{DynamicResource {{ ns }}.Color.Text.Inverse}"/>
+    <Setter Property="Opacity" Value="0.35"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+  <ControlTemplate x:Key="{{ ns }}.Titlebar.Button.Template" TargetType="Button">
+    <Border x:Name="Chrome" Background="Transparent" Width="{TemplateBinding Width}" Height="{TemplateBinding Height}"
+            SnapsToDevicePixels="True">
+      <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                        TextElement.Foreground="{TemplateBinding Foreground}"
+                        TextElement.FontFamily="{TemplateBinding FontFamily}"
+                        TextElement.FontSize="{TemplateBinding FontSize}"/>
+    </Border>
+    <ControlTemplate.Triggers>
+      <Trigger Property="IsMouseOver" Value="True">
+        <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource {{ ns }}.Color.Status.Danger.Bg}"/>
+        <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Status.Danger.Fg}"/>
+      </Trigger>
+      <Trigger Property="IsPressed" Value="True">
+        <Setter TargetName="Chrome" Property="Background" Value="{DynamicResource {{ ns }}.Color.Status.Danger.Fg}"/>
+        <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Status.Danger.Bg}"/>
+      </Trigger>
+    </ControlTemplate.Triggers>
+  </ControlTemplate>
+  <Style x:Key="{{ ns }}.Titlebar.CloseButton" TargetType="Button">
+    <Setter Property="Template" Value="{StaticResource {{ ns }}.Titlebar.Button.Template}"/>
+    <Setter Property="Width" Value="32"/>
+    <Setter Property="Height" Value="28"/>
+    <Setter Property="FontFamily" Value="{DynamicResource {{ ns }}.Font.Body}"/>
+    <Setter Property="FontSize" Value="{DynamicResource {{ ns }}.FontSize.Title}"/>
+    <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Text.Inverse}"/>
+    <Setter Property="Cursor" Value="Hand"/>
+    <Setter Property="Focusable" Value="False"/>
+  </Style>
+
+  <Style x:Key="{{ ns }}.Usage.Label" TargetType="TextBlock">
+    <Setter Property="FontFamily" Value="{DynamicResource {{ ns }}.Font.Label}"/>
+    <Setter Property="FontSize" Value="{DynamicResource {{ ns }}.FontSize.Label}"/>
+    <Setter Property="FontWeight" Value="{DynamicResource {{ ns }}.FontWeight.Label}"/>
+    <Setter Property="Foreground" Value="{DynamicResource {{ ns }}.Color.Text.Inverse}"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>
+  <Style x:Key="{{ ns }}.Usage.Icon" TargetType="Path">
+    <Setter Property="Stroke" Value="{DynamicResource {{ ns }}.Color.Text.Inverse}"/>
+    <!-- WPF does not scale stroke with Stretch: a 24-unit icon at 14 DIPs needs a 1 DIP stroke. -->
+    <Setter Property="StrokeThickness" Value="1"/>
+    <Setter Property="StrokeStartLineCap" Value="Round"/>
+    <Setter Property="StrokeEndLineCap" Value="Round"/>
+    <Setter Property="StrokeLineJoin" Value="Round"/>
+    <Setter Property="Width" Value="14"/>
+    <Setter Property="Height" Value="14"/>
+    <Setter Property="Stretch" Value="Uniform"/>
+    <Setter Property="VerticalAlignment" Value="Center"/>
+  </Style>

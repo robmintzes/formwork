@@ -20,6 +20,9 @@ GUIDE = "docs/guides/hello-button.html"
 WPF_DIR = "specimens/wpf"
 SAMPLE_TOOL_ID = "hello-button"
 SAMPLE_TOOL_TITLE = "Hello Button"
+UI_KIT_DEMO_TOOL_ID = "ui-kit-demo"
+UI_KIT_DEMO_TITLE = "UI Kit Demo"
+UI_KIT_DEMO_DOC = "docs/toolbar/tools/ui-kit-demo.md"
 
 
 def extension_dir(technical: Technical) -> str:
@@ -32,6 +35,23 @@ def tab_dir(technical: Technical) -> str:
 
 def sample_button_dir(technical: Technical) -> str:
     return "{}/{}.panel/HelloButton.pushbutton".format(tab_dir(technical), technical.sample_panel)
+
+
+def sample_panel_dir(technical: Technical) -> str:
+    return "{}/{}.panel".format(tab_dir(technical), technical.sample_panel)
+
+
+def ui_kit_demo_dir(technical: Technical) -> str:
+    return "{}/UIKitDemo.pushbutton".format(sample_panel_dir(technical))
+
+
+def ui_kit_package(technical: Technical) -> str:
+    """Importable Python package name of the generated UI kit."""
+    return "{}_ui".format(technical.namespace)
+
+
+def ui_kit_dir(technical: Technical) -> str:
+    return "{}/lib/{}".format(extension_dir(technical), ui_kit_package(technical))
 
 
 def font_path(font: FontSpec, font_file: FontFile) -> str:

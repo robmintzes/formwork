@@ -1,0 +1,229 @@
+# -*- coding: utf-8 -*-
+"""M2-lite selection dialog (generated, managed file: regenerate, do not edit).
+
+A compact searchable selector for a list of (label, value) pairs: type to
+filter, pick one row or tick several, and the primary button stays disabled
+until something is selected. Esc cancels; Enter accepts. Prefer the richer M2
+selector surface when rows need columns, detail panes or editing.
+
+IronPython 2.7 conventions: no f-strings or annotations, named handler methods,
+package-qualified imports, ASCII source.
+"""
+from __future__ import absolute_import, print_function
+
+import os
+
+import clr
+
+clr.AddReference("PresentationCore")
+clr.AddReference("PresentationFramework")
+clr.AddReference("WindowsBase")
+
+from System.Windows import TextTrimming, Thickness, VerticalAlignment, Visibility
+from System.Windows.Controls import CheckBox, ListBoxItem, TextBlock
+from System.Windows.Input import Key
+from pyrevit import forms
+
+from {{ package }} import bootstrap
+
+CHECK_STYLE = "{{ ns }}.Check"
+
+_HERE = os.path.dirname(os.path.abspath(__file__))
+_XAML_PATH = os.path.join(_HERE, "SelectionDialog.xaml")
+
+
+def filter_labels(labels, needle):
+    """Indexes of labels containing needle (case-insensitive); blank needle keeps all.
+
+    Kept free of WPF so the filter rule can be tested anywhere.
+    """
+    needle = (needle or u"").strip().lower()
+    return [index for index, label in enumerate(labels) if needle in u"{0}".format(label).lower()]
+
+
+class SelectionDialog(forms.WPFWindow):
+    """Searchable single or multiple selection over (label, value) pairs.
+
+    items        Iterable of (label, value).
+    heading      Question, e.g. "Choose views".
+    instruction  One sentence of guidance.
+    button_name  Primary button caption; name the outcome.
+    multiselect  False: one row; True: checkboxes plus Check visible / Clear all.
+    tool_name    Title strip text (optional).
+    eyebrow      Workflow family (optional; never the tool name).
+    usage        "reusable", "setup" or "one-time" for the titlebar badge.
+
+    After ShowDialog, ``selected`` is the chosen value (single), a list of
+    values (multiple), or None when cancelled.
+    """
+
+    def __init__(self, items, heading, instruction, button_name, multiselect=False,
+                 tool_name=None, eyebrow=None, usage=None):
+        forms.WPFWindow.__init__(self, _XAML_PATH)
+        bootstrap.prepare_window(self, tool_name or heading, usage)
+
+        self.selected = None
+        self._multiselect = bool(multiselect)
+        self._labels = []
+        self._rows = []
+        self._values = []
+        self._check_style = self.TryFindResource(CHECK_STYLE)
+        self._clearing = False
+
+        self.HeadingBlock.Text = u"{0}".format(heading)
+        self.InstructionBlock.Text = u"{0}".format(instruction)
+        self.PrimaryBtn.Content = bootstrap.button_text(button_name)
+        bootstrap.show_text(self.EyebrowBlock, eyebrow)
+
+        self.CloseXBtn.Click += self._on_cancel
+        self.CancelBtn.Click += self._on_cancel
+        self.PrimaryBtn.Click += self._on_accept
+        self.SearchBox.TextChanged += self._on_search_changed
+        self.CheckAllBtn.Click += self._on_check_all
+        self.ClearAllBtn.Click += self._on_clear_all
+        self.ChoiceList.SelectionChanged += self._on_selection_changed
+        self.ChoiceList.MouseDoubleClick += self._on_double_click
+        self.PreviewKeyDown += self._on_preview_key_down
+        self.Loaded += self._on_loaded
+
+        if not self._multiselect:
+            self.MultiActions.Visibility = Visibility.Collapsed
+
+        for label, value in items:
+            self._add_row(u"{0}".format(label), value)
+        self._refill(u"")
+
+    # ---- rows -----------------------------------------------------------
+    def _label_block(self, label):
+        block = TextBlock()
+        block.Text = label
+        block.ToolTip = label
+        block.TextTrimming = TextTrimming.CharacterEllipsis
+        block.VerticalAlignment = VerticalAlignment.Center
+        return block
+
+    def _add_row(self, label, value):
+        if self._multiselect:
+            row = CheckBox()
+            if self._check_style is not None:
+                row.Style = self._check_style
+            row.Content = self._label_block(label)
+            row.Margin = Thickness(0, 4, 0, 4)
+            row.Checked += self._on_check_changed
+            row.Unchecked += self._on_check_changed
+        else:
+            row = ListBoxItem()
+            row.Content = self._label_block(label)
+        self._labels.append(label)
+        self._rows.append(row)
+        self._values.append(value)
+
+    def _refill(self, needle):
+        self.ChoiceList.Items.Clear()
+        for index in filter_labels(self._labels, needle):
+            self.ChoiceList.Items.Add(self._rows[index])
+        self._update_state()
+
+    def _selected_values(self):
+        if self._multiselect:
+            return [self._values[i] for i, row in enumerate(self._rows) if bool(row.IsChecked)]
+        row = self.ChoiceList.SelectedItem
+        if row is None or row not in self._rows:
+            return []
+        return [self._values[self._rows.index(row)]]
+
+    def _update_state(self):
+        shown = self.ChoiceList.Items.Count
+        chosen = len(self._selected_values())
+        if self._multiselect:
+            self.CountBlock.Text = u"{0} shown | {1} selected".format(shown, chosen)
+        else:
+            self.CountBlock.Text = u"{0} shown".format(shown)
+        self.PrimaryBtn.IsEnabled = chosen > 0
+
+    # ---- handlers (named methods, not lambdas) --------------------------------
+    def _on_loaded(self, sender, args):
+        self.SearchBox.Focus()
+
+    def _on_search_changed(self, sender, args):
+        self._refill(self.SearchBox.Text)
+
+    def _on_check_changed(self, sender, args):
+        self._update_state()
+
+    def _on_selection_changed(self, sender, args):
+        if self._multiselect:
+            # Rows are checkboxes here; the list's own highlight would double up.
+            if self.ChoiceList.SelectedItem is not None and not self._clearing:
+                self._clearing = True
+                self.ChoiceList.SelectedItem = None
+                self._clearing = False
+            return
+        self._update_state()
+
+    def _on_check_all(self, sender, args):
+        for row in self.ChoiceList.Items:
+            row.IsChecked = True
+        self._update_state()
+
+    def _on_clear_all(self, sender, args):
+        for row in self._rows:
+            row.IsChecked = False
+        self._update_state()
+
+    def _on_double_click(self, sender, args):
+        if not self._multiselect and self.PrimaryBtn.IsEnabled:
+            self._accept()
+
+    def _on_accept(self, sender, args):
+        self._accept()
+
+    def _accept(self):
+        values = self._selected_values()
+        if not values:
+            return
+        self.selected = values if self._multiselect else values[0]
+        self.Close()
+
+    def _on_cancel(self, sender, args):
+        self.selected = None
+        self.Close()
+
+    def _on_preview_key_down(self, sender, args):
+        if args.Key == Key.Escape:
+            args.Handled = True
+            self._on_cancel(sender, args)
+        elif args.Key == Key.Enter and self.PrimaryBtn.IsEnabled:
+            args.Handled = True
+            self._accept()
+
+    @classmethod
+    def show(cls, items, heading, instruction, button_name, multiselect=False,
+             tool_name=None, eyebrow=None, usage=None):
+        """Show modally; return the selection (see class docstring)."""
+        dialog = cls(
+            items,
+            heading,
+            instruction,
+            button_name,
+            multiselect=multiselect,
+            tool_name=tool_name,
+            eyebrow=eyebrow,
+            usage=usage,
+        )
+        dialog.ShowDialog()
+        return dialog.selected
+
+
+def show(items, heading, instruction, button_name, multiselect=False, tool_name=None, eyebrow=None, usage=None):
+    """Module-level shortcut for SelectionDialog.show."""
+    return SelectionDialog.show(
+        items,
+        heading,
+        instruction,
+        button_name,
+        multiselect=multiselect,
+        tool_name=tool_name,
+        eyebrow=eyebrow,
+        usage=usage,
+    )

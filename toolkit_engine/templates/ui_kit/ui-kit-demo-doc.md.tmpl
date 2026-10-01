@@ -1,0 +1,56 @@
+# UI Kit Demo
+
+UI Kit Demo is a read-only reference tool for the generated UI kit
+(`lib/{{ package }}/`). It shows the three dialog families a tool is most likely
+to need, in the firm's own tokens, so a developer can see and copy the pattern.
+
+## User workflow
+
+1. Open any Revit document.
+2. On **{{ tab_display }}**, in **{{ panel_display }}**, click **UI Kit Demo**.
+3. Choose which selector to try (the chooser dialog, module M0).
+4. Pick one view or several from a searchable list of up to 50 view names (the
+   selection dialog, module M2-lite).
+5. Read the outcome in the result dialog (module M1).
+
+The tool exits without a dialog when no document is open. Cancelling at any
+dialog stops the tool; only cancelling the selector shows a result.
+
+## Technical design
+
+- **Minimum pyRevit version:** 4.8.10
+- **Document context:** any open document (it reads only the title and view names)
+- **Revit API query:** `FilteredElementCollector(doc).OfClass(DB.View)`
+- **User interface:** `{{ package }}.chooser_dialog`, `{{ package }}.selection_dialog`,
+  `{{ package }}.result_dialog` (WPF, IronPython 2.7)
+- **External dependencies:** none beyond pyRevit and the Revit API
+- **Linked models:** not accessed
+
+## Pattern for tools that change the model
+
+Collect input, show the input dialog, run one short Transaction with rollback on
+failure, then show the result dialog after the Transaction has finished. Never
+leave a Transaction open while a dialog is on screen. This demo has no
+Transaction at all.
+
+## Risk and transactions
+
+- **Risk classification:** Low / read-only
+- **Modifies the Revit database:** No
+- **Transaction:** None
+
+## Support
+
+Firm support: <{{ support_url }}>
+
+## Troubleshooting
+
+- **No dialog appears:** open a Revit document and run the tool again.
+- **Text uses a fallback font:** the packaged fonts live under
+  `lib/{{ package }}/fonts/`; reload the extension and confirm the folder exists.
+- **The button is missing:** reload the extension or restart Revit after
+  confirming that the extension is installed and enabled.
+
+## Changelog
+
+- **1.0.0:** Initial read-only demonstration of the generated UI kit.

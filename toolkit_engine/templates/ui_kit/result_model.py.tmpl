@@ -1,0 +1,44 @@
+# -*- coding: utf-8 -*-
+"""ToolResult: the standard result shape consumed by the result dialog.
+
+Pure Python for IronPython 2.7 and CPython 3, so it can be tested without
+Revit. Statuses are success, partial, failed and cancelled; anything else is
+treated as failed so a typo never reads as success.
+"""
+from __future__ import absolute_import, print_function
+
+HEADINGS = {
+    "success": "Success",
+    "partial": "Partial success",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+}
+
+
+class ToolResult(object):
+    def __init__(self, status, summary, counts, log, items):
+        self.status = status if status in HEADINGS else "failed"
+        self.summary = summary
+        self.counts = counts
+        self.log = log
+        self.items = items
+
+    @classmethod
+    def from_dict(cls, data):
+        counts = {"ok": 0, "warn": 0, "fail": 0}
+        counts.update(data.get("counts") or {})
+        return cls(
+            data.get("status", "failed"),
+            data.get("summary", ""),
+            counts,
+            list(data.get("log") or []),
+            list(data.get("items") or []),
+        )
+
+    @property
+    def heading(self):
+        return HEADINGS[self.status]
+
+    @property
+    def log_text(self):
+        return "\n".join(self.log)
