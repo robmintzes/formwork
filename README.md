@@ -1,75 +1,92 @@
-# pyRevit Agentic Toolkit Foundation
+# pyRevit Toolbar Template: a design technology foundation
 
-An early-stage, firm-neutral foundation for teams building a governed pyRevit
-toolbar and a local, read-only Revit MCP bridge with AI coding agents.
+**What this is now:** a foundation that generates a firm's own design
+technology workspace (branded pyRevit toolbar, WPF UI kit, HTML guides,
+agent-neutral governance, and a read-only MCP bridge) from a small
+configuration. You do not rebrand this repository; you generate a separate
+workspace from it and regenerate when your inputs change.
 
-Live Revit/pyRevit verification remains outstanding. See the [September 2026 repository assessment](docs/reviews/repository-state-2026-09-30.md) for the distinction between `main` and the unmerged stabilization work.
-
-Before developing, install the local Git guards and follow the [branch policy](docs/onboarding/BRANCH_POLICY.md). All contributions use a human-owned branch and a pull request.
-
-> **Alpha status:** the repository has static validation and automated Python
-> tests, but it has not yet completed an end-to-end test inside a live Revit and
-> pyRevit session. Treat it as a development foundation, not a production-ready
+> **Alpha.** Generation, validators, and automated tests pass. **No live
+> Revit/pyRevit verification has been completed**, and a C# add-in starter does
+> not exist yet. Treat it as a development foundation, not a production
 > deployment system.
 
-## Current scope
+- **Adopting it?** Read the [adoption guide](docs/onboarding/ADOPTING.md).
+- **Want the contracts?** See the [foundation specification](docs/product/FOUNDATION_SPEC.md).
+- **Fastest start:** `python -m toolkit_cli serve` opens the local onboarding
+  wizard (loopback only; it prints a link with a per-launch token).
+- **Contributing?** Follow the [branch policy](docs/onboarding/BRANCH_POLICY.md):
+  a human-owned branch and a pull request for every change.
 
-The repository currently provides:
-
-- vendor-neutral agent instructions and a pyRevit authoring playbook;
-- a neutral sample pyRevit extension with toolbar, bundle, and tool-doc specs;
-- a localhost-only, read-only MCP bridge foundation;
-- standard-library validators for bundle structure, metadata, icons, safety
-  patterns, toolbar coverage, and spec-to-bundle alignment;
-- CI coverage for validator regressions, generated structure, and the MCP server;
-- PowerShell packaging and verified local pyRevit registration helpers;
-- cross-platform environment diagnostics and a redacted live Revit verification
-  harness.
-
-It does **not** yet provide an update-safe setup wizard, managed firm-wide
-deployment, authenticated remote MCP access, or completed live Revit
-verification. Those are roadmap work, not implied capabilities.
-See the [toolkit roadmap](docs/ROADMAP.md) for the proposed configuration-first
-onboarding architecture and delivery phases.
-
-## Generate a firm workspace (alpha)
-
-A configuration-driven generator now creates a separate, firm-owned workspace
-from a profile (identity, design tokens, logos, fonts) and regenerates it
-safely: repeat runs are no-ops, edited generated files are reported as
-conflicts, and firm-owned tools are never touched.
+Profiles are the inputs to generation. `profiles/bimxbert` is the default (the
+BIMxBert name and marks are **not** MIT-licensed; see its `NOTICE-brand.md`).
+`profiles/quillmoor` is a fictional firm that proves identity is data. The
+foundation code is MIT.
 
 ```powershell
-py -3.11 -m toolkit_cli config validate --firm profiles/quillmoor
-py -3.11 -m toolkit_cli init --profile profiles/quillmoor --workspace D:\work\quillmoor-dt
-py -3.11 -m toolkit_cli render --workspace D:\work\quillmoor-dt --dry-run
-py -3.11 -m toolkit_cli render --workspace D:\work\quillmoor-dt
+python -m toolkit_cli config validate --firm profiles/quillmoor
+python -m toolkit_cli init --profile profiles/quillmoor --workspace "D:\Work\quillmoor-dt"
+python -m toolkit_cli render --workspace "D:\Work\quillmoor-dt" --dry-run
+python -m toolkit_cli render --workspace "D:\Work\quillmoor-dt"
+python -m toolkit_cli validate --workspace "D:\Work\quillmoor-dt"
 ```
 
-`profiles/bimxbert` is the default profile (its name and marks are not
-MIT-licensed); `profiles/quillmoor` is a fictional firm. Generated surfaces are
-a read-only pyRevit sample, a native WPF specimen, and an offline HTML guide.
-Live Revit verification of generated workspaces is still outstanding. See the
-[foundation specification](docs/product/FOUNDATION_SPEC.md) and
-[generator handoff](docs/handoffs/foundation-generator-2026-09-30.md).
+Repeat renders are no-ops, edited generated files are reported as conflicts
+instead of overwritten, and firm-owned tools are never touched.
+
+The [September 2026 repository assessment](docs/reviews/repository-state-2026-09-30.md)
+records the distinction between `main` and earlier unmerged stabilization work.
+
+## Surfaces
+
+A firm enables surfaces in `firm.json`. All are generated and tested; none is
+live-verified in Revit yet.
+
+| Surface | Produces |
+| --- | --- |
+| `pyrevit-sample` | pyRevit extension with a read-only Hello Button, icons, spec fragment, tool guide |
+| `wpf-specimen` | Themed WPF resource dictionaries, specimen window, PowerShell runner, bundled fonts |
+| `html-guide` | Self-contained offline guide with the firm's brand |
+| `governance` | `AGENTS.md` and thin agent pointers, branch policy, hooks, CI, GitHub ruleset JSON |
+| `mcp-bridge` | Read-only pyRevit Routes bridge and external FastMCP server |
+| `ui-kit` | Themed WPF dialogs (chooser, selector, result), controls, icons, `UI Kit Demo` button |
+
+Not built yet: a C# add-in starter, application starters, managed firm-wide
+deployment, authenticated remote MCP, and the WebView2 tool host. See the
+[backlog](docs/product/BACKLOG.md) and the [toolkit roadmap](docs/ROADMAP.md).
+
+This checkout also still carries the original neutral sample extension
+(`extensions/Placeholder.extension`), a local read-only MCP bridge, and
+standard-library validators for bundle structure, metadata, icons, safety
+patterns, and toolbar spec alignment. Generated workspaces vendor the
+validators and bridge from here.
 
 ## Repository layout
 
 ```text
 pyrevit-toolbar-template/
 ├── .agents/skills/pyrevit-tool/       # pyRevit authoring playbook
-├── .github/workflows/ci.yml           # repository and MCP test pipeline
+├── .github/workflows/                 # CI and development-policy pipelines
 ├── docs/
+│   ├── decisions/                     # architecture decision records
 │   ├── design/                        # neutral WPF and HTML design guidance
 │   ├── handoffs/                      # durable work-in-progress state
 │   ├── memory/                        # Revit-version API overlays
-│   ├── onboarding/                    # developer and MCP setup guides
+│   ├── onboarding/                    # adopter guide, developer and MCP guides
+│   ├── product/                       # charter, foundation spec, backlog
+│   ├── reviews/                       # repository assessments
 │   ├── templates/                     # reusable documentation templates
-│   └── toolbar/                       # ribbon spec and per-tool guides
-├── extensions/Placeholder.extension/ # deployable pyRevit extension root
+│   ├── toolbar/                       # ribbon spec and per-tool guides
+│   └── verification/                  # live-check runbooks and evidence matrix
+├── extensions/Placeholder.extension/  # neutral sample pyRevit extension
+├── profiles/                          # bimxbert (default) and quillmoor (fictional)
+├── schemas/                           # firm.json JSON Schema
 ├── scripts/                           # install, verification, and package helpers
 ├── servers/revit-mcp/                 # local MCP-to-pyRevit Routes bridge
 ├── tests/                             # validator and generation regression tests
+├── toolkit_cli/                       # command-line entry point (python -m toolkit_cli)
+├── toolkit_engine/                    # generator, adapters, templates, planner
+├── toolkit_wizard/                    # local onboarding wizard service and UI
 └── validators/                        # static repository guardrails
 ```
 
@@ -79,9 +96,15 @@ pyRevit.
 
 ## Start locally
 
-### 1. Run the repository checks
+### 1. Install the Git guards and run the repository checks
 
-Use CPython 3.10 or newer. From the repository root:
+Use CPython 3.10 or newer. Install the guards once per clone (use your own
+human branch prefix; see the [branch policy](docs/onboarding/BRANCH_POLICY.md)),
+then run the checks from the repository root:
+
+```powershell
+.\scripts\install-git-hooks.ps1 -Owner <your-branch-prefix>
+```
 
 ```bash
 python -m unittest discover -s tests -v
@@ -106,25 +129,24 @@ python -m toolkit_cli doctor --profile authoring
 
 ### 2. Create your firm's workspace
 
-The foundation is never rebranded in place. Generate a separate workspace from
-a profile (copy `profiles/quillmoor` as a starting point for your own), then
-regenerate it whenever `firm/` changes:
+Use the wizard (`python -m toolkit_cli serve`) or the CLI commands above. Copy
+`profiles/quillmoor` as the starting point for your own profile. Full steps,
+ownership rules, and upgrade guidance are in the
+[adoption guide](docs/onboarding/ADOPTING.md). The in-place `bootstrap` scripts
+that previously rebranded this checkout were retired on 2026-09-30. CI
+generates both shipped profiles on Windows in paths containing spaces and
+validates them.
 
-```bash
-python -m toolkit_cli init --profile profiles/quillmoor --workspace ../my-firm-dt
-python -m toolkit_cli render --workspace ../my-firm-dt --dry-run
-python -m toolkit_cli render --workspace ../my-firm-dt
-python -m toolkit_cli validate --workspace ../my-firm-dt
+### 3. Register an extension with pyRevit
+
+For a generated workspace:
+
+```powershell
+pyrevit extensions paths add "D:\Work\quillmoor-dt\extensions"
 ```
 
-Re-renders preserve firm-owned tools and report edited generated files as
-conflicts instead of overwriting them. The in-place `bootstrap` scripts that
-previously rebranded this checkout were retired on 2026-09-30. CI now generates
-both shipped profiles on Windows in paths containing spaces and validates them.
-
-### 3. Register the extension with pyRevit
-
-On a Windows workstation with the pyRevit CLI available:
+For this checkout's neutral sample, on a Windows workstation with the pyRevit
+CLI available:
 
 ```powershell
 .\scripts\install-extension.ps1
@@ -139,8 +161,11 @@ the [MCP guide](docs/onboarding/MCP_GUIDE.md) before making a request.
 
 ### 4. Produce live Windows/Revit evidence
 
-The guarded Windows runner checks prerequisites and exercises every documented
-read-only Routes endpoint and MCP tool while retaining no raw project data:
+For a generated workspace, follow the [generated workspace live
+check](docs/verification/GENERATED_WORKSPACE.md). For this checkout's own
+sample and read-only Routes/MCP bridge, the guarded Windows runner checks
+prerequisites and exercises every documented read-only Routes endpoint and MCP
+tool while retaining no raw project data:
 
 ```powershell
 .\scripts\verify-windows.ps1 -Mode Preflight
@@ -166,15 +191,20 @@ prevent the known unsafe call sequence after pyRevit Reload.
 
 ## Verification status
 
-Automated tests exercise the Python validators, workspace generation, and MCP
-server contract. The verification harness can record live results, but static
-checks cannot prove Revit API behavior, pyRevit ribbon loading, Routes lifecycle
-behavior, or transaction safety at runtime.
+Automated tests exercise the Python validators, workspace generation, the
+wizard service, and the MCP server contract. The verification harness can
+record live results, but static checks cannot prove Revit API behavior, pyRevit
+ribbon loading, Routes lifecycle behavior, or transaction safety at runtime.
+Native WPF and browser renders of the generated specimens were captured
+separately (see `docs/verification/foundation-generator/`).
 
-No live Revit/pyRevit verification has been completed for this stabilization
-slice. The active checklist and blockers are recorded in
+No live Revit/pyRevit verification has been completed for the foundation or for
+any generated workspace; the [verification matrix](docs/verification/MATRIX.md)
+has no passing combination. The active checklist and blockers for the MCP
+bridge are recorded in
 [docs/handoffs/mcp-bridge-onboarding-2026-06-19.md](docs/handoffs/mcp-bridge-onboarding-2026-06-19.md).
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE).
+This project is licensed under the MIT License. See [LICENSE](LICENSE). The
+BIMxBert name and marks in `profiles/bimxbert` are not covered by that license.

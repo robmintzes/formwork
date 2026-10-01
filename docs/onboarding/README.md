@@ -1,15 +1,21 @@
 # Developer Onboarding & Operating Model
 
+> **Two audiences.** This document is for **foundation contributors** working
+> in this repository. If you are a firm setting up your own branded workspace,
+> read the [adoption guide](ADOPTING.md) instead.
+
 Welcome to the alpha pyRevit toolbar development foundation. This document
-outlines local setup, branch ownership, packaging, and safety expectations. It
-does not imply that the template has completed live Revit verification or is
-ready for managed firm-wide deployment.
+outlines local setup, branch ownership, packaging, and safety expectations for
+working on the foundation itself. It does not imply that the template has
+completed live Revit verification or is ready for managed firm-wide deployment.
 
 ---
 
 ## 1. Local Development Setup
 
-To link this repository's extension folder directly to your Revit environment:
+To link this repository's own sample extension folder directly to your Revit
+environment (a generated firm workspace is registered differently; see the
+[adoption guide](ADOPTING.md#9-install-into-pyrevit-and-run-the-live-check)):
 
 1. Open PowerShell and run:
    ```powershell
