@@ -24,7 +24,7 @@ decision. Specification: [FOUNDATION_SPEC.md](FOUNDATION_SPEC.md).
 | B15 | Retire `scripts/bootstrap.*` once `init`/`render` cover the sample; update CI windows-smoke | B8 | P | done |
 | B16 | Engine distribution to adopters (pip, pinned checkout, vendored) | B8 | H | todo |
 | B17 | Permanent product/repository name | - | H | todo |
-| B18 | Later surfaces: MCP bridge in workspaces, C# add-in starter, Python app, TypeScript app | B12 | C (scope), P (order) | todo |
+| B18 | Later surfaces: ~~MCP bridge in workspaces~~ (done: `mcp-bridge` surface, spec 8.1; live run pending), C# add-in starter, Python app, TypeScript app | B12 | C (scope), P (order) | todo (MCP bridge part done) |
 
 Pending human decisions: B11's live run (requires Rob in Revit), B16, B17,
 and merge order of PR #3 -> PR #2 -> this branch.

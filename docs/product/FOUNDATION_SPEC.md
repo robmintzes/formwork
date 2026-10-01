@@ -62,9 +62,10 @@ proves identity is data.
 | `pyrevit-sample` | extension manifest, read-only Hello Button bundle (metadata, light/dark 96x96 icons), toolbar-spec fragment, tool doc | static validators **and** live Revit/pyRevit run on the declared combination |
 | `wpf-specimen` | `Theme.xaml`, `Controls.xaml`, `Specimen.xaml`, PowerShell runner, bundled fonts | native Windows render (runner snapshot), inspected separately from browser output |
 | `html-guide` | self-contained Hello Button guide with brand header and component specimen | browser render inspected; offline (no external URL) check automated |
+| `governance` | agent instructions, branch policy, hooks, CI, ruleset (section 8) | hooks exercised in a temporary repository; ruleset activation is a maintainer action |
+| `mcp-bridge` | read-only Revit MCP bridge: pyRevit Routes side in the firm extension, external FastMCP server, guide (section 8.1) | static checks and extension runtime tests **and** a live Revit/pyRevit run behind the mandatory reset rule |
 
-Compiled Revit add-ins, Python/TypeScript app starters, governance/agent
-adapters, and the MCP bridge in generated workspaces are later surfaces
+Compiled Revit add-ins and Python/TypeScript app starters are later surfaces
 ([backlog](BACKLOG.md)). The adapter interface (section 6) is shared so those
 are additions, not special cases.
 
@@ -86,7 +87,7 @@ The engine is the authority; a test keeps the JSON Schema in step with it.
 | `technical` | object | stable technical identity (2.3). |
 | `brand` | object | token file, asset slots, fonts (2.4). |
 | `appearance` | object | component treatments (2.5). |
-| `surfaces` | array of surface ids | non-empty, unique, known ids (1.2, plus `governance`, section 8). |
+| `surfaces` | array of surface ids | non-empty, unique, known ids (1.2, section 8); `mcp-bridge` requires `pyrevit-sample`. |
 | `governance` | object, optional | `required_approvals` 0-6 (section 8). |
 | `maintainers` | array | each `{name, branch_prefix}`; prefix matches the branch-policy component rule. At least one. |
 | keys starting `x-` | any | firm extension data; preserved, ignored by the engine. |
@@ -465,6 +466,48 @@ satisfy warns `governance.approvals-unreachable`. Generating the ruleset does
 not activate it; `governance.ruleset-not-applied` says so on every render.
 The IronPython syntax guard applies only to `extensions/**.py`. Vendored
 validators are CPython tooling.
+
+### 8.1 MCP bridge (`mcp-bridge` surface)
+
+Opt-in surface (`"mcp-bridge"` in `surfaces`) that requires `pyrevit-sample`
+(config error `config.surface-requires` otherwise): the bridge lives inside the
+extension that surface generates. It is a re-identified copy of the foundation's
+read-only bridge, never a fork to maintain by hand.
+
+| Output | Ownership | Notes |
+| --- | --- | --- |
+| `extensions/<Extension>.extension/startup.py`, `lib/revit_mcp_bridge/*.py` (12 modules) | managed | Registers GET-only pyRevit Routes; IronPython 2.7 syntax guard applies. Not tabs: `startup.py` and `lib/` are not registered in the toolbar spec. |
+| `extensions/<Extension>.extension/tests/test_mcp_bridge_runtime.py` | managed | Generated (not vendored): pure-CPython runtime checks that need no Revit. |
+| `servers/revit-mcp/mcp-server/**` (FastMCP server, `requirements.txt`, its pytest suite), `servers/revit-mcp/scripts/*.ps1`, `servers/revit-mcp/.gitignore` | managed | Loopback-only defaults and read-only tools preserved unchanged. |
+| `docs/onboarding/MCP_GUIDE.md` | managed | Generated from a template using the firm's prefix; carries the reset rule below. |
+
+Substitutions, all asserted by exact occurrence count (`VendoringError` on any
+mismatch, so a changed foundation file fails generation instead of rendering
+half-rebranded):
+
+| Where | Foundation text | Becomes | Count |
+| --- | --- | --- | --- |
+| every bridge module and `startup.py` | `__author__ = "Template Author"` | `identity.author` | 1 per file |
+| `routes_health.py`, `routes_project.py`, `routes_dispatch.py` | `routes.API("placeholder")` | `routes.API("<namespace>")` | 1 per file |
+| `startup.py` | `"Placeholder extension loaded and MCP routes registered."` | log line naming `technical.extension` | 1 |
+| `mcp-server/settings.py` | `(/placeholder)` comment, default URL `...:48884/placeholder"` | `/<namespace>` | 1 each |
+| `mcp-server/tests/test_settings.py` | `/placeholder` URL literals | `/<namespace>` | 7 |
+
+The Routes prefix derives from `technical.namespace` (stable technical identity),
+so a rebrand never moves the URL; changing the namespace is a migration. The
+adapter also fails when the foundation bridge or server directories gain or lose
+a file it does not list. `servers/revit-mcp/mcp-server/live_probe.py` and its
+test are deliberately not vendored: they import the foundation's own
+`toolkit_cli`, which a workspace does not contain. The foundation's
+`toolkit verify revit --repository <workspace> --routes-url http://127.0.0.1:48884/<namespace>`
+is the live gate.
+
+**Mandatory reset rule.** After clicking pyRevit Reload, do not call a route:
+restart Revit or toggle pyRevit Routes off and back on before the first request.
+Reloading extension code does not safely refresh the running Routes listener and
+can destabilize or crash Revit. `--routes-reset-confirmed` on the verifier is a
+human assertion that this reset happened; the tool cannot check it. Every render
+reports `mcp-bridge.not-live-verified` (info) until live evidence is recorded.
 
 ## 9. Notices, attribution, and provenance
 

@@ -92,5 +92,7 @@ read-only Routes/MCP bridge are verified separately with
 `python -m toolkit_cli verify revit ... --routes-reset-confirmed` (see
 [README.md](README.md)). That procedure's mandatory reset rule still applies:
 after a pyRevit Reload, restart Revit or toggle Routes before the first route
-request. Generated workspaces do not include the bridge yet, so they have no
-Routes step.
+request. Workspaces that list the `mcp-bridge` surface carry a copy of the
+bridge (see `docs/onboarding/MCP_GUIDE.md` in the workspace); its Routes
+checks are not part of the checklist above and need their own live run.
+Workspaces without that surface have no Routes step.

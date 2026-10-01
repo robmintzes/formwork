@@ -17,6 +17,7 @@ from toolkit_engine.diagnostics import Diagnostic
 from toolkit_engine.outputs import OWNERSHIP_SEED, text_file
 from toolkit_engine.profile import Profile
 from toolkit_engine.textutil import md, pascal, py_string, render_file
+from toolkit_engine.vendoring import VendoringError, substitute as _substitute
 
 ADAPTER_ID = "governance"
 FOUNDATION = Path(__file__).resolve().parents[2]
@@ -37,21 +38,6 @@ POINTERS = {
     ".github/copilot-instructions.md": "GitHub Copilot",
 }
 RULESET = ".github/rulesets/main-branch-ruleset.json"
-
-
-class VendoringError(RuntimeError):
-    """A vendored foundation file no longer matches the substitutions expected here."""
-
-
-def _substitute(path: str, text: str, old: str, new: str, *, required: bool = True) -> str:
-    count = text.count(old)
-    if count == 0 and not required:
-        return text
-    if count != 1:
-        raise VendoringError(
-            "{}: expected exactly one {!r}, found {}; update the governance adapter".format(path, old, count)
-        )
-    return text.replace(old, new)
 
 
 def _vendored(profile: Profile) -> list:

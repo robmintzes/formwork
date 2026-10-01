@@ -122,7 +122,8 @@
     "pyrevit-sample",
     "wpf-specimen",
     "html-guide",
-    "governance"
+    "governance",
+    "mcp-bridge"
   ],
   "technical": {
     "namespace": "bimxbert",

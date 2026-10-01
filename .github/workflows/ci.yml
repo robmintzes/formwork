@@ -52,6 +52,15 @@ jobs:
     - name: Test MCP server
       run: python -m pytest servers/revit-mcp/mcp-server/tests -q
 
+    - name: Test the MCP server vendored into a generated workspace
+      shell: bash
+      run: |
+        workspace="$RUNNER_TEMP/generated workspace (mcp)"
+        python -m toolkit_cli init --profile profiles/quillmoor --workspace "$workspace"
+        python -m toolkit_cli render --workspace "$workspace"
+        python -m pytest "$workspace/servers/revit-mcp/mcp-server/tests" -q
+        python -m unittest discover -s "$workspace/extensions/Quillmoor.extension/tests" -v
+
   windows-smoke:
     runs-on: windows-latest
     permissions:

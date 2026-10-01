@@ -14,7 +14,9 @@ from toolkit_engine import CONFIG_SCHEMA_VERSION, __version__
 from toolkit_engine.diagnostics import Diagnostics, did_you_mean
 from toolkit_engine.paths import WINDOWS_RESERVED_NAMES, check_relative_path
 
-SURFACES = ("pyrevit-sample", "wpf-specimen", "html-guide", "governance")
+SURFACES = ("pyrevit-sample", "wpf-specimen", "html-guide", "governance", "mcp-bridge")
+# Surfaces that only make sense inside another surface's output.
+SURFACE_REQUIRES = {"mcp-bridge": ("pyrevit-sample",)}
 ASSET_SLOTS = ("wordmark", "symbol")
 ASSET_VARIANTS = ("light", "inverse")
 ASSET_FORMATS = ("svg", "png")
@@ -484,6 +486,16 @@ def _surfaces(r: _Reader, value: Any) -> tuple[str, ...]:
             r.diags.error("config.surface-duplicate", r.loc("/surfaces/{}".format(index)), "Surface listed twice.")
         else:
             result.append(item)
+    for surface, needed in SURFACE_REQUIRES.items():
+        if surface in result:
+            for dependency in needed:
+                if dependency not in result:
+                    r.diags.error(
+                        "config.surface-requires",
+                        r.loc("/surfaces"),
+                        "Surface {!r} requires {!r}.".format(surface, dependency),
+                        "Add {!r} to surfaces: {} extends the extension that surface generates.".format(dependency, surface),
+                    )
     return tuple(result)
 
 

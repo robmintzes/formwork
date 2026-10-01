@@ -1,17 +1,35 @@
 # ADR 0005 - Source extraction, brand marks, and fonts
 
-Status: marks and fonts **accepted** (Rob, 2026-09-30); clean-room **proposed**.
+Status: marks and fonts **accepted** (Rob, 2026-09-30). Rockwell reuse
+**accepted** (Rob, 2026-09-30), superseding the earlier clean-room proposal.
 
-## Rockwell repository: clean-room reference
+## Rockwell repository: reuse with a scoped record
 
-The Rockwell `design-technology` LICENSE is proprietary/internal-use. Rob
-reports Cassie's support for open-sourcing, but no scoped release record exists
-yet. The engine, templates, XAML, and CSS in this repository are written
-independently. Rockwell material informed concepts only: module families
-M0-M7, the semantic role idea, and lessons from its token workbench (atomic
-writes; and its missing Origin/Host checks, which the wizard must not repeat).
-No Rockwell file, value set, font, or identifier is copied. If a specific
-Rockwell component is later imported, it gets a release-record entry first.
+The Rockwell `design-technology` LICENSE is proprietary/internal-use. On
+2026-09-30 Rob, who authored nearly all of that repository with AI
+assistance, explicitly permitted using its tools and apps here and said not to
+treat its licensing as a blocker. He had earlier reported Cassie Nozil's
+support for open-sourcing.
+
+The permission covers Rob-authored Rockwell code, XAML, CSS, documentation,
+and design patterns. It does **not** cover what was never Rockwell's or Rob's
+to grant. Those items stay out:
+
+- Adobe/office-licensed fonts (IvyPresto, Proxima Nova, Auger Mono);
+- bundled third-party binaries (qpdf, the WebView2 SDK);
+- client and project data;
+- internal deployment destinations (`G:\` lanes, internal URLs);
+- Rockwell's name, logos, and marks.
+
+Imported items are neutralized: firm identity becomes configuration, `RGDT` /
+`rg-` identifiers become the firm namespace, and internal references are
+removed. Each item is recorded in the release record (source commit, files,
+changes, verification) before it merges.
+
+Code written before this permission (the engine, the CLI, the wizard
+boundary, and the initial XAML/CSS) was written independently, using Rockwell
+material only as a reference for concepts. It stays as it is; nothing
+requires it to be replaced.
 
 ## BIMxBert export
 
