@@ -49,7 +49,8 @@ is merged; this branch's eventual PR is stacked on both.
 
 1. **Rob:** review and merge PR #3, then PR #2, then draft PR #4
    (its diff includes theirs until they merge).
-2. **Live gate (B11):** install a generated BIMxBert workspace's extension on
+2. **Live gate (B11)** - runbook: [GENERATED_WORKSPACE.md](../verification/GENERATED_WORKSPACE.md);
+   recorder: `toolkit verify workspace`. install a generated BIMxBert workspace's extension on
    Revit 2026 + pyRevit 6.5.5 (IronPython 2.7.12) and record ribbon load,
    light/dark icons, `help_url`, no-document/family/project contexts. The
    foundation sample and Routes verification use `toolkit verify revit`
@@ -71,6 +72,13 @@ is merged; this branch's eventual PR is stacked on both.
   WPF size offsets (ADR 0003).
 
 ## Incremental Edit Log
+
+- **2026-09-30:** Added `toolkit verify workspace` (redacted evidence; checklist
+  coverage enforcement), the manual checklist template, the runbook, and
+  `scripts/verify-generated-workspace.ps1`. Python path verified end to end;
+  the PowerShell wrapper is blocked by Cylance Script Control on the reference
+  workstation, so the runbook uses plain commands. Fixed windows-smoke CI by
+  sizing the bootstrap test's nested-suite timeout (`79c60d8`).
 
 - **2026-09-30:** Created branch; merged PR #2 into the planning branch,
   resolving AGENTS/README/INDEX/onboarding conflicts in favour of the policy

@@ -106,6 +106,14 @@ def build_parser() -> argparse.ArgumentParser:
             "the most recent pyRevit Reload."
         ),
     )
+    workspace = verify_targets.add_parser(
+        "workspace",
+        help="Record live-host evidence for a generated firm workspace.",
+    )
+    workspace.add_argument("--workspace", type=Path, required=True)
+    workspace.add_argument("--manual-checks", type=Path, help="Filled checklist (see docs/verification).")
+    workspace.add_argument("--revit-version", help="Revit year tested, for example 2026.")
+    workspace.add_argument("--output-dir", type=Path)
     add_generation_commands(commands)
     return parser
 
@@ -160,6 +168,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             else:
                 print(format_doctor_text(report))
             return report_exit_code(report)
+
+        if args.command == "verify" and args.verify_target == "workspace":
+            from toolkit_cli.verify_workspace import format_text, run_workspace_verification, write_workspace_evidence
+
+            repo_root = Path(__file__).resolve().parents[1]
+            output_dir = args.output_dir or (
+                repo_root / ".logs" / "workspace-verification" / datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+            )
+            report = run_workspace_verification(
+                args.workspace, manual_checks_path=args.manual_checks, revit_version=args.revit_version
+            )
+            paths = write_workspace_evidence(report, output_dir)
+            print(format_text(report, paths))
+            return report["exit_code"]
 
         if args.command == "verify" and args.verify_target == "revit":
             if not args.routes_reset_confirmed:

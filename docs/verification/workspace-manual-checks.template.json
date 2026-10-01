@@ -1,0 +1,71 @@
+{
+  "about": "Human checklist for a generated workspace in live Revit. Set each status to pass, fail, warn, skip, or not_run. Only id, required, and status are recorded; 'step' text and your notes are never copied into evidence. Do not remove checks or change 'required'.",
+  "checks": [
+    {
+      "id": "pyrevit-reload-clean",
+      "required": true,
+      "status": "pending",
+      "step": "With Revit open and no document loaded, click pyRevit > Reload. The reload finishes with no error in the pyRevit output window mentioning the workspace extension."
+    },
+    {
+      "id": "ribbon-tab-visible",
+      "required": true,
+      "status": "pending",
+      "step": "The profile's tab (BIMxBert for the default profile) appears with its sample panel (Foundation) containing Hello Button."
+    },
+    {
+      "id": "icon-light-theme",
+      "required": true,
+      "status": "pending",
+      "step": "With Revit's light UI theme, the Hello Button icon is crisp at the large size and uses the profile's dark outline with accent dots."
+    },
+    {
+      "id": "icon-dark-theme",
+      "required": true,
+      "status": "pending",
+      "step": "Switch Revit to the dark UI theme (Options > Colors > Active theme), reload if needed: the light-outline icon.dark.png variant is shown instead."
+    },
+    {
+      "id": "tooltip-author-help",
+      "required": true,
+      "status": "pending",
+      "step": "Hovering shows the tooltip text; pressing F1 while hovering (or the help link) opens the profile's support URL."
+    },
+    {
+      "id": "context-no-document",
+      "required": true,
+      "status": "pending",
+      "step": "With no document open, click Hello Button: it exits quietly with the 'requires an open Revit project document' message and no dialog error."
+    },
+    {
+      "id": "context-family-document",
+      "required": true,
+      "status": "pending",
+      "step": "With a family document active, click Hello Button: an alert says a project document is required, then the tool exits."
+    },
+    {
+      "id": "context-project-document",
+      "required": true,
+      "status": "pending",
+      "step": "With a project document active, click Hello Button: the dialog shows the project title, active view, and a non-template view count."
+    },
+    {
+      "id": "no-model-modification",
+      "required": true,
+      "status": "pending",
+      "step": "After the project run, the Undo list contains no Hello Button entry and Revit does not prompt to save changes made by the tool."
+    },
+    {
+      "id": "clean-exit",
+      "required": true,
+      "status": "pending",
+      "step": "Close Revit normally. No pyRevit or extension error appears during shutdown."
+    },
+    {
+      "id": "second-profile-loads",
+      "required": false,
+      "status": "not_run",
+      "step": "Optional: render the Quillmoor workspace, register it too, reload, and confirm a separate Quillmoor tab appears without disturbing the first."
+    }
+  ]
+}
