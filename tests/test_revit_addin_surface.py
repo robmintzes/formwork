@@ -436,8 +436,13 @@ def _expected_framework(year: int) -> str:
 
 
 @unittest.skipUnless(_dotnet(), "dotnet is not on PATH")
+@unittest.skipUnless(os.name == "nt", "Windows-targeting projects only build on Windows (NETSDK1100 elsewhere)")
 class BuildErrorTests(AddinCase):
-    """Property errors need dotnet but not a Revit install."""
+    """Property errors need dotnet but not a Revit install.
+
+    Revit add-ins target net*-windows, which the .NET SDK refuses to restore on
+    other operating systems before the project's own guard targets run.
+    """
 
     def build(self, csproj: Path, *props: str) -> subprocess.CompletedProcess:
         return subprocess.run(
