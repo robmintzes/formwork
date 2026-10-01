@@ -22,7 +22,7 @@ re-render with conflict reporting.
 
 - The experience can still be "click Use this template": a template repository
   holding an initialized workspace is a later distribution channel.
-- The existing `scripts/bootstrap.*` in-place replacement scripts are
-  transitional and will be retired once `init`/`render` cover the sample.
+- The in-place `scripts/bootstrap.*` replacement scripts were retired on
+  2026-09-30 once `init`/`render` covered the sample.
 - Distribution of the engine to adopters (pip package, pinned checkout, or
   vendored copy) is an open packaging question tracked in the backlog.

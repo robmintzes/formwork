@@ -29,6 +29,11 @@ def add_generation_commands(commands: Any) -> None:
     init.add_argument("--workspace", type=Path, required=True, help="Missing or empty destination folder.")
     _output_options(init)
 
+    validate = commands.add_parser("validate", help="Check that a generated workspace is current and valid.")
+    validate.add_argument("--workspace", type=Path, required=True)
+    validate.add_argument("--skip-tests", action="store_true", help="Do not run the firm's tests/ suite.")
+    _output_options(validate)
+
     render = commands.add_parser("render", help="Plan and apply generation for a workspace.")
     render.add_argument("--workspace", type=Path, required=True)
     render.add_argument("--dry-run", action="store_true", help="Show the plan without writing anything.")
@@ -41,6 +46,15 @@ def _output_options(parser: argparse.ArgumentParser) -> None:
 
 
 def run_generation_command(args: argparse.Namespace) -> int:
+    if args.command == "validate":
+        from toolkit_cli.validate_workspace import format_text as format_validation, run_workspace_validation
+
+        report = run_workspace_validation(args.workspace, run_tests=not args.skip_tests)
+        if args.output:
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        print(json.dumps(report, indent=2, sort_keys=True) if args.format == "json" else format_validation(report))
+        return report["exit_code"]
     try:
         if args.command == "config":
             report = validate_firm(args.firm)

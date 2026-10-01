@@ -21,7 +21,7 @@ decision. Specification: [FOUNDATION_SPEC.md](FOUNDATION_SPEC.md).
 | B12 | Governance adapter: AGENTS.md, agent shims, branch policy/hooks, ruleset JSON from `maintainers` | B7 | C | done |
 | B13 | `config migrate`, template overrides, three-way upgrade merge | B8 | P | todo |
 | B14 | Wizard (`toolkit serve`) per ADR 0006 | B8, B10 | C (wizard), P (stack) | todo |
-| B15 | Retire `scripts/bootstrap.*` once `init`/`render` cover the sample; update CI windows-smoke | B8 | P | todo |
+| B15 | Retire `scripts/bootstrap.*` once `init`/`render` cover the sample; update CI windows-smoke | B8 | P | done |
 | B16 | Engine distribution to adopters (pip, pinned checkout, vendored) | B8 | H | todo |
 | B17 | Permanent product/repository name | - | H | todo |
 | B18 | Later surfaces: MCP bridge in workspaces, C# add-in starter, Python app, TypeScript app | B12 | C (scope), P (order) | todo |

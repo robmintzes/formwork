@@ -21,10 +21,11 @@ BANNED_PATTERNS = {
 }
 
 
-def main() -> None:
+def find_violations(root: Path = ROOT) -> list[str]:
+    """Return safety violations for Python files under *root*/extensions."""
     violations = []
     # Find all Python files in the extensions directory
-    py_files = list((ROOT / "extensions").rglob("*.py"))
+    py_files = list((root / "extensions").rglob("*.py"))
 
     for py_file in py_files:
         try:
@@ -33,7 +34,7 @@ def main() -> None:
             print(f"WARNING: Failed to read {py_file}: {e}")
             continue
 
-        rel_path = py_file.relative_to(ROOT)
+        rel_path = py_file.relative_to(root)
 
         # Check banned patterns
         for pattern, reason in BANNED_PATTERNS.items():
@@ -55,6 +56,11 @@ def main() -> None:
                     f"{rel_path}: Transaction opened without try-except block wrapping."
                 )
 
+    return violations
+
+
+def main() -> None:
+    violations = find_violations()
     if violations:
         print("ERROR: Safety validation failed:")
         for v in violations:

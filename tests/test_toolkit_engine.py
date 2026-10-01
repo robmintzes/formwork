@@ -255,7 +255,7 @@ class GenerationTests(WorkspaceCase):
         workspace = self.make()
         generated = next(workspace.rglob("HelloButton.pushbutton/script.py")).read_text(encoding="utf-8")
         reference = next((REPO / "extensions").rglob("HelloButton.pushbutton/script.py")).read_text(encoding="utf-8")
-        # Only the author line is firm-specific (bootstrap tests rewrite the reference's author too).
+        # Only the author line is firm-specific.
         author = re.compile(r'^__author__ = ".*"$', re.MULTILINE)
         self.assertEqual(
             author.sub("__author__ = X", generated),

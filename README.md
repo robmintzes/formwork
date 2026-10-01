@@ -67,7 +67,7 @@ pyrevit-toolbar-template/
 │   ├── templates/                     # reusable documentation templates
 │   └── toolbar/                       # ribbon spec and per-tool guides
 ├── extensions/Placeholder.extension/ # deployable pyRevit extension root
-├── scripts/                           # bootstrap, install, and package helpers
+├── scripts/                           # install, verification, and package helpers
 ├── servers/revit-mcp/                 # local MCP-to-pyRevit Routes bridge
 ├── tests/                             # validator and generation regression tests
 └── validators/                        # static repository guardrails
@@ -104,25 +104,23 @@ Run the portable authoring diagnostic on macOS, Linux, or Windows:
 python -m toolkit_cli doctor --profile authoring
 ```
 
-### 2. Rebrand a working copy
+### 2. Create your firm's workspace
 
-The current bootstrap scripts mutate the checkout in place. Run one of them
-once on a clean feature branch or disposable copy:
+The foundation is never rebranded in place. Generate a separate workspace from
+a profile (copy `profiles/quillmoor` as a starting point for your own), then
+regenerate it whenever `firm/` changes:
 
 ```bash
-python scripts/bootstrap.py --firm "Example Firm" --extension "ExampleTools"
+python -m toolkit_cli init --profile profiles/quillmoor --workspace ../my-firm-dt
+python -m toolkit_cli render --workspace ../my-firm-dt --dry-run
+python -m toolkit_cli render --workspace ../my-firm-dt
+python -m toolkit_cli validate --workspace ../my-firm-dt
 ```
 
-```powershell
-.\scripts\bootstrap.ps1 -FirmName "Example Firm" -ExtensionName "ExampleTools"
-```
-
-The two implementations declare the same replacement surfaces. CI exercises
-the Python generator plus both Windows PowerShell 5.1 and PowerShell 7 in paths
-containing spaces. Neither script is an update-safe project generator, and live
-workstation onboarding remains a separate verification gate. A bootstrap error
-can leave its working copy partially changed; discard that copy or restore the
-feature branch before retrying instead of running the script again in place.
+Re-renders preserve firm-owned tools and report edited generated files as
+conflicts instead of overwriting them. The in-place `bootstrap` scripts that
+previously rebranded this checkout were retired on 2026-09-30. CI now generates
+both shipped profiles on Windows in paths containing spaces and validates them.
 
 ### 3. Register the extension with pyRevit
 
@@ -168,7 +166,7 @@ prevent the known unsafe call sequence after pyRevit Reload.
 
 ## Verification status
 
-Automated tests exercise the Python validators, bootstrap structure, and MCP
+Automated tests exercise the Python validators, workspace generation, and MCP
 server contract. The verification harness can record live results, but static
 checks cannot prove Revit API behavior, pyRevit ribbon loading, Routes lifecycle
 behavior, or transaction safety at runtime.

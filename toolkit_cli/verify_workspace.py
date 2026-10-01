@@ -22,7 +22,7 @@ from toolkit_cli import __version__ as toolkit_version
 from toolkit_cli.results import CheckResult, report_exit_code, summarize
 from toolkit_cli.verify import _generated_at, _git_provenance, _manual_checks
 from toolkit_engine import __version__ as engine_version
-from toolkit_engine.workspace import EngineError, render_workspace
+from toolkit_cli.workspace_checks import render_current_check, validator_checks
 
 MANUAL_TEMPLATE = Path(__file__).resolve().parents[1] / "docs" / "verification" / "workspace-manual-checks.template.json"
 REVIT_VERSION = re.compile(r"^20[2-9][0-9]$")
@@ -47,60 +47,10 @@ def _comparable(path: str) -> str:
 
 
 def _workspace_checks(workspace: Path) -> tuple[list[CheckResult], dict[str, Any]]:
-    from validators.check_bundle_structure import validate_bundle_structure
-    from validators.validate_toolbar_spec import validate_toolbar_spec
-
-    checks: list[CheckResult] = []
-    metadata: dict[str, Any] = {"workspace_id": None, "profile_id": None}
-    try:
-        report = render_workspace(workspace, dry_run=True)
-    except EngineError as exc:
-        checks.append(
-            CheckResult(
-                "workspace.render-current",
-                "Workspace matches its inputs",
-                "fail",
-                "The workspace could not be planned.",
-                required=True,
-                details={"code": exc.code},
-            )
-        )
-        return checks, metadata
-
-    metadata["workspace_id"] = report.get("workspace_id")
-    metadata["profile_id"] = report.get("profile_id")
-    summary = report["summary"]
-    codes = sorted({d["code"] for d in report["diagnostics"] if d["severity"] == "error"})
-    if summary["outcome"] != "pass":
-        status, text = "fail", "Planning reported errors or conflicts; resolve them before testing in Revit."
-    elif summary.get("changes", 0):
-        status, text = "fail", "The workspace differs from its inputs; run toolkit render before testing."
-    else:
-        status, text = "pass", "A dry-run render reports no changes."
-    checks.append(
-        CheckResult(
-            "workspace.render-current",
-            "Workspace matches its inputs",
-            status,
-            text,
-            required=True,
-            details={"changes": summary.get("changes", 0), "error_codes": codes},
-        )
-    )
-
-    bundle_errors, _ = validate_bundle_structure(workspace)
-    _, spec_errors = validate_toolbar_spec(workspace)
-    checks.append(
-        CheckResult(
-            "workspace.validators",
-            "Bundle and toolbar spec validators",
-            "fail" if bundle_errors or spec_errors else "pass",
-            "{} bundle and {} spec error(s).".format(len(bundle_errors), len(spec_errors)),
-            required=True,
-            details={"bundle_errors": len(bundle_errors), "spec_errors": len(spec_errors)},
-        )
-    )
-    return checks, metadata
+    current, metadata = render_current_check(workspace)
+    if current.status != "pass" and current.details.get("code"):
+        return [current], metadata
+    return [current] + validator_checks(workspace), metadata
 
 
 def _host_checks(
