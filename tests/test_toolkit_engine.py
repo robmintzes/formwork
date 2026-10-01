@@ -1,7 +1,7 @@
 """Acceptance tests for workspace generation (FOUNDATION_SPEC section 10).
 
 These exercise the promises in docs/product/FIRST_MILESTONE.md against real
-temporary workspaces whose paths contain spaces. They test behaviour (what is
+temporary workspaces whose paths contain spaces. They test behavior (what is
 on disk, what is reported), not the generator's internal structure.
 """
 

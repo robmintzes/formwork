@@ -46,7 +46,7 @@ Maintainers:
 - Register a ribbon tool in the toolbar spec **before** creating its folder. Every tool also needs `docs/toolbar/tools/<id>.md`.
 - Firm tools go in their own panels inside `extensions/{{ extension }}.extension/{{ tab }}.tab/`. Never add them to the generated sample panel.
 - Set `__author__` and `bundle.yaml author:` to `{{ author }}`. Personal attribution belongs in commit history, not tool metadata.
-- Custom WPF uses the generated resources in `specimens/wpf/Theme.xaml` and `Controls.xaml` (keys prefixed `{{ ns }}.`) instead of hard-coded colours or fonts.
+- Custom WPF uses the generated resources in `specimens/wpf/Theme.xaml` and `Controls.xaml` (keys prefixed `{{ ns }}.`) instead of hard-coded colors or fonts.
 - Point users to support at {{ support_url }}.
 
 ## 5. Revit safety
@@ -60,7 +60,7 @@ Maintainers:
 ## 6. Verification
 
 - Run the validators in `validators/` and any tests in `tests/` before opening a PR.
-- Static checks never prove Revit behaviour. Record live checks per tool and Revit version before claiming support.
+- Static checks never prove Revit behavior. Record live checks per tool and Revit version before claiming support.
 
 ## 7. Handoffs
 

@@ -1,4 +1,4 @@
-/* Token document helpers: alias resolution, colour maths, role tables, edits.
+/* Token document helpers: alias resolution, color maths, role tables, edits.
    The server remains the authority; this mirrors toolkit_engine/tokens.py closely
    enough to show live values and WCAG contrast while a draft is being edited. */
 
@@ -77,7 +77,7 @@ export function resolve(doc, path) {
   }
 }
 
-/* ---- colour ---------------------------------------------------------------- */
+/* ---- color ---------------------------------------------------------------- */
 
 export function normalizeHex(text) {
   let value = String(text).trim();
@@ -95,7 +95,7 @@ function hexFromComponents(components) {
     .toUpperCase();
 }
 
-/* A DTCG colour object -> {hex, alpha} or null. Mirrors the server: a valid hex wins. */
+/* A DTCG color object -> {hex, alpha} or null. Mirrors the server: a valid hex wins. */
 export function colorFromValue(value) {
   if (!isObject(value) || value.colorSpace !== 'srgb') return null;
   const alpha = typeof value.alpha === 'number' ? value.alpha : 1;
@@ -110,13 +110,13 @@ export function colorFromValue(value) {
   return null;
 }
 
-/* Resolve a colour token. Returns {hex, alpha, chain} or {error, chain}. */
+/* Resolve a color token. Returns {hex, alpha, chain} or {error, chain}. */
 export function resolveColor(doc, path) {
   const result = resolve(doc, path);
   if (!result.ok) return { error: result.error, chain: result.chain };
-  if (result.type !== 'color') return { error: path + ' is ' + (result.type || 'untyped') + ', not a colour.', chain: result.chain };
+  if (result.type !== 'color') return { error: path + ' is ' + (result.type || 'untyped') + ', not a color.', chain: result.chain };
   const color = colorFromValue(result.value);
-  if (!color) return { error: 'Not a valid sRGB colour value.', chain: result.chain };
+  if (!color) return { error: 'Not a valid sRGB color value.', chain: result.chain };
   return { hex: color.hex, alpha: color.alpha, chain: result.chain, source: result.source };
 }
 
@@ -138,7 +138,7 @@ export function contrastRatio(hexA, hexB) {
   return (Math.max(a, b) + 0.05) / (Math.min(a, b) + 0.05);
 }
 
-/* A literal DTCG colour object. components rounded to 4 decimals, uppercase hex. */
+/* A literal DTCG color object. components rounded to 4 decimals, uppercase hex. */
 export function literalColor(hex, previous) {
   const clean = normalizeHex(hex);
   const value = {
@@ -150,7 +150,7 @@ export function literalColor(hex, previous) {
   return value;
 }
 
-/* Replace a colour token's value with a literal colour. Other token fields ($extensions, ...) stay. */
+/* Replace a color token's value with a literal color. Other token fields ($extensions, ...) stay. */
 export function setColor(doc, path, hex) {
   const found = getToken(doc, path);
   if (!found) return false;
@@ -160,7 +160,7 @@ export function setColor(doc, path, hex) {
 
 /* ---- palette --------------------------------------------------------------- */
 
-/* Every colour token under `palette`, as [{path, group}] in document order. */
+/* Every color token under `palette`, as [{path, group}] in document order. */
 export function paletteTokens(doc) {
   const out = [];
   const root = isObject(doc) && isObject(doc.palette) ? doc.palette : null;
@@ -182,7 +182,7 @@ export function paletteTokens(doc) {
   return out;
 }
 
-/* Number of required colour roles whose alias chain passes through each palette token. */
+/* Number of required color roles whose alias chain passes through each palette token. */
 export function paletteUsage(doc, palette) {
   const usage = {};
   for (const item of palette) usage[item.path] = 0;

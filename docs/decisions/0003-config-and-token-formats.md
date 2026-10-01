@@ -12,7 +12,7 @@ Status: **proposed**.
   Report, 2025-10-28; https://www.designtokens.org/tr/2025.10/format/) as the
   interchange basis, restricted to `color` (sRGB), `dimension` (`px`),
   `fontFamily`, `fontWeight`, and `number`, with curly-brace aliases.
-- Behaviour/treatment enums (button and badge styles, decorations) live in
+- Behavior/treatment enums (button and badge styles, decorations) live in
   `firm.json` `appearance`, not in tokens: they are choices, not values.
 
 ## Deviations from DTCG, and why
@@ -20,7 +20,7 @@ Status: **proposed**.
 | Deviation | Reason |
 | --- | --- |
 | `rem` rejected | WPF has no root font size; one absolute DIP value per token avoids hidden platform offsets. |
-| Non-sRGB colour spaces rejected | WPF and the CSS outputs consume sRGB; conversion is out of scope for v1. |
+| Non-sRGB color spaces rejected | WPF and the CSS outputs consume sRGB; conversion is out of scope for v1. |
 | `$ref`, `$extends`, `$root` rejected | Not needed by v1 profiles; rejecting explicitly is safer than partial support. |
 | Composite types rejected | Typography/border/shadow composites are expressed by separate role tokens in v1. |
 

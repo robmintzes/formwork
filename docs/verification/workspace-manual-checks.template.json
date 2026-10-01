@@ -77,7 +77,7 @@
       "id": "web-tool-demo-opens",
       "required": true,
       "status": "pending",
-      "step": "With a project open, click Web Tool Demo. A WebView2 window opens within about 20 seconds showing view counts by type with metrics and pills, styled in the firm's colours and fonts; no error dialog appears."
+      "step": "With a project open, click Web Tool Demo. A WebView2 window opens within about 20 seconds showing view counts by type with metrics and pills, styled in the firm's colors and fonts; no error dialog appears."
     },
     {
       "id": "web-tool-demo-interaction",

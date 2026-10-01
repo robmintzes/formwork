@@ -23,6 +23,7 @@ This repository uses a structured memory layer to govern human and AI developmen
 - **Install Local Guards:** Run `./scripts/install-git-hooks.ps1 -Owner robmintzes` once per clone (use the accountable human prefix for another developer). This installs tracked pre-commit and pre-push guards without replacing another hooks configuration. Do not bypass guards to perform development on an integration branch.
 - **Merge Gate:** `main` and any future `stable` branch require a pull request, passing `branch-policy` and `repository-validation` checks against the current base, and resolved review conversations. GitHub enforcement includes admins and blocks force pushes and deletion. Automated checks do not authorize an agent to merge or release; the human decides when to merge. See [the canonical branch policy](docs/onboarding/BRANCH_POLICY.md), including its activation and single-owner review policy.
 - **Spec Integrity:** Do not write code or create folder structures for a new ribbon button unless a matching entry has been registered in `docs/toolbar/toolbar_spec.md`.
+- **US English:** Write all text (docs, UI strings, templates, comments, diagnostics) in US English: *color*, *license* (noun and verb), *behavior*, *normalize*, *canceled*. `tests/test_us_english.py` enforces it; `python tools/us_english.py --fix` repairs it.
 
 ---
 

@@ -60,7 +60,7 @@ def render(profile: Profile) -> RenderResult:
         icon_notices = (
             "The `ui-kit` surface packages line-icon geometry derived from Lucide "
             "(<https://lucide.dev>) in `{}/Icons.xaml`. Lucide is licensed ISC, with "
-            "portions MIT from Feather; the licence texts follow.\n\n```text\n{}\n```".format(
+            "portions MIT from Feather; the license texts follow.\n\n```text\n{}\n```".format(
                 layout.ui_kit_dir(config.technical), lucide
             )
         )

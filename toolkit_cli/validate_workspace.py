@@ -1,6 +1,6 @@
 """``toolkit validate --workspace``: is this generated workspace healthy right now?
 
-Static and automated checks only. Live Revit behaviour is ``toolkit verify workspace``.
+Static and automated checks only. Live Revit behavior is ``toolkit verify workspace``.
 """
 
 from __future__ import annotations

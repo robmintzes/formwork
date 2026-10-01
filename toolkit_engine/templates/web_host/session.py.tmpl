@@ -6,7 +6,7 @@ A mixin for ``WebToolWindow`` subclasses. A tool exposes the lifecycle verbs
 mixin supplies the cancel flag and ``run_chunked``, the canonical chunked loop
 with progress events, cooperative cancellation and the standard result shape:
 
-    {status: success|partial|failed|cancelled, summary, counts: {ok, warn, fail},
+    {status: success|partial|failed|canceled, summary, counts: {ok, warn, fail},
      log: [..], items: [{id, label, status, note}]}
 
 WebMessageReceived is dispatched serially on Revit's UI thread, and WebView2
@@ -17,7 +17,7 @@ Pumping flushes OUTBOUND progress events only; it can never receive a cancel.
 
 So ``run_chunked`` honours ``cancel`` only for a caller that returns to the
 message loop between chunks. A tool whose whole run sits inside one ``execute``
-call cannot be cancelled by construction; such a tool should step itself with
+call cannot be canceled by construction; such a tool should step itself with
 ``Dispatcher.BeginInvoke`` and publish its result as an event instead.
 
 A tool that changes the model wraps each chunk (or batch) in one short
@@ -42,7 +42,7 @@ class ToolSession(object):
         return {"ok": True}
 
     def run_chunked(self, items, work, label="Working"):
-        """Run ``work(item)`` per item; emit progress; honour cancellation.
+        """Run ``work(item)`` per item; emit progress; honor cancellation.
 
         ``work(item)`` returns ``{"id", "status": "ok"|"warn"|"fail", ...}`` or
         raises (recorded as a failure; the loop continues). The host class
@@ -56,8 +56,8 @@ class ToolSession(object):
         for index, item in enumerate(items):
             if self._cancel_requested:
                 return self._result(
-                    "cancelled", out, log, counts,
-                    "Cancelled after {0} of {1}".format(index, total))
+                    "canceled", out, log, counts,
+                    "Canceled after {0} of {1}".format(index, total))
             try:
                 rec = work(item)
             except Exception as exc:

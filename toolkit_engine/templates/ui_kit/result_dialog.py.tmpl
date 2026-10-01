@@ -2,7 +2,7 @@
 """M1 compact result dialog (generated, managed file: regenerate, do not edit).
 
 Report what happened after Revit input or a transaction: a status heading
-coloured from the status tokens, one summary sentence, an evidence log, then
+colored from the status tokens, one summary sentence, an evidence log, then
 Copy log, an optional follow-up action and Close.
 
 Transaction rule for tools that use it: collect input, show the input dialog,
@@ -32,13 +32,13 @@ from pyrevit import forms
 from {{ package }} import bootstrap
 from {{ package }}.result_model import ToolResult
 
-# Status colour keys come from Theme.xaml; the heading text carries the state
+# Status color keys come from Theme.xaml; the heading text carries the state
 # even when a key is missing, so a theme problem never hides the outcome.
 STATUS_KEY = {
     "success": "{{ ns }}.Color.Status.Success.Fg",
     "partial": "{{ ns }}.Color.Status.Warning.Fg",
     "failed": "{{ ns }}.Color.Status.Danger.Fg",
-    "cancelled": "{{ ns }}.Color.Text.Secondary",
+    "canceled": "{{ ns }}.Color.Text.Secondary",
 }
 
 _HERE = os.path.dirname(os.path.abspath(__file__))

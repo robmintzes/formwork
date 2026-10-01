@@ -6,13 +6,13 @@
 // this file only sets attributes and text. It never writes markup from data.
 //
 // Lifecycle state is the data-state attribute on <body>:
-//   idle | waiting | partial | failure | cancelled | done
-// tool.css reads it, so a tool changes behaviour by calling setState and not by
+//   idle | waiting | partial | failure | canceled | done
+// tool.css reads it, so a tool changes behavior by calling setState and not by
 // adding rules of its own.
 (function () {
   "use strict";
 
-  var STATES = ["idle", "waiting", "partial", "failure", "cancelled", "done"];
+  var STATES = ["idle", "waiting", "partial", "failure", "canceled", "done"];
   var live = null;
 
   function liveRegion() {

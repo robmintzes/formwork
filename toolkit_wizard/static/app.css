@@ -1,6 +1,6 @@
 /* Workspace wizard. The foundation's own default look: editorial restraint,
    Pacific Blue band, hairline rules, square corners. Fonts are OFL and live in
-   /static/fonts next to their licence files. */
+   /static/fonts next to their license files. */
 
 @font-face { font-family: "Barlow Condensed"; font-weight: 500; font-style: normal; src: url("fonts/barlow-condensed/BarlowCondensed-Medium.ttf") format("truetype"); }
 @font-face { font-family: "Barlow Condensed"; font-weight: 600; font-style: normal; src: url("fonts/barlow-condensed/BarlowCondensed-SemiBold.ttf") format("truetype"); }
@@ -212,7 +212,7 @@ details.conflict > summary { background: var(--danger-bg); color: var(--danger);
 .thumb .none { font-size: 0.8rem; color: var(--text-2); text-align: center; }
 .on-dark .none { color: #D2E2EE; }
 
-/* Colour */
+/* Color */
 .role-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 28px; }
 .color-row { display: grid; grid-template-columns: 28px 40px 104px minmax(0, 1fr); gap: 8px; align-items: center; padding: 4px 0; border-bottom: 1px solid var(--line); }
 .color-row .name { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 8px; font-family: var(--mono); font-size: 0.78rem; margin-top: 6px; }

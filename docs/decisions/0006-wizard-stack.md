@@ -15,7 +15,7 @@ A local browser wizard served by `toolkit serve`:
   workspace's `firm/` inputs and the engine's own apply.
 - UI: static HTML/CSS/vanilla JS shipped in the foundation, styled by the
   foundation's own generated tokens. No build step, no npm, no CDN.
-- Previews reuse the HTML adapter output; the WPF preview is labelled as a
+- Previews reuse the HTML adapter output; the WPF preview is labeled as a
   browser approximation until the native snapshot runner has been executed.
 
 ## Why not React/Electron/a desktop toolkit now

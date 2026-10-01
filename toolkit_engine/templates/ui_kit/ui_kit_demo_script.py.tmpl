@@ -78,7 +78,7 @@ def main():
 
     log = ["Document: " + title, "Views offered: {0}".format(len(names))]
     if chosen is None:
-        _show("cancelled", "No selection was made.", log)
+        _show("canceled", "No selection was made.", log)
         return
     picked = chosen if multiselect else [chosen]
     log.extend("Selected: " + name for name in picked)

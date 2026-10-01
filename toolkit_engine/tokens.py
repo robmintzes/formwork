@@ -84,7 +84,7 @@ STATUS_NAMES = _STATUS
 
 @dataclass(frozen=True)
 class Color:
-    """An sRGB colour with 8-bit channels and a 0-1 alpha."""
+    """An sRGB color with 8-bit channels and a 0-1 alpha."""
 
     red: int
     green: int
@@ -137,7 +137,7 @@ class Color:
 
 
 def contrast_ratio(foreground: Color, background: Color) -> float:
-    """WCAG 2.x contrast ratio of two opaque colours."""
+    """WCAG 2.x contrast ratio of two opaque colors."""
     lighter = max(foreground.relative_luminance(), background.relative_luminance())
     darker = min(foreground.relative_luminance(), background.relative_luminance())
     return (lighter + 0.05) / (darker + 0.05)
@@ -468,19 +468,19 @@ def _parse_color(value: Any, location: str, diags: Diagnostics) -> Color | None:
         diags.error(
             "token.color-invalid",
             location,
-            "Colour must be an object with colorSpace and components.",
+            "Color must be an object with colorSpace and components.",
             "Example: {\"colorSpace\": \"srgb\", \"components\": [0.18, 0.27, 0.32], \"hex\": \"#2F4452\"}",
         )
         return None
     unknown = set(value) - {"colorSpace", "components", "alpha", "hex"}
     if unknown:
-        diags.error("token.color-invalid", location, "Unknown colour fields: {}.".format(sorted(unknown)))
+        diags.error("token.color-invalid", location, "Unknown color fields: {}.".format(sorted(unknown)))
         return None
     if value.get("colorSpace") != "srgb":
         diags.error(
             "token.color-space-unsupported",
             location,
-            "Colour space {!r} is not supported; use srgb.".format(value.get("colorSpace")),
+            "Color space {!r} is not supported; use srgb.".format(value.get("colorSpace")),
         )
         return None
     components = value.get("components")
@@ -520,7 +520,7 @@ def _parse_color(value: Any, location: str, diags: Diagnostics) -> Color | None:
 
 
 def color_value(hex_value: str, alpha: float | None = None) -> dict[str, Any]:
-    """Build a DTCG colour value from ``#RRGGBB`` (used by profile tooling and tests)."""
+    """Build a DTCG color value from ``#RRGGBB`` (used by profile tooling and tests)."""
     color = Color.from_hex(hex_value)
     result: dict[str, Any] = {
         "colorSpace": "srgb",

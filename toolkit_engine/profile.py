@@ -279,7 +279,7 @@ def _check_fonts(config: FirmConfig, tokens: TokenSet, diags: Diagnostics) -> No
                 "font.not-packaged",
                 "{}#/font/{}".format(config.tokens_path, role),
                 "{!r} is not packaged; outputs fall back to {}.".format(primary, ", ".join(stack[1:]) or "the platform default"),
-                "Add the font files and licence under brand.fonts, or choose a packaged family.",
+                "Add the font files and license under brand.fonts, or choose a packaged family.",
             )
 
 

@@ -354,7 +354,7 @@ class PythonModuleTests(UiKitCase):
                 result = model.ToolResult.from_dict({"status": "success", "summary": "ok", "log": ["x", "y"], "counts": {"ok": 2}})
                 self.assertEqual((result.heading, result.log_text, result.counts["fail"]), ("Success", "x\ny", 0))
                 self.assertEqual(model.ToolResult.from_dict({"status": "bogus"}).status, "failed")
-                self.assertEqual(model.ToolResult("cancelled", "", {}, [], []).heading, "Cancelled")
+                self.assertEqual(model.ToolResult("canceled", "", {}, [], []).heading, "Canceled")
         finally:
             sys.path[:] = saved_path
             for name in [n for n in sys.modules if n == "bimxbert_ui" or n.startswith("bimxbert_ui.")]:

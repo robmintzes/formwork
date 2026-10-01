@@ -76,7 +76,7 @@ def _case(text: str, uppercase: bool) -> str:
 def draw_ribbon_icon(profile: Profile, size: int) -> bytes:
     """A filled speech-bubble glyph at ``size`` px (16 or 32).
 
-    Filled with the accent colour and punched with surface-colour dots so it reads on
+    Filled with the accent color and punched with surface-color dots so it reads on
     both the light and the dark Revit ribbon (a ribbon image cannot swap by theme).
     Corners follow the firm's button shape. Pure geometry: identical bytes every run.
     """
@@ -231,7 +231,7 @@ def render(profile: Profile) -> RenderResult:
     for size in (32, 16):
         add(binary_file("{}/Resources/icon-{}.png".format(base, size), draw_ribbon_icon(profile, size), ADAPTER_ID))
 
-    # Packaged fonts and their licences sit beside the DLL after the build.
+    # Packaged fonts and their licenses sit beside the DLL after the build.
     for font in config.fonts:
         folder = "{}/{}".format(base, _font_folder(font))
         for font_file in font.files:
