@@ -56,6 +56,24 @@
       "step": "After the project run, the Undo list contains no Hello Button entry and Revit does not prompt to save changes made by the tool."
     },
     {
+      "id": "ui-kit-chooser",
+      "required": true,
+      "status": "pending",
+      "step": "Click UI Kit Demo (same panel). A chooser dialog opens with the firm's titlebar, symbol mark, and usage badge; the profile's fonts render (for BIMxBert: condensed headings, Geist body). Esc closes it without an error."
+    },
+    {
+      "id": "ui-kit-selection",
+      "required": true,
+      "status": "pending",
+      "step": "Run UI Kit Demo again and continue: the view selector lists view names, typing filters the list, the primary button stays disabled until something is selected, and Enter accepts."
+    },
+    {
+      "id": "ui-kit-result",
+      "required": true,
+      "status": "pending",
+      "step": "After selecting, the result dialog shows the status heading, summary, and log; Copy log works; Close returns to Revit; the Undo list gains no UI Kit Demo entry."
+    },
+    {
       "id": "clean-exit",
       "required": true,
       "status": "pending",
