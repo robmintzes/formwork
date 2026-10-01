@@ -8,11 +8,13 @@ Declared combination for the first run: **Revit 2026, pyRevit 6.5.5
 (IronPython 2.7.12 default engine), Windows 11**. The sample tool is
 read-only, but use a disposable copy of a project and family document anyway.
 
-Time: about 30 minutes. Run commands from the foundation checkout.
+Time: about 30 minutes. Every command below uses paths relative to the
+foundation checkout, so start there.
 
 ## 1. Prepare (outside Revit)
 
 ```powershell
+Set-Location '<foundation checkout>'   # for example D:\Tools\foundation
 py -3.11 -m formwork_cli init --profile profiles/bimxbert --workspace 'D:\Live Check\BIMxBert'
 py -3.11 -m formwork_cli render --workspace 'D:\Live Check\BIMxBert'
 pyrevit extensions paths add 'D:\Live Check\BIMxBert\extensions'
