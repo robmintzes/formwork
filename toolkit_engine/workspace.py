@@ -145,8 +145,16 @@ def render_workspace(
     foundation: Path | None = None,
     write: Writer = atomic_write,
     on_planned: Callable[[Any], None] | None = None,
+    firm_dir: Path | None = None,
 ) -> dict[str, Any]:
-    """Plan and (unless *dry_run*) apply generation for an initialized workspace."""
+    """Plan and (unless *dry_run*) apply generation for an initialized workspace.
+
+    *firm_dir* substitutes draft inputs for the workspace's ``firm/`` folder so
+    a client (the wizard) can preview a plan before saving anything. It is only
+    accepted for dry runs: applied output must always come from ``firm/``.
+    """
+    if firm_dir is not None and not dry_run:
+        raise ValueError("firm_dir overrides are only allowed for dry runs")
     root = _vet_root(workspace, foundation)
     marker = _read_marker(root)
     diags = Diagnostics()
@@ -159,7 +167,7 @@ def render_workspace(
             summary={"outcome": "fail", "counts": _counts(diags), "written": False, **extra},
         )
 
-    profile = load_profile(root / FIRM_DIR, diags)
+    profile = load_profile(firm_dir if firm_dir is not None else root / FIRM_DIR, diags)
     if profile is None:
         return blocked()
     workspace_id = profile.config.technical.workspace_id

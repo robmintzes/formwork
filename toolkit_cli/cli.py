@@ -115,6 +115,9 @@ def build_parser() -> argparse.ArgumentParser:
     workspace.add_argument("--revit-version", help="Revit year tested, for example 2026.")
     workspace.add_argument("--output-dir", type=Path)
     add_generation_commands(commands)
+    serve = commands.add_parser("serve", help="Run the local onboarding wizard (loopback only).")
+    serve.add_argument("--port", type=int, default=0, help="Port on 127.0.0.1 (default: a free port).")
+    serve.add_argument("--no-open", action="store_true", help="Print the URL without opening a browser.")
     return parser
 
 
@@ -149,6 +152,12 @@ def _format_verify_text(
 def main(argv: Sequence[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+
+    if args.command == "serve":
+        from toolkit_wizard.server import serve as serve_wizard
+
+        serve_wizard(args.port, open_browser=not args.no_open)
+        return 0
 
     if args.command in ("config", "init", "render", "validate"):
         return run_generation_command(args)
