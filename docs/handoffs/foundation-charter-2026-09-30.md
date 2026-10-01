@@ -28,6 +28,10 @@
 - Select the first supported host combination and implement the schemas,
   generated ownership model, and shared generator before the wizard backend.
 
+## Continued by
+
+Implementation continues in [foundation-generator-2026-09-30.md](foundation-generator-2026-09-30.md).
+
 ## Incremental Edit Log
 
 - **2026-09-30**: Documented confirmed user intent separately from engineering

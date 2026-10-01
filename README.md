@@ -32,6 +32,27 @@ verification. Those are roadmap work, not implied capabilities.
 See the [toolkit roadmap](docs/ROADMAP.md) for the proposed configuration-first
 onboarding architecture and delivery phases.
 
+## Generate a firm workspace (alpha)
+
+A configuration-driven generator now creates a separate, firm-owned workspace
+from a profile (identity, design tokens, logos, fonts) and regenerates it
+safely: repeat runs are no-ops, edited generated files are reported as
+conflicts, and firm-owned tools are never touched.
+
+```powershell
+py -3.11 -m toolkit_cli config validate --firm profiles/quillmoor
+py -3.11 -m toolkit_cli init --profile profiles/quillmoor --workspace D:\work\quillmoor-dt
+py -3.11 -m toolkit_cli render --workspace D:\work\quillmoor-dt --dry-run
+py -3.11 -m toolkit_cli render --workspace D:\work\quillmoor-dt
+```
+
+`profiles/bimxbert` is the default profile (its name and marks are not
+MIT-licensed); `profiles/quillmoor` is a fictional firm. Generated surfaces are
+a read-only pyRevit sample, a native WPF specimen, and an offline HTML guide.
+Live Revit verification of generated workspaces is still outstanding. See the
+[foundation specification](docs/product/FOUNDATION_SPEC.md) and
+[generator handoff](docs/handoffs/foundation-generator-2026-09-30.md).
+
 ## Repository layout
 
 ```text
