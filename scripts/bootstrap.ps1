@@ -26,9 +26,25 @@ if (-not $ExtensionName) {
     if (-not $ExtensionName) { $ExtensionName = "BimTools" }
 }
 
-# Clean naming variables
-$FirmName = $FirmName.Replace(" ", "")
-$ExtensionName = $ExtensionName.Replace(" ", "")
+# Preserve human-facing firm spacing; extension names are safe identifiers.
+$FirmName = [regex]::Replace($FirmName.Trim(), "\s+", " ")
+$ExtensionName = [regex]::Replace($ExtensionName, "\s+", "")
+
+if ($FirmName -notmatch "^[\p{L}\p{N}][\p{L}\p{N} .,&'()_-]{0,79}$") {
+    Write-Host "ERROR: Firm name contains unsupported characters." -ForegroundColor Red
+    exit 2
+}
+
+$ReservedNames = @("CON", "PRN", "AUX", "NUL", "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9", "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9")
+if (
+    $ExtensionName.Length -gt 64 -or
+    $ExtensionName -notmatch "^[A-Za-z][A-Za-z0-9]*(?:-[A-Za-z0-9]+)*$" -or
+    $ReservedNames -contains $ExtensionName.ToUpperInvariant() -or
+    $ExtensionName.ToLowerInvariant() -eq "placeholder"
+) {
+    Write-Host "ERROR: Extension name must begin with a letter and contain alphanumeric segments separated by single hyphens." -ForegroundColor Red
+    exit 2
+}
 
 $ExtFolder = "${ExtensionName}.extension"
 $TabFolder = "${ExtensionName}Tab.tab"
@@ -41,6 +57,7 @@ Write-Host "  Extension Dir:  extensions/$ExtFolder" -ForegroundColor White
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "..")
+$Utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
 # 2. Check if placeholders exist
 $PlaceholderExtPath = Join-Path $RepoRoot "extensions\Placeholder.extension"
@@ -57,32 +74,83 @@ $FilesToUpdate = @(
     "README.md",
     "AGENTS.md",
     "docs\toolbar\toolbar_spec.md",
+    "docs\toolbar\tools\hello-button.md",
     "docs\onboarding\MCP_GUIDE.md",
+    "docs\verification\README.md",
+    "docs\handoffs\mcp-bridge-onboarding-2026-06-19.md",
+    "scripts\verify-windows.ps1",
+    "toolkit_cli\cli.py",
+    "toolkit_cli\doctor.py",
     "extensions\Placeholder.extension\extension.json",
     "extensions\Placeholder.extension\startup.py",
     "extensions\Placeholder.extension\PlaceholderTab.tab\PlaceholderPanel.panel\HelloButton.pushbutton\script.py",
     "extensions\Placeholder.extension\PlaceholderTab.tab\PlaceholderPanel.panel\HelloButton.pushbutton\bundle.yaml",
-    "extensions\Placeholder.extension\lib\mcp\routes_health.py",
-    "extensions\Placeholder.extension\lib\mcp\routes_project.py",
-    "extensions\Placeholder.extension\lib\mcp\routes_dispatch.py",
-    "servers\revit-mcp\mcp-server\settings.py"
+    "extensions\Placeholder.extension\lib\revit_mcp_bridge\__init__.py",
+    "extensions\Placeholder.extension\lib\revit_mcp_bridge\compat.py",
+    "extensions\Placeholder.extension\lib\revit_mcp_bridge\dispatch.py",
+    "extensions\Placeholder.extension\lib\revit_mcp_bridge\handlers_health.py",
+    "extensions\Placeholder.extension\lib\revit_mcp_bridge\handlers_project.py",
+    "extensions\Placeholder.extension\lib\revit_mcp_bridge\handlers_registry.py",
+    "extensions\Placeholder.extension\lib\revit_mcp_bridge\identity.py",
+    "extensions\Placeholder.extension\lib\revit_mcp_bridge\response.py",
+    "extensions\Placeholder.extension\lib\revit_mcp_bridge\routes_health.py",
+    "extensions\Placeholder.extension\lib\revit_mcp_bridge\routes_project.py",
+    "extensions\Placeholder.extension\lib\revit_mcp_bridge\routes_dispatch.py",
+    "extensions\Placeholder.extension\lib\revit_mcp_bridge\startup.py",
+    "extensions\Placeholder.extension\tests\test_runtime_stabilization.py",
+    "servers\revit-mcp\mcp-server\settings.py",
+    "servers\revit-mcp\mcp-server\tests\test_settings.py"
 )
+
+$MissingPaths = @(
+    $FilesToUpdate | Where-Object {
+        -not (Test-Path (Join-Path $RepoRoot $_) -PathType Leaf)
+    }
+)
+$OldTabPath = Join-Path $PlaceholderExtPath "PlaceholderTab.tab"
+$OldPanelPath = Join-Path $OldTabPath "PlaceholderPanel.panel"
+$NewTabPath = Join-Path $PlaceholderExtPath $TabFolder
+$NewPanelPath = Join-Path $OldTabPath $PanelFolder
+$NewExtPath = Join-Path $RepoRoot "extensions\$ExtFolder"
+$TemplateMarker = Join-Path $RepoRoot ".toolkit-template"
+$GeneratedMarker = Join-Path $RepoRoot ".toolkit-generated"
+
+foreach ($RequiredDirectory in @($OldTabPath, $OldPanelPath)) {
+    if (-not (Test-Path $RequiredDirectory -PathType Container)) {
+        $MissingPaths += $RequiredDirectory
+    }
+}
+if (-not (Test-Path $TemplateMarker -PathType Leaf)) {
+    $MissingPaths += $TemplateMarker
+}
+if ($MissingPaths.Count -gt 0) {
+    Write-Host "ERROR: Bootstrap source paths are missing:" -ForegroundColor Red
+    $MissingPaths | ForEach-Object { Write-Host "  - $_" -ForegroundColor Red }
+    exit 1
+}
+foreach ($Destination in @($NewPanelPath, $NewTabPath, $NewExtPath, $GeneratedMarker)) {
+    if (Test-Path $Destination) {
+        Write-Host "ERROR: Bootstrap destination already exists: $Destination" -ForegroundColor Red
+        exit 1
+    }
+}
 
 foreach ($RelPath in $FilesToUpdate) {
     $Path = Join-Path $RepoRoot $RelPath
     if (Test-Path $Path) {
-        $Text = Get-Content -Path $Path -Raw
+        $Text = [System.IO.File]::ReadAllText($Path, [System.Text.Encoding]::UTF8)
         
         # Substitutions
-        $Text = $Text.Replace("Placeholder", $ExtensionName)
-        $Text = $Text.Replace("placeholder-tools", $ExtensionName.ToLower())
-        $Text = $Text.Replace("Placeholder Tools", "$ExtensionName Tools")
+        $Text = $Text.Replace("Placeholder Tools", $ExtensionName)
+        $Text = $Text.Replace("placeholder-tools", $ExtensionName.ToLowerInvariant())
         $Text = $Text.Replace("PlaceholderPanel", "${ExtensionName}Panel")
         $Text = $Text.Replace("PlaceholderTab", "${ExtensionName}Tab")
-        $Text = $Text.Replace("Template Author", "$FirmName Design Technology")
-        $Text = $Text.Replace("placeholder", $ExtensionName.ToLower())
+        $Text = $Text.Replace("Template Author", $FirmName)
+        $Text = $Text.Replace("PLACEHOLDER", $ExtensionName.ToUpperInvariant())
+        $Text = $Text.Replace("Placeholder", $ExtensionName)
+        $Text = $Text.Replace("placeholder", $ExtensionName.ToLowerInvariant())
         
-        Set-Content -Path $Path -Value $Text -NoNewline
+        [System.IO.File]::WriteAllText($Path, $Text, $Utf8NoBom)
         Write-Host "  Updated: $RelPath" -ForegroundColor Green
     }
 }
@@ -91,21 +159,21 @@ foreach ($RelPath in $FilesToUpdate) {
 Write-Host "`nRenaming folders on disk..." -ForegroundColor Gray
 
 # Rename Tab
-$OldTabPath = Join-Path $PlaceholderExtPath "PlaceholderTab.tab"
-$NewTabPath = Join-Path $PlaceholderExtPath $TabFolder
 Rename-Item -Path $OldTabPath -NewName $TabFolder
 Write-Host "  Renamed Tab folder." -ForegroundColor Green
 
 # Rename Panel
-$OldPanelPath = Join-Path $NewTabPath "PlaceholderPanel.panel"
-$NewPanelPath = Join-Path $NewTabPath $PanelFolder
-Rename-Item -Path $OldPanelPath -NewName $PanelFolder
+$RenamedPanelPath = Join-Path $NewTabPath "PlaceholderPanel.panel"
+Rename-Item -Path $RenamedPanelPath -NewName $PanelFolder
 Write-Host "  Renamed Panel folder." -ForegroundColor Green
 
 # Rename Extension
-$NewExtPath = Join-Path $RepoRoot "extensions\$ExtFolder"
 Rename-Item -Path $PlaceholderExtPath -NewName $ExtFolder
 Write-Host "  Renamed Extension root folder." -ForegroundColor Green
+
+# Mark this checkout as generated so CI never bootstraps it again.
+Rename-Item -Path $TemplateMarker -NewName ".toolkit-generated"
+Write-Host "  Recorded generated-workspace marker." -ForegroundColor Green
 
 # 5. Output next steps
 Write-Host "`n==========================================" -ForegroundColor Cyan

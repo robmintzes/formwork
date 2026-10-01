@@ -1,0 +1,19 @@
+{
+  "checks": [
+    {
+      "id": "routes-reset-after-reload",
+      "required": true,
+      "status": "pending"
+    },
+    {
+      "id": "revit-ribbon-visible",
+      "required": true,
+      "status": "pending"
+    },
+    {
+      "id": "hello-button-read-only",
+      "required": true,
+      "status": "pending"
+    }
+  ]
+}

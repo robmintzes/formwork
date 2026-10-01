@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """Shared response envelope builder for pyRevit MCP route handlers."""
 
+__author__ = "Template Author"
+
 
 def _doc_context(doc):
     """Build a minimal document context dict from an active Revit document."""

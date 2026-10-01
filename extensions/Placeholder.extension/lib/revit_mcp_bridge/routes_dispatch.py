@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """pyRevit Routes - Single generic dispatch route for MCP."""
 
+__author__ = "Template Author"
+
 from pyrevit import routes
-from mcp import dispatch
+from revit_mcp_bridge import dispatch
 
 _API = routes.API("placeholder")
 
