@@ -150,6 +150,13 @@ Findings worth Rob's attention:
 
 ## Incremental Edit Log
 
+- **2026-10-01:** Rob accepted the B16 and B21 recommendations (ADRs 0009 and 0010).
+  Branch `robmintzes/formwork-rename` renames the packages to `formwork_*`, the
+  state folder to `.formwork/` (pre-0.3 `.toolkit/` workspaces migrate on the
+  first applied render), and report kinds, the wizard header, the probe protocol,
+  and add-in codes. It keeps a `python -m toolkit_cli` alias until 0.4.0 and bumps
+  the foundation to 0.3.0-alpha.1. PRs #5 (name docs) and #6 (US English) merged.
+
 - **2026-10-01:** Merged PR #3 (`6aa7e84`), then PR #2 after bringing it up to
   date with main (`7b1e5fb`, merged `7ad4ad7`), then PR #4 (`3ccf8b4`), all with
   merge commits and green required checks. Rob chose the name **Formwork**

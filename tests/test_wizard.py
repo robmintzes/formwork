@@ -15,8 +15,8 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from toolkit_wizard.server import WizardServer  # noqa: E402
-from toolkit_wizard.session import WizardError, WizardSession  # noqa: E402
+from formwork_wizard.server import WizardServer  # noqa: E402
+from formwork_wizard.session import WizardError, WizardSession  # noqa: E402
 
 
 class SessionTests(unittest.TestCase):
@@ -158,12 +158,12 @@ class BoundaryTests(unittest.TestCase):
         return response, payload
 
     def auth(self) -> dict:
-        return {"X-Toolkit-Token": "test-token-123"}
+        return {"X-Formwork-Token": "test-token-123"}
 
     def test_api_requires_token(self) -> None:
         response, _ = self.request("GET", "/api/starters")
         self.assertEqual(response.status, 403)
-        response, _ = self.request("GET", "/api/starters", headers={"X-Toolkit-Token": "wrong"})
+        response, _ = self.request("GET", "/api/starters", headers={"X-Formwork-Token": "wrong"})
         self.assertEqual(response.status, 403)
         response, payload = self.request("GET", "/api/starters", headers=self.auth())
         self.assertEqual(response.status, 200)

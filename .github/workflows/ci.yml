@@ -56,8 +56,8 @@ jobs:
       shell: bash
       run: |
         workspace="$RUNNER_TEMP/generated workspace (mcp)"
-        python -m toolkit_cli init --profile profiles/quillmoor --workspace "$workspace"
-        python -m toolkit_cli render --workspace "$workspace"
+        python -m formwork_cli init --profile profiles/quillmoor --workspace "$workspace"
+        python -m formwork_cli render --workspace "$workspace"
         python -m pytest "$workspace/servers/revit-mcp/mcp-server/tests" -q
         python -m unittest discover -s "$workspace/extensions/Quillmoor.extension/tests" -v
 
@@ -97,15 +97,15 @@ jobs:
         $Base = Join-Path $env:RUNNER_TEMP "Firm Workspaces (smoke test)"
         foreach ($ProfileId in @("bimxbert", "quillmoor")) {
           $Target = Join-Path $Base "$ProfileId workspace"
-          python -m toolkit_cli init --profile "profiles/$ProfileId" --workspace $Target
+          python -m formwork_cli init --profile "profiles/$ProfileId" --workspace $Target
           if ($LASTEXITCODE -ne 0) { throw "init $ProfileId failed with exit $LASTEXITCODE." }
-          python -m toolkit_cli render --workspace $Target
+          python -m formwork_cli render --workspace $Target
           if ($LASTEXITCODE -ne 0) { throw "render $ProfileId failed with exit $LASTEXITCODE." }
-          $Second = (python -m toolkit_cli render --workspace $Target --format json | Out-String) | ConvertFrom-Json
+          $Second = (python -m formwork_cli render --workspace $Target --format json | Out-String) | ConvertFrom-Json
           if ($LASTEXITCODE -ne 0 -or $Second.summary.changes -ne 0) {
             throw "Second render of $ProfileId was not a no-op."
           }
-          python -m toolkit_cli validate --workspace $Target
+          python -m formwork_cli validate --workspace $Target
           if ($LASTEXITCODE -ne 0) { throw "validate $ProfileId failed with exit $LASTEXITCODE." }
           Push-Location -LiteralPath $Target
           try {

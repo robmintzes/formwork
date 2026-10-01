@@ -1,0 +1,32 @@
+# Design technology workspace
+
+This repository was initialized by the design technology foundation. The
+foundation generated its starting files; from here on this README belongs to
+you. Edit it freely.
+
+## Ownership at a glance
+
+| Location | Owner | Notes |
+| --- | --- | --- |
+| `firm/` | you | Identity, tokens, logos, fonts. The only input to generation. |
+| Files listed in `.formwork/manifest.json` as `managed` | generator | Regenerated on every render. Edits are reported as conflicts and block the render until resolved. |
+| Files listed as `seed` (this README, `docs/toolbar/toolbar_spec.md`, `.gitattributes`) | you | Written once if absent, never overwritten. |
+| Everything else (your own tools, panels, docs) | you | Never touched by the generator. |
+
+## Regenerate after changing `firm/`
+
+From a foundation checkout:
+
+```powershell
+py -3.11 -m formwork_cli render --workspace <path-to-this-workspace> --dry-run
+py -3.11 -m formwork_cli render --workspace <path-to-this-workspace>
+```
+
+The dry run is read-only and lists every create, update, delete, and conflict.
+
+## Add your own pyRevit tools
+
+Create a new panel folder inside the generated tab (for example
+`extensions/<Extension>.extension/<Tab>.tab/Studio.panel/`) and register each
+tool in `docs/toolbar/toolbar_spec.md`. Do not edit the generated sample panel
+or `docs/toolbar/spec.d/`; those are managed.

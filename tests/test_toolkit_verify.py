@@ -13,7 +13,7 @@ from typing import Any, Iterator
 import unittest
 from unittest import mock
 
-from toolkit_cli import verify
+from formwork_cli import verify
 
 
 SECRET_PROJECT = "Museum of Extremely Secret Things"
@@ -230,7 +230,7 @@ def _check(report: dict[str, Any], check_id: str) -> dict[str, Any]:
 class LiveVerificationTests(unittest.TestCase):
     def setUp(self) -> None:
         patcher = mock.patch(
-            "toolkit_cli.verify._git_provenance", return_value=(TEST_SHA, False)
+            "formwork_cli.verify._git_provenance", return_value=(TEST_SHA, False)
         )
         patcher.start()
         self.addCleanup(patcher.stop)
@@ -690,7 +690,7 @@ class LiveVerificationTests(unittest.TestCase):
         protocol = _mcp_protocol()
         stdout = "dependency log\n" + verify.MCP_PROBE_PREFIX + json.dumps(protocol) + "\n"
         with mock.patch(
-            "toolkit_cli.verify._execute_bounded_process",
+            "formwork_cli.verify._execute_bounded_process",
             return_value=(stdout.encode("utf-8"), 0),
         ) as run:
             parsed = verify._run_mcp_probe(

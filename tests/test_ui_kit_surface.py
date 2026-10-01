@@ -25,11 +25,11 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from toolkit_engine.adapters import render_all  # noqa: E402
-from toolkit_engine.checks import check_outputs  # noqa: E402
-from toolkit_engine.diagnostics import Diagnostics  # noqa: E402
-from toolkit_engine.profile import load_profile  # noqa: E402
-from toolkit_engine.workspace import init_workspace, render_workspace, validate_firm  # noqa: E402
+from formwork_engine.adapters import render_all  # noqa: E402
+from formwork_engine.checks import check_outputs  # noqa: E402
+from formwork_engine.diagnostics import Diagnostics  # noqa: E402
+from formwork_engine.profile import load_profile  # noqa: E402
+from formwork_engine.workspace import init_workspace, render_workspace, validate_firm  # noqa: E402
 from validators.check_bundle_structure import validate_bundle_structure  # noqa: E402
 from validators.check_safety_rules import find_violations  # noqa: E402
 from validators.validate_toolbar_spec import validate_toolbar_spec  # noqa: E402
@@ -105,7 +105,7 @@ class UiKitCase(unittest.TestCase):
 
     @staticmethod
     def kit_paths(root: Path) -> list[str]:
-        manifest = json.loads((root / ".toolkit" / "manifest.json").read_text(encoding="utf-8"))
+        manifest = json.loads((root / ".formwork" / "manifest.json").read_text(encoding="utf-8"))
         return sorted(rel for rel, entry in manifest["files"].items() if entry["adapter"] == "ui-kit")
 
 
@@ -122,7 +122,7 @@ class GeneratedFilesTests(UiKitCase):
                     self.assertTrue((demo / name).is_file(), name)
                 self.assertTrue((root / "extensions" / (extension + ".extension") / "tests" / "test_ui_kit_contract.py").is_file())
                 self.assertTrue((root / "docs" / "toolbar" / "tools" / "ui-kit-demo.md").is_file())
-                manifest = json.loads((root / ".toolkit" / "manifest.json").read_text(encoding="utf-8"))
+                manifest = json.loads((root / ".formwork" / "manifest.json").read_text(encoding="utf-8"))
                 paths = self.kit_paths(root)
                 self.assertGreaterEqual(len(paths), 19)
                 for rel in paths:

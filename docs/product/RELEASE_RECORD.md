@@ -63,8 +63,8 @@ Georgia (a system font, not packaged). MIT with the rest of the repository.
 ## R05 - Rockwell tool UI kit (`ui-kit` surface)
 
 Ported 2026-09-30 under Rob Mintzes's scoped permission (ADR 0005). Rob authored
-the source. Written into `toolkit_engine/adapters/ui_kit.py`,
-`toolkit_engine/adapters/wpf_common.py`, and `toolkit_engine/templates/ui_kit/`.
+the source. Written into `formwork_engine/adapters/ui_kit.py`,
+`formwork_engine/adapters/wpf_common.py`, and `formwork_engine/templates/ui_kit/`.
 
 - **Source repository:** Rockwell Group `design-technology`, commit
   `96fbafeada60d3c62b632b8d8014242cb9ef2fd9` (working tree had only untracked
@@ -122,7 +122,7 @@ the source. Written into `toolkit_engine/adapters/ui_kit.py`,
   for its own theme keys).
 - **License notice:** `RGDT.Icons.xaml` carried Lucide geometry. Lucide is ISC
   (portions MIT from Feather); the license texts live in
-  `toolkit_engine/resources/LUCIDE_LICENSE.txt` and are added to every
+  `formwork_engine/resources/LUCIDE_LICENSE.txt` and are added to every
   workspace's `THIRD_PARTY_NOTICES.md` when `ui-kit` is enabled. Code is MIT with
   the rest of the repository.
 - **Verification:** `tests/test_ui_kit_surface.py` (key resolution against the
@@ -140,8 +140,8 @@ the source. Written into `toolkit_engine/adapters/ui_kit.py`,
 ## R06 - Rockwell web tool host (`web-host` surface)
 
 Ported 2026-10-01 under Rob Mintzes's scoped permission (ADR 0005). Rob authored
-the source. Written into `toolkit_engine/adapters/web_host.py` and
-`toolkit_engine/templates/web_host/`.
+the source. Written into `formwork_engine/adapters/web_host.py` and
+`formwork_engine/templates/web_host/`.
 
 - **Source repository:** Rockwell Group `design-technology`, commit
   `96fbafeada60d3c62b632b8d8014242cb9ef2fd9` (the working tree had untracked files

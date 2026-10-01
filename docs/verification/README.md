@@ -15,7 +15,7 @@ raw response bodies.
 Run the authoring profile from the repository root:
 
 ```bash
-python -m toolkit_cli doctor --profile authoring
+python -m formwork_cli doctor --profile authoring
 python -m unittest discover -s tests -v
 python -m unittest discover -s extensions/Placeholder.extension/tests -v
 ```

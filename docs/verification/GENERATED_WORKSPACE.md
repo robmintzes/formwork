@@ -1,6 +1,6 @@
 # Live check: generated workspace in Revit
 
-Proves that a workspace produced by `toolkit render` loads and behaves in a
+Proves that a workspace produced by `formwork render` loads and behaves in a
 real Revit/pyRevit session. Static tests, WPF snapshots, and browser renders
 are separate evidence; none of them substitutes for this check.
 
@@ -13,8 +13,8 @@ Time: about 30 minutes. Run commands from the foundation checkout.
 ## 1. Prepare (outside Revit)
 
 ```powershell
-py -3.11 -m toolkit_cli init --profile profiles/bimxbert --workspace 'D:\Live Check\BIMxBert'
-py -3.11 -m toolkit_cli render --workspace 'D:\Live Check\BIMxBert'
+py -3.11 -m formwork_cli init --profile profiles/bimxbert --workspace 'D:\Live Check\BIMxBert'
+py -3.11 -m formwork_cli render --workspace 'D:\Live Check\BIMxBert'
 pyrevit extensions paths add 'D:\Live Check\BIMxBert\extensions'
 New-Item -ItemType Directory -Force .logs\workspace-verification | Out-Null
 Copy-Item docs\verification\workspace-manual-checks.template.json .logs\workspace-verification\manual-checks.json
@@ -57,7 +57,7 @@ The checks cover:
 ## 3. Record evidence
 
 ```powershell
-py -3.11 -m toolkit_cli verify workspace --workspace 'D:\Live Check\BIMxBert' --manual-checks .logs\workspace-verification\manual-checks.json --revit-version 2026
+py -3.11 -m formwork_cli verify workspace --workspace 'D:\Live Check\BIMxBert' --manual-checks .logs\workspace-verification\manual-checks.json --revit-version 2026
 ```
 
 Exit `0` is a pass; `1` is a failure; `2` is incomplete (pending checks or no
@@ -92,7 +92,7 @@ need it; no script here deletes files.
 
 This check covers *generated* workspaces. The foundation's own sample and
 read-only Routes/MCP bridge are verified separately with
-`python -m toolkit_cli verify revit ... --routes-reset-confirmed` (see
+`python -m formwork_cli verify revit ... --routes-reset-confirmed` (see
 [README.md](README.md)). That procedure's mandatory reset rule still applies:
 after a pyRevit Reload, restart Revit or toggle Routes before the first route
 request. Workspaces that list the `mcp-bridge` surface carry a copy of the

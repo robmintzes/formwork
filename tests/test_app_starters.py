@@ -29,12 +29,12 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from toolkit_engine.adapters import render_all, web_theme  # noqa: E402
-from toolkit_engine.checks import check_outputs  # noqa: E402
-from toolkit_engine.diagnostics import Diagnostics  # noqa: E402
-from toolkit_engine.outputs import text_file  # noqa: E402
-from toolkit_engine.profile import load_profile  # noqa: E402
-from toolkit_engine.workspace import init_workspace, render_workspace  # noqa: E402
+from formwork_engine.adapters import render_all, web_theme  # noqa: E402
+from formwork_engine.checks import check_outputs  # noqa: E402
+from formwork_engine.diagnostics import Diagnostics  # noqa: E402
+from formwork_engine.outputs import text_file  # noqa: E402
+from formwork_engine.profile import load_profile  # noqa: E402
+from formwork_engine.workspace import init_workspace, render_workspace  # noqa: E402
 from validators.check_bundle_structure import validate_bundle_structure  # noqa: E402
 from validators.check_safety_rules import find_violations  # noqa: E402
 from validators.validate_toolbar_spec import validate_toolbar_spec  # noqa: E402
@@ -147,7 +147,7 @@ class GeneratedFilesTests(AppCase):
                     "public/assets/symbol-light.svg",
                 ):
                     self.assertTrue((web / rel).is_file(), rel)
-                manifest = json.loads((root / ".toolkit" / "manifest.json").read_text(encoding="utf-8"))
+                manifest = json.loads((root / ".formwork" / "manifest.json").read_text(encoding="utf-8"))
                 owned = [rel for rel, entry in manifest["files"].items() if entry["adapter"] in ("python-app", "web-app")]
                 self.assertGreaterEqual(len(owned), 24)
                 for rel in owned:

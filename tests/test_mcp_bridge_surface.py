@@ -22,12 +22,12 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from toolkit_engine.adapters import mcp_bridge, render_all  # noqa: E402
-from toolkit_engine.checks import check_outputs  # noqa: E402
-from toolkit_engine.diagnostics import Diagnostics  # noqa: E402
-from toolkit_engine.profile import load_profile  # noqa: E402
-from toolkit_engine.vendoring import VendoringError  # noqa: E402
-from toolkit_engine.workspace import init_workspace, render_workspace, validate_firm  # noqa: E402
+from formwork_engine.adapters import mcp_bridge, render_all  # noqa: E402
+from formwork_engine.checks import check_outputs  # noqa: E402
+from formwork_engine.diagnostics import Diagnostics  # noqa: E402
+from formwork_engine.profile import load_profile  # noqa: E402
+from formwork_engine.vendoring import VendoringError  # noqa: E402
+from formwork_engine.workspace import init_workspace, render_workspace, validate_firm  # noqa: E402
 from validators.check_bundle_structure import validate_bundle_structure  # noqa: E402
 from validators.check_safety_rules import find_violations  # noqa: E402
 from validators.validate_toolbar_spec import validate_toolbar_spec  # noqa: E402
@@ -64,7 +64,7 @@ class BridgeCase(unittest.TestCase):
 
     @staticmethod
     def bridge_paths(root: Path) -> list:
-        manifest = json.loads((root / ".toolkit" / "manifest.json").read_text(encoding="utf-8"))
+        manifest = json.loads((root / ".formwork" / "manifest.json").read_text(encoding="utf-8"))
         return sorted(rel for rel, entry in manifest["files"].items() if entry["adapter"] == "mcp-bridge")
 
 
@@ -76,10 +76,10 @@ class GeneratedBridgeTests(BridgeCase):
             bridge + name for name in mcp_bridge.BRIDGE_MODULES
         ] + ["servers/revit-mcp/" + rel for rel in mcp_bridge.SERVER_FILES]:
             self.assertTrue((root / rel).is_file(), rel)
-        manifest = json.loads((root / ".toolkit" / "manifest.json").read_text(encoding="utf-8"))
+        manifest = json.loads((root / ".formwork" / "manifest.json").read_text(encoding="utf-8"))
         for rel in self.bridge_paths(root):
             self.assertEqual(manifest["files"][rel]["ownership"], "managed", rel)
-        # The live probe depends on the foundation's toolkit_cli and is not vendored.
+        # The live probe depends on the foundation's formwork_cli and is not vendored.
         self.assertFalse((root / "servers" / "revit-mcp" / "mcp-server" / "live_probe.py").exists())
         self.assertIn("mcp-bridge.not-live-verified", [d["code"] for d in self.report["diagnostics"]])
 

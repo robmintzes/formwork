@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from toolkit_cli.results import CheckResult, report_exit_code, summarize
+from formwork_cli.results import CheckResult, report_exit_code, summarize
 
 
 class ResultContractTests(unittest.TestCase):

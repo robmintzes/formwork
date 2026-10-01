@@ -1,4 +1,4 @@
-"""Tests for ``toolkit validate --workspace``."""
+"""Tests for ``formwork validate --workspace``."""
 
 from __future__ import annotations
 
@@ -14,9 +14,9 @@ REPO = Path(__file__).resolve().parents[1]
 if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
-from toolkit_cli.cli import main as cli_main  # noqa: E402
-from toolkit_cli.validate_workspace import run_workspace_validation  # noqa: E402
-from toolkit_engine.workspace import init_workspace, render_workspace  # noqa: E402
+from formwork_cli.cli import main as cli_main  # noqa: E402
+from formwork_cli.validate_workspace import run_workspace_validation  # noqa: E402
+from formwork_engine.workspace import init_workspace, render_workspace  # noqa: E402
 
 
 class ValidateWorkspaceTests(unittest.TestCase):

@@ -19,7 +19,7 @@ workspace from it and regenerate when your inputs change.
 
 - **Adopting it?** Read the [adoption guide](docs/onboarding/ADOPTING.md).
 - **Want the contracts?** See the [foundation specification](docs/product/FOUNDATION_SPEC.md).
-- **Fastest start:** `python -m toolkit_cli serve` opens the local onboarding
+- **Fastest start:** `python -m formwork_cli serve` opens the local onboarding
   wizard (loopback only; it prints a link with a per-launch token).
 - **Contributing?** Follow the [branch policy](docs/onboarding/BRANCH_POLICY.md):
   a human-owned branch and a pull request for every change.
@@ -30,11 +30,11 @@ BIMxBert name and marks are **not** MIT-licensed; see its `NOTICE-brand.md`).
 foundation code is MIT.
 
 ```powershell
-python -m toolkit_cli config validate --firm profiles/quillmoor
-python -m toolkit_cli init --profile profiles/quillmoor --workspace "D:\Work\quillmoor-dt"
-python -m toolkit_cli render --workspace "D:\Work\quillmoor-dt" --dry-run
-python -m toolkit_cli render --workspace "D:\Work\quillmoor-dt"
-python -m toolkit_cli validate --workspace "D:\Work\quillmoor-dt"
+python -m formwork_cli config validate --firm profiles/quillmoor
+python -m formwork_cli init --profile profiles/quillmoor --workspace "D:\Work\quillmoor-dt"
+python -m formwork_cli render --workspace "D:\Work\quillmoor-dt" --dry-run
+python -m formwork_cli render --workspace "D:\Work\quillmoor-dt"
+python -m formwork_cli validate --workspace "D:\Work\quillmoor-dt"
 ```
 
 Repeat renders are no-ops, edited generated files are reported as conflicts
@@ -63,7 +63,7 @@ live-verified in Revit yet.
 
 Not built yet: managed firm-wide
 deployment and authenticated remote MCP. See the
-[backlog](docs/product/BACKLOG.md) and the [toolkit roadmap](docs/ROADMAP.md).
+[backlog](docs/product/BACKLOG.md) and the [Formwork roadmap](docs/ROADMAP.md).
 
 This checkout also still carries the original neutral sample extension
 (`extensions/Placeholder.extension`), a local read-only MCP bridge, and
@@ -94,9 +94,9 @@ formwork/
 ├── scripts/                           # install, verification, and package helpers
 ├── servers/revit-mcp/                 # local MCP-to-pyRevit Routes bridge
 ├── tests/                             # validator and generation regression tests
-├── toolkit_cli/                       # command-line entry point (python -m toolkit_cli)
-├── toolkit_engine/                    # generator, adapters, templates, planner
-├── toolkit_wizard/                    # local onboarding wizard service and UI
+├── formwork_cli/                       # command-line entry point (python -m formwork_cli)
+├── formwork_engine/                    # generator, adapters, templates, planner
+├── formwork_wizard/                    # local onboarding wizard service and UI
 └── validators/                        # static repository guardrails
 ```
 
@@ -134,12 +134,12 @@ python -m pytest servers/revit-mcp/mcp-server/tests -q
 Run the portable authoring diagnostic on macOS, Linux, or Windows:
 
 ```bash
-python -m toolkit_cli doctor --profile authoring
+python -m formwork_cli doctor --profile authoring
 ```
 
 ### 2. Create your firm's workspace
 
-Use the wizard (`python -m toolkit_cli serve`) or the CLI commands above. Copy
+Use the wizard (`python -m formwork_cli serve`) or the CLI commands above. Copy
 `profiles/quillmoor` as the starting point for your own profile. Full steps,
 ownership rules, and upgrade guidance are in the
 [adoption guide](docs/onboarding/ADOPTING.md). The in-place `bootstrap` scripts

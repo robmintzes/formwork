@@ -1,0 +1,67 @@
+# {{ display_name }} design technology - instructions for AI agents and humans
+
+> Canonical, vendor-neutral instructions for every coding agent (Claude Code,
+> Codex, Gemini, Copilot, local orchestrators) and every human working here.
+> Client-specific files such as `CLAUDE.md` only point to this file.
+> This file is generated; add firm-specific rules to `docs/agents/FIRM_RULES.md`.
+
+## 1. Read first
+
+1. This file.
+2. [`docs/agents/FIRM_RULES.md`](docs/agents/FIRM_RULES.md): the firm's own conventions. It overrides nothing here except where it says so.
+3. The skill for your task in `.agents/skills/`. For example, `pyrevit-tool` covers ribbon tools.
+4. [`docs/toolbar/toolbar_spec.md`](docs/toolbar/toolbar_spec.md) and `docs/toolbar/spec.d/`, the registry of ribbon tools.
+5. [`docs/onboarding/BRANCH_POLICY.md`](docs/onboarding/BRANCH_POLICY.md).
+6. Open handoffs in [`docs/handoffs/INDEX.md`](docs/handoffs/INDEX.md).
+
+## 2. Who owns what
+
+This workspace is generated from `firm/` by the design technology foundation.
+
+| Location | Owner | Rule |
+| --- | --- | --- |
+| `firm/` | maintainers | Identity, tokens, logos, fonts. Change brand by editing these and re-rendering. |
+| Files listed as `managed` in `.formwork/manifest.json` | generator | **Do not edit.** Your edit becomes a conflict that blocks the next render. Change `firm/` or move the customization to a firm-owned file. |
+| Files listed as `seed` | firm | Written once; edit freely. |
+| Everything else | firm | Your tools and docs. The generator never touches them. |
+
+Re-render with `python -m formwork_cli render --workspace <this folder> --dry-run`
+from a foundation checkout, read the plan, then run it without `--dry-run`.
+
+## 3. Branches and contributions
+
+- Branches are named `<human-owner>/<lowercase-task-slug>`, for example `{{ first_prefix }}/sheet-audit`. The prefix names the accountable human, even when an agent writes the code. AI or vendor prefixes (`claude/`, `codex/`, ...) are rejected.
+- Never develop on `main`, `stable`, a detached HEAD, or another person's branch. Preserve work you did not create: never reset, clean, or move it to satisfy a check.
+- Every change, including documentation, goes through a pull request. Passing checks do not authorize an agent to merge, release, or deploy; maintainers decide.
+- Before editing, run `git status --short --branch` and `python validators/check_branch_policy.py`.
+
+Maintainers:
+
+| Name | Branch prefix |
+| --- | --- |
+{{ maintainers }}
+
+## 4. Tool conventions
+
+- Register a ribbon tool in the toolbar spec **before** creating its folder. Every tool also needs `docs/toolbar/tools/<id>.md`.
+- Firm tools go in their own panels inside `extensions/{{ extension }}.extension/{{ tab }}.tab/`. Never add them to the generated sample panel.
+- Set `__author__` and `bundle.yaml author:` to `{{ author }}`. Personal attribution belongs in commit history, not tool metadata.
+- Custom WPF uses the generated resources in `specimens/wpf/Theme.xaml` and `Controls.xaml` (keys prefixed `{{ ns }}.`) instead of hard-coded colors or fonts.
+- Point users to support at {{ support_url }}.
+
+## 5. Revit safety
+
+- Validate the document context (none, family, project) and the selection before showing UI or starting a transaction.
+- Keep transactions narrow. Never wait for user input inside one. Commit or roll back explicitly in `try`/`except`.
+- Linked documents are read-only: read from them, write results into the host document.
+- New tools default to read-only. Write operations need `risk` and `requires_confirmation` set correctly in the toolbar spec.
+- pyRevit runs IronPython 2.7 by default: no f-strings, annotations, or walrus operators in extension code.
+
+## 6. Verification
+
+- Run the validators in `validators/` and any tests in `tests/` before opening a PR.
+- Static checks never prove Revit behavior. Record live checks per tool and Revit version before claiming support.
+
+## 7. Handoffs
+
+For work spanning sessions, agents, or people, keep `docs/handoffs/<slug>-YYYY-MM-DD.md` with `## State`, `## Open` (next steps, blockers, rejected paths), and `## Incremental Edit Log`, and list it in `docs/handoffs/INDEX.md`.

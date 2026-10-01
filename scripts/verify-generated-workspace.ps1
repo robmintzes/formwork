@@ -6,7 +6,7 @@
             copy the manual checklist to .logs\workspace-verification\. With
             -RegisterExtension it also adds the workspace's extensions folder
             to pyRevit's search paths (a pyRevit configuration change).
-  Record    Run 'toolkit verify workspace' with the filled checklist and write
+  Record    Run 'formwork verify workspace' with the filled checklist and write
             redacted JSON/Markdown evidence.
   Unregister  Remove the workspace's extensions folder from pyRevit's search
             paths. Never deletes files.
@@ -56,13 +56,13 @@ function Get-PythonCommand {
     return $null
 }
 
-function Invoke-Toolkit([string[]]$Arguments) {
+function Invoke-Formwork([string[]]$Arguments) {
     $exe = $script:Python[0]
     $prefix = @($script:Python | Select-Object -Skip 1)
     Push-Location -LiteralPath $RepoRoot
     try {
         # Send output to the host so the function returns only the exit code.
-        & $exe @prefix -m toolkit_cli @Arguments | Out-Host
+        & $exe @prefix -m formwork_cli @Arguments | Out-Host
         return $LASTEXITCODE
     }
     finally {
@@ -96,14 +96,14 @@ if ($null -eq $Python) {
 }
 
 if ($Mode -eq 'Prepare') {
-    $marker = Join-Path $WorkspaceFull '.toolkit\workspace.json'
+    $marker = Join-Path $WorkspaceFull '.formwork\workspace.json'
     if (-not (Test-Path -LiteralPath $marker -PathType Leaf)) {
         Write-Host "Initializing workspace from profile: $ProfilePath" -ForegroundColor Gray
-        $code = Invoke-Toolkit @('init', '--profile', $ProfilePath, '--workspace', $WorkspaceFull)
+        $code = Invoke-Formwork @('init', '--profile', $ProfilePath, '--workspace', $WorkspaceFull)
         if ($code -ne 0) { exit $code }
     }
     Write-Host 'Rendering workspace...' -ForegroundColor Gray
-    $code = Invoke-Toolkit @('render', '--workspace', $WorkspaceFull)
+    $code = Invoke-Formwork @('render', '--workspace', $WorkspaceFull)
     if ($code -ne 0) { exit $code }
 
     if ($RegisterExtension) {
@@ -143,7 +143,7 @@ if ($Mode -eq 'Prepare') {
 if ($Mode -eq 'Record') {
     $arguments = @('verify', 'workspace', '--workspace', $WorkspaceFull, '--manual-checks', $ManualChecks)
     if ($RevitVersion) { $arguments += @('--revit-version', $RevitVersion) }
-    exit (Invoke-Toolkit $arguments)
+    exit (Invoke-Formwork $arguments)
 }
 
 # Unregister
