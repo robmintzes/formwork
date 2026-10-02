@@ -32,3 +32,15 @@ tools:
     description: Displays a read-only greeting with the active project, active view, and non-template view count.
     source_path: extensions/Placeholder.extension/PlaceholderTab.tab/PlaceholderPanel.panel/HelloButton.pushbutton
 ```
+
+## Generated tool registration: Array Along Path
+
+The opt-in `array-along-path` surface registers `array-along-path` (Array Along
+Path, PushButton, geometry, Medium risk, sandbox) in the generated firm's
+**Elements** panel. It requires `web-host` and `pyrevit-sample`. Its source
+templates are `formwork_engine/templates/array_along_path/`; its generated
+bundle is `extensions/<extension>.extension/<tab>.tab/Elements.panel/ArrayAlongPath.pushbutton`.
+The adapter emits `docs/toolbar/spec.d/array-along-path.md` with the concrete
+paths, so generated workspace validators check the actual ribbon mapping.
+It creates copies in a single undoable transaction after a live HTML preview;
+live Revit verification is required before production use.

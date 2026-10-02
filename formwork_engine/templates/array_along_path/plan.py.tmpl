@@ -1,0 +1,33 @@
+# -*- coding: utf-8 -*-
+"""Bounded placement payload validation, independent of Revit (Python 2/3)."""
+from __future__ import absolute_import
+import math
+
+__author__ = {{ author_literal }}
+MAX_COPIES = 2000
+
+
+def validate_plan(placements):
+    if not isinstance(placements, list) or not 1 <= len(placements) <= MAX_COPIES:
+        raise ValueError("Provide between 1 and 2000 preview placements.")
+    clean = []
+    for row in placements:
+        if not isinstance(row, dict):
+            raise ValueError("Each placement must be an object.")
+        item = {}
+        for key in ("x", "y", "z", "rot_delta", "station"):
+            value = row.get(key)
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError("Placement {} must be numeric.".format(key))
+            value = float(value)
+            if math.isnan(value) or math.isinf(value):
+                raise ValueError("Placement {} must be finite.".format(key))
+            if key in ("x", "y", "z") and abs(value) > 1000000:
+                raise ValueError("Placement exceeds the supported coordinate range.")
+            if key == "station" and value < 0:
+                raise ValueError("Station cannot be negative.")
+            if key == "rot_delta" and abs(value) > 360:
+                raise ValueError("Rotation exceeds the supported range.")
+            item[key] = value
+        clean.append(item)
+    return clean

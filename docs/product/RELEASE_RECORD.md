@@ -218,9 +218,45 @@ the source. Written into `formwork_engine/adapters/web_host.py` and
   class has not been imported under IronPython, and the IronPython delegate conversions
   and the WebView2 policy handlers are unverified there.
 
-## Not imported
+## R07 - Array Along Path and native motion pilot (2026-10-02)
 
-Rockwell Group `design-technology` repository: beyond R05 and R06, reference only
+- **Authorization:** Rob explicitly requested this tool's port and BIMxBert
+  reskin on 2026-10-02; scoped source permission remains ADR 0005.
+- **Source checkout:** `design-technology`, commit
+  `538006ac3747d65ffdcd773cb7466ec229c36f61`; tool path
+  `RG Tools/RG_Tools.extension/RG_Tools.tab/Elements.panel/Array Along Path.pushbutton`.
+  The RG Tools_TEST copies had identical hashes at extraction.
+- **Source files / SHA-256:**
+  - `script.py`: `84025e2fdfd54e5d96b097130a48f0f021a6d5dc165ba24988f083a8a5b3c398`
+  - `array_along_path_ui.html`: `3cbd30c0d4205e17aebedceb6b36fa7c643b24ec3a854dcb967028b0a0c370e1`
+- **Kept:** curve chaining/reversal/tessellation, plan outline extraction,
+  mesh hulls, nested geometry collection, seeded preview math, camera/grid,
+  source-relative rotation, hover/pin inspector, synthetic chair demo.
+- **Rewritten:** selection uses local Revit selection filters and silent Escape;
+  geometry is read before the HTML opens; browser callbacks submit plain data
+  only. Copy/rotate runs after window closure, checks transaction start/commit
+  status, rolls back on errors, and uses a failure preprocessor. Source/context
+  changes reject a stale preview. A bounded Python plan validator rejects
+  non-finite coordinates and excessive counts. Actual copied source IDs are
+  identified among dependents. The preview excludes source-anchor duplicates.
+- **New:** opt-in generator adapter, default BIMxBert activation, generated
+  Elements panel spec, original 32px icons, independent tool guide, CSP without
+  inline scripts/styles, generated firm theme/assets, responsive/resizable panes,
+  keyboard inspection, motion toggle, contextual animations and native path reveal.
+- **Excluded:** source icons, commercial fonts, marks, internal deployment
+  bootstrap, `rg_select`, `rgdt_web`, `rgdt_ui`, vendor binaries and npm packages.
+  The existing generated WebView2 host supplies the WPF window and bridge.
+- **Verification:** `tests/test_array_along_path.py` covers two-profile generation,
+  workspace/spec alignment, repeat render, dependency validation, seeded preview
+  math/count cap/anchor exclusion, bounded payloads, commit and rollback with mocks.
+  Real Edge browser review at 1280/768/390 covers controls, invalid input, scatter,
+  simulation, keyboard pane sizing, motion and reduced motion. Local BIMxBert
+  sandbox generated and statically validated. **Live placement and Undo have not
+  been run.** See the [handoff](../handoffs/array-along-path-motion-2026-10-02.md).
+
+## Not imported (remaining material)
+
+Rockwell Group `design-technology` repository: beyond R05, R06 and R07, reference only
 (ADR 0005). From the BIMxBert ZIP: React/JSX components,
 provisional XAML, uploads (RGDT sources), PDFs, exploratory boards, and
 `support.js`.

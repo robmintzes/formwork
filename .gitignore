@@ -13,6 +13,8 @@ htmlcov/
 dist/
 build/
 .logs/
+.playwright-cli/
+output/playwright/
 *.zip
 
 # Operating System Files

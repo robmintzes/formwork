@@ -27,6 +27,7 @@ Adapter = Callable[[Profile], RenderResult]
 def _registry() -> dict[str, Adapter]:
     from formwork_engine.adapters import (
         common,
+        array_along_path,
         governance,
         html_guide,
         mcp_bridge,
@@ -48,6 +49,7 @@ def _registry() -> dict[str, Adapter]:
         "mcp-bridge": mcp_bridge.render,
         "ui-kit": ui_kit.render,
         "web-host": web_host.render,
+        "array-along-path": array_along_path.render,
         "revit-addin": revit_addin.render,
         "python-app": python_app.render,
         "web-app": web_app.render,

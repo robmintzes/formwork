@@ -1,0 +1,776 @@
+"use strict";
+/* ================================================================
+   Mode detection: hosted (Revit WebView2) vs browser simulation.
+   Browser simulation feeds demo geometry so the surface can be
+   design-reviewed without Revit.
+   ================================================================ */
+var hosted = !!(window.chrome && window.chrome.webview && window.{{ ns }});
+
+function reportClientError(message, stack) {
+  if (hosted) {
+    window.{{ ns }}.call("client_error", { message: String(message), stack: String(stack || "") })
+      .catch(function () {});
+  } else {
+    console.error("client_error:", message, stack);
+  }
+}
+window.addEventListener("error", function (e) {
+  reportClientError(e.message, e.error && e.error.stack);
+  $("btn-apply").disabled = true;
+  setState("Preview error / reopen the tool");
+});
+
+/* ================================================================
+   State
+   ================================================================ */
+var S = {
+  path: [],            // [[x,y,z], ...] world feet
+  cumdist: [],         // cumulative length per vertex
+  totalLen: 0,
+  normal: [0, 0, 1],
+  outline: [],         // [[[x,y],...], ...] source polylines, feet rel. anchor
+  source: null,        // {anchor:[x,y,z], offset_vector:[x,y,z], offset_distance}
+  seed: 1,
+  placements: [],      // computed preview rows
+  copyNodes: [],       // SVG group per placement (same index)
+  hoveredIdx: null,
+  selectedIdx: null,   // click-pinned copy; survives re-renders by index
+  cam: { scale: 1, tx: 0, ty: 0 },  // screen transform
+  executed: false
+};
+
+var MAX_COPIES = 2000;
+
+var $ = function (id) { return document.getElementById(id); };
+
+/* ================================================================
+   Deterministic RNG (mulberry32). The preview IS the contract:
+   the same seed + inputs produce the placements Python executes.
+   ================================================================ */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    var t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/* ================================================================
+   Vector helpers (arrays of 3)
+   ================================================================ */
+function vsub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+function vadd(a, b) { return [a[0] + b[0], a[1] + b[1], a[2] + b[2]]; }
+function vscale(a, s) { return [a[0] * s, a[1] * s, a[2] * s]; }
+function vdot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+function vcross(a, b) {
+  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+}
+function vlen(a) { return Math.sqrt(vdot(a, a)); }
+function vnorm(a) {
+  var l = vlen(a);
+  return l > 1e-9 ? vscale(a, 1 / l) : [0, 0, 0];
+}
+function projectToPlane(v, n) {
+  var p = vsub(v, vscale(n, vdot(v, n)));
+  var l = vlen(p);
+  return l > 1e-9 ? vscale(p, 1 / l) : vnorm(v);
+}
+function signedAngleDeg(a, b, n) {
+  var pa = projectToPlane(a, n);
+  var pb = projectToPlane(b, n);
+  var sin = vdot(n, vcross(pa, pb));
+  var cos = Math.max(-1, Math.min(1, vdot(pa, pb)));
+  return Math.atan2(sin, cos) * 180 / Math.PI;
+}
+function perpToTangent(t, n) {
+  var p = vcross(n, t);
+  var l = vlen(p);
+  if (l > 1e-9) return vscale(p, 1 / l);
+  return vnorm([-t[1], t[0], 0]);
+}
+
+/* ================================================================
+   Path evaluation over the tessellated polyline
+   ================================================================ */
+function buildCumdist() {
+  S.cumdist = [0];
+  var total = 0;
+  for (var i = 1; i < S.path.length; i++) {
+    total += vlen(vsub(S.path[i], S.path[i - 1]));
+    S.cumdist.push(total);
+  }
+  S.totalLen = total;
+}
+
+function evaluatePath(s) {
+  var pts = S.path, cd = S.cumdist;
+  var last = pts.length - 1;
+  if (s <= 0) return { pt: pts[0], tan: vnorm(vsub(pts[1], pts[0])) };
+  if (s >= S.totalLen) return { pt: pts[last], tan: vnorm(vsub(pts[last], pts[last - 1])) };
+  var lo = 0, hi = last;
+  while (lo < hi) {
+    var mid = (lo + hi) >> 1;
+    if (cd[mid] < s) lo = mid + 1; else hi = mid;
+  }
+  var i = lo;
+  var d0 = cd[i - 1], d1 = cd[i];
+  var r = (s - d0) / (d1 - d0);
+  var seg = vsub(pts[i], pts[i - 1]);
+  return { pt: vadd(pts[i - 1], vscale(seg, r)), tan: vnorm(seg) };
+}
+
+/* ================================================================
+   Placement computation - mirrors the retired WPF engine exactly:
+   stations along the chain; perpendicular side offset; optional
+   constant source-offset vector; XY position jitter; rotation =
+   tangent alignment + jitter; delta_rot is the relative rotation
+   applied on top of the copy's preserved source rotation.
+   ================================================================ */
+function readInputs() {
+  return {
+    mode: $("mode-count").checked ? "count" : "distance",
+    value: parseFloat($("in-spacing").value) || 0,
+    offset: parseFloat($("in-offset").value) || 0,
+    align: $("chk-align").checked,
+    preserve: $("chk-preserve").checked,
+    rotJit: parseFloat($("in-rotjit").value) || 0,
+    posJit: parseFloat($("in-posjit").value) || 0
+  };
+}
+
+function computePlacements() {
+  var inp = readInputs();
+  var rng = mulberry32(S.seed);
+  var stations = [];
+  var capped = false;
+
+  if (inp.mode === "distance") {
+    var step = Math.max(inp.value, 0.01);
+    for (var s = 0; s <= S.totalLen + 1e-9; s += step) {
+      if (stations.length >= MAX_COPIES) { capped = true; break; }
+      stations.push(Math.min(s, S.totalLen));
+    }
+  } else {
+    var count = Math.max(2, Math.min(Math.round(inp.value), MAX_COPIES));
+    var stepc = S.totalLen / (count - 1);
+    for (var i = 0; i < count; i++) stations.push(i * stepc);
+  }
+
+  var startTan = evaluatePath(0).tan;
+  var out = [];
+  for (var k = 0; k < stations.length; k++) {
+    var st = stations[k];
+    var ev = evaluatePath(st);
+    var pt = ev.pt, tan = ev.tan;
+
+    if (inp.offset !== 0) {
+      pt = vadd(pt, vscale(perpToTangent(tan, S.normal), inp.offset));
+    }
+    if (inp.preserve && S.source) {
+      pt = vadd(pt, S.source.offset_vector);
+    }
+    var jx = (rng() - 0.5) * inp.posJit;
+    var jy = (rng() - 0.5) * inp.posJit;
+    pt = vadd(pt, [jx, jy, 0]);
+
+    var jr = (rng() - 0.5) * 2 * inp.rotJit;
+    var rotAbs = (inp.align ? Math.atan2(tan[1], tan[0]) * 180 / Math.PI : 0) + jr;
+    var rotDelta = (inp.align ? signedAngleDeg(startTan, tan, S.normal) : 0) + jr;
+
+    out.push({ x: pt[0], y: pt[1], z: pt[2], rot: rotAbs, rot_delta: rotDelta, station: st, index: k });
+  }
+  S.placements = out.filter(function (p) {
+    return !S.source || vlen(vsub([p.x,p.y,p.z], S.source.anchor)) >= 0.01;
+  });
+  return { inputs: inp, capped: capped };
+}
+
+/* ================================================================
+   Rendering - SVG in world feet, mapped by the camera transform.
+   Y flips (world +Y up, screen +Y down).
+   ================================================================ */
+var SVGNS = document.getElementById("canvas").namespaceURI;
+
+function css(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#333";
+}
+
+function worldToScreen(p) {
+  return [p[0] * S.cam.scale + S.cam.tx, -p[1] * S.cam.scale + S.cam.ty];
+}
+
+function fitCamera() {
+  var wrap = $("canvas-wrap");
+  var w = wrap.clientWidth || 800, h = wrap.clientHeight || 500;
+  var xs = [], ys = [];
+  S.path.forEach(function (p) { xs.push(p[0]); ys.push(p[1]); });
+  var minx = Math.min.apply(null, xs), maxx = Math.max.apply(null, xs);
+  var miny = Math.min.apply(null, ys), maxy = Math.max.apply(null, ys);
+  var spanx = Math.max(maxx - minx, 1), spany = Math.max(maxy - miny, 1);
+  S.cam.scale = Math.min((w * 0.8) / spanx, (h * 0.8) / spany);
+  S.cam.tx = w / 2 - (minx + maxx) / 2 * S.cam.scale;
+  S.cam.ty = h / 2 + (miny + maxy) / 2 * S.cam.scale;
+}
+
+/* World-locked scale grid: pans/zooms with the geometry and adapts its
+   step so lines stay ~40-200px apart. The label doubles as a scale bar
+   readout, which is the grid's actual job. */
+var GRID_STEPS = [0.25, 0.5, 1, 2, 5, 10, 25, 50, 100, 250, 500, 1000];
+
+function drawGrid() {
+  var grid = $("grid");
+  while (grid.firstChild) grid.removeChild(grid.firstChild);
+
+  var wrap = $("canvas-wrap");
+  var w = wrap.clientWidth || 800, h = wrap.clientHeight || 500;
+
+  var step = GRID_STEPS[GRID_STEPS.length - 1];
+  for (var i = 0; i < GRID_STEPS.length; i++) {
+    if (GRID_STEPS[i] * S.cam.scale >= 40) { step = GRID_STEPS[i]; break; }
+  }
+  var stepPx = step * S.cam.scale;
+  var label = $("grid-label");
+  if (stepPx > w && stepPx > h) {
+    label.textContent = "";
+    return; // zoomed out past any useful grid
+  }
+
+  // Visible world bounds (invert the camera transform).
+  var wx0 = (0 - S.cam.tx) / S.cam.scale;
+  var wx1 = (w - S.cam.tx) / S.cam.scale;
+  var wy0 = (S.cam.ty - h) / S.cam.scale;
+  var wy1 = (S.cam.ty - 0) / S.cam.scale;
+
+  var stroke = css("--line");
+
+  function line(x1, y1, x2, y2) {
+    var el = document.createElementNS(SVGNS, "line");
+    el.setAttribute("x1", x1.toFixed(1)); el.setAttribute("y1", y1.toFixed(1));
+    el.setAttribute("x2", x2.toFixed(1)); el.setAttribute("y2", y2.toFixed(1));
+    el.setAttribute("stroke", stroke);
+    el.setAttribute("stroke-width", "1");
+    grid.appendChild(el);
+  }
+
+  for (var gx = Math.ceil(wx0 / step) * step; gx <= wx1; gx += step) {
+    var sx = gx * S.cam.scale + S.cam.tx;
+    line(sx, 0, sx, h);
+  }
+  for (var gy = Math.ceil(wy0 / step) * step; gy <= wy1; gy += step) {
+    var sy = -gy * S.cam.scale + S.cam.ty;
+    line(0, sy, w, sy);
+  }
+
+  label.textContent = "Grid · " +
+    (step < 1 ? (step * 12).toFixed(0) + " in" : step + " ft");
+}
+
+/* Source-outline prototype: the element's real plan geometry in feet (y
+   flipped for screen), instanced per copy via <use>. Built ONCE — it never
+   changes — so slider ticks only rebuild the cheap <use> nodes.
+   non-scaling-stroke keeps the linework at 1px whatever the zoom. */
+function buildOutlineProto() {
+  var defs = $("outline-defs");
+  while (defs.firstChild) defs.removeChild(defs.firstChild);
+  if (!S.outline.length) return;
+  var proto = document.createElementNS(SVGNS, "g");
+  proto.setAttribute("id", "src-outline");
+  for (var q = 0; q < S.outline.length; q++) {
+    var polyPts = [];
+    for (var r = 0; r < S.outline[q].length; r++) {
+      var op = S.outline[q][r];
+      polyPts.push(op[0].toFixed(3) + "," + (-op[1]).toFixed(3));
+    }
+    var pl0 = document.createElementNS(SVGNS, "polyline");
+    pl0.setAttribute("points", polyPts.join(" "));
+    pl0.setAttribute("fill", "none");
+    pl0.setAttribute("vector-effect", "non-scaling-stroke");
+    proto.appendChild(pl0);
+  }
+  defs.appendChild(proto);
+}
+
+function render(animateChange) {
+  var previous = S.copyNodes.map(function (node) { return node.getAttribute("data-position"); });
+  var world = $("world");
+  while (world.firstChild) world.removeChild(world.firstChild);
+  drawGrid();
+
+  var inkSteel = css("--accent");
+
+  // Path polyline
+  var d = "";
+  for (var i = 0; i < S.path.length; i++) {
+    var sp = worldToScreen(S.path[i]);
+    d += (i === 0 ? "M" : "L") + sp[0].toFixed(1) + " " + sp[1].toFixed(1);
+  }
+  var pathEl = document.createElementNS(SVGNS, "path");
+  pathEl.setAttribute("d", d);
+  pathEl.setAttribute("fill", "none");
+  pathEl.setAttribute("stroke", inkSteel);
+  pathEl.setAttribute("stroke-width", "1.5");
+  world.appendChild(pathEl);
+
+  // Copies. The outline is the source's CURRENT plan geometry, so each copy
+  // rotates by rot_delta (the rotation actually applied on top of the
+  // preserved source rotation) -- the preview shows exactly what lands.
+  S.copyNodes = [];
+  for (var k = 0; k < S.placements.length; k++) {
+    var pl = S.placements[k];
+    var sp2 = worldToScreen([pl.x, pl.y, pl.z]);
+    var g = document.createElementNS(SVGNS, "g");
+    g.setAttribute("class", "aap-copy");
+    g.setAttribute("data-idx", String(k));
+    g.setAttribute("data-position", sp2[0] + "," + sp2[1]);
+    if (S.outline.length) {
+      var use = document.createElementNS(SVGNS, "use");
+      use.setAttribute("href", "#src-outline");
+      use.setAttribute("transform",
+        "translate(" + sp2[0].toFixed(1) + " " + sp2[1].toFixed(1) + ")" +
+        " rotate(" + (-pl.rot_delta).toFixed(2) + ")" +
+        " scale(" + S.cam.scale.toFixed(4) + ")");
+      g.appendChild(use);
+    }
+    var dot = document.createElementNS(SVGNS, "circle");
+    dot.setAttribute("r", "3");
+    dot.setAttribute("cx", sp2[0].toFixed(1));
+    dot.setAttribute("cy", sp2[1].toFixed(1));
+    g.appendChild(dot);
+    world.appendChild(g);
+    S.copyNodes.push(g);
+    if (animateChange && S.placements.length <= 150) {
+      var old = previous[k] && previous[k].split(",").map(Number);
+      var dx = old ? old[0] - sp2[0] : 0, dy = old ? old[1] - sp2[1] : 8;
+      ToolMotion.animate(g, [{transform: "translate(" + dx + "px," + dy + "px)", opacity: old ? 0.7 : 0},
+        {transform: "translate(0,0)", opacity: 1}], {duration: 260, delay: old ? 0 : Math.min(k * 12, 220)});
+    }
+  }
+
+  // Re-apply pinned selection after a rebuild (deselect if count shrank).
+  if (S.selectedIdx !== null && S.selectedIdx >= S.placements.length) {
+    S.selectedIdx = null;
+  }
+  if (S.selectedIdx !== null) {
+    S.copyNodes[S.selectedIdx].classList.add("aap-sel");
+    showInspector(S.selectedIdx, true);
+  } else {
+    hideInspector();
+  }
+}
+
+function updateStats(compute) {
+  $("m-length").textContent = S.totalLen.toFixed(2) + " ft";
+  $("m-count").textContent = String(S.placements.length) + (compute.capped ? " (capped)" : "");
+  var spacing;
+  if (compute.inputs.mode === "count" && S.placements.length > 1) {
+    spacing = S.totalLen / (Math.max(2, Math.round(compute.inputs.value)) - 1);
+  } else {
+    spacing = compute.inputs.value;
+  }
+  $("m-spacing").textContent = spacing.toFixed(2) + " ft";
+  $("m-mode").textContent = compute.inputs.mode === "count" ? "Count" : "Spacing";
+}
+
+function refresh() {
+  if (S.path.length < 2 || S.executed) return;
+  if (!inputsValid()) {
+    $("btn-apply").disabled = true;
+    $("action-note").textContent = "Enter valid values within the displayed input ranges.";
+    return;
+  }
+  var compute = computePlacements();
+  render(true);
+  updateStats(compute);
+  updateAction(compute);
+}
+
+/* ================================================================
+   Inspector chip: transient on hover, pinned on click.
+   ================================================================ */
+function showInspector(idx, pinned) {
+  var pl = S.placements[idx];
+  if (!pl) return;
+  var wrap = $("canvas-wrap");
+  var insp = $("inspector");
+  insp.textContent = "#" + (pl.index + 1) + (pinned ? " / PINNED" : "") + "\n" +
+    "Station  " + pl.station.toFixed(2) + " ft\n" +
+    "Location " + pl.x.toFixed(1) + ", " + pl.y.toFixed(1) + "\n" +
+    "Rotation " + pl.rot.toFixed(1) + " deg";
+  insp.classList.add("aap-visible");
+  // Flip away from the copy so the chip never sits on top of it or the
+  // canvas edge: right of the point by default, left when near the right
+  // edge; below-top clamped.
+  var sp = worldToScreen([pl.x, pl.y, pl.z]);
+  var w = insp.offsetWidth || 170, h = insp.offsetHeight || 70;
+  var left = sp[0] + 22;
+  if (left + w > wrap.clientWidth - 8) left = sp[0] - w - 22;
+  var top = sp[1] - h - 16;
+  if (top < 8) top = sp[1] + 22;
+  insp.style.left = Math.max(8, left) + "px";
+  insp.style.top = Math.min(Math.max(8, top), wrap.clientHeight - h - 8) + "px";
+}
+
+function hideInspector() {
+  $("inspector").classList.remove("aap-visible");
+}
+
+function setHot(idx) {
+  if (S.hoveredIdx !== null && S.copyNodes[S.hoveredIdx]) {
+    S.copyNodes[S.hoveredIdx].classList.remove("aap-hot");
+  }
+  S.hoveredIdx = idx;
+  if (idx !== null && S.copyNodes[idx]) {
+    S.copyNodes[idx].classList.add("aap-hot");
+  }
+}
+
+function nearestCopy(mx, my, maxPx) {
+  var best = null, bestD = (maxPx || 40) * (maxPx || 40);
+  for (var i = 0; i < S.placements.length; i++) {
+    var pl = S.placements[i];
+    var sp = worldToScreen([pl.x, pl.y, pl.z]);
+    var dx = sp[0] - mx, dy = sp[1] - my;
+    var d2 = dx * dx + dy * dy;
+    if (d2 < bestD) { bestD = d2; best = i; }
+  }
+  return best;
+}
+
+/* ================================================================
+   Pan / zoom / hover / click-to-pin
+   ================================================================ */
+(function wireCanvas() {
+  var wrap = $("canvas-wrap");
+  var panning = false, lastX = 0, lastY = 0;
+  var downX = 0, downY = 0, dragged = false;
+
+  wrap.addEventListener("mousedown", function (e) {
+    if (e.button !== 0 && e.button !== 1) return;
+    panning = true; dragged = false;
+    lastX = downX = e.clientX; lastY = downY = e.clientY;
+    wrap.classList.add("aap-panning");
+    e.preventDefault();
+  });
+  window.addEventListener("mouseup", function (e) {
+    var wasPanning = panning;
+    panning = false;
+    wrap.classList.remove("aap-panning");
+    if (!wasPanning || dragged || e.button === 1) return;
+    // A stationary left click: pin the copy under the cursor, or unpin.
+    var rect = wrap.getBoundingClientRect();
+    if (e.clientX < rect.left || e.clientX > rect.right ||
+        e.clientY < rect.top || e.clientY > rect.bottom) return;
+    var idx = nearestCopy(e.clientX - rect.left, e.clientY - rect.top, 40);
+    if (S.selectedIdx !== null && S.copyNodes[S.selectedIdx]) {
+      S.copyNodes[S.selectedIdx].classList.remove("aap-sel");
+    }
+    if (idx !== null && idx !== S.selectedIdx) {
+      S.selectedIdx = idx;
+      setHot(null);
+      S.copyNodes[idx].classList.add("aap-sel");
+      showInspector(idx, true);
+    } else {
+      S.selectedIdx = null;
+      hideInspector();
+    }
+  });
+  window.addEventListener("mousemove", function (e) {
+    if (!panning) return;
+    if (Math.abs(e.clientX - downX) + Math.abs(e.clientY - downY) > 4) {
+      dragged = true;
+    }
+    if (!dragged) return;
+    S.cam.tx += e.clientX - lastX;
+    S.cam.ty += e.clientY - lastY;
+    lastX = e.clientX; lastY = e.clientY;
+    render();
+  });
+  wrap.addEventListener("wheel", function (e) {
+    e.preventDefault();
+    var rect = wrap.getBoundingClientRect();
+    var mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    var f = e.deltaY < 0 ? 1.1 : 0.9;
+    S.cam.tx = mx - (mx - S.cam.tx) * f;
+    S.cam.ty = my - (my - S.cam.ty) * f;
+    S.cam.scale = Math.max(0.01, Math.min(10000, S.cam.scale * f));
+    render();
+  }, { passive: false });
+
+  // Transient hover (suppressed while a copy is pinned).
+  wrap.addEventListener("mousemove", function (e) {
+    if (panning || !S.placements.length) return;
+    if (S.selectedIdx !== null) return;
+    var rect = wrap.getBoundingClientRect();
+    var idx = nearestCopy(e.clientX - rect.left, e.clientY - rect.top, 40);
+    setHot(idx);
+    if (idx !== null) showInspector(idx, false);
+    else hideInspector();
+  });
+  wrap.addEventListener("mouseleave", function () {
+    setHot(null);
+    if (S.selectedIdx === null) hideInspector();
+  });
+  window.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && S.selectedIdx !== null) {
+      if (S.copyNodes[S.selectedIdx]) {
+        S.copyNodes[S.selectedIdx].classList.remove("aap-sel");
+      }
+      S.selectedIdx = null;
+      hideInspector();
+    }
+  });
+})();
+
+/* ================================================================
+   Controls wiring: slider <-> number pairs, mode switch, reseed.
+   ================================================================ */
+
+
+function setState(text) { $("tool-state").textContent = text; }
+function fail(message) {
+  S.executed = false;
+  document.body.dataset.state = "ready";
+  $("btn-close").disabled = false;
+  setState(message);
+  refresh();
+}
+function newPlacements() {
+  var anchor = S.source && S.source.anchor;
+  return S.placements.filter(function (p) {
+    return !anchor || vlen(vsub([p.x,p.y,p.z], anchor)) >= 0.01;
+  });
+}
+function inputsValid() {
+  return ["in-spacing","in-offset","in-rotjit","in-posjit"].every(function (id) {
+    var el = $(id);
+    return el.value !== "" && Number.isFinite(Number(el.value)) && el.checkValidity();
+  });
+}
+function updateAction(compute) {
+  var count = newPlacements().length;
+  $("m-count").textContent = String(count) + (compute.capped ? " / capped" : "");
+  $("apply-count").textContent = String(count);
+  $("btn-apply").disabled = count === 0 || S.executed;
+  $("action-note").textContent = compute.capped
+    ? "Limited to 2000 stations. Increase spacing to cover the entire path."
+    : (hosted ? "One undoable transaction. Your source stays in place." : "Browser demo. Placement is simulated; no Revit model is connected.");
+}
+function pair(sliderId, numberId) {
+  var sl = $(sliderId), num = $(numberId);
+  sl.addEventListener("input", function () { num.value = sl.value; queueRefresh(); });
+  num.addEventListener("input", function () { sl.value = num.value; queueRefresh(); });
+}
+var refreshFrame = null;
+function queueRefresh() {
+  if (refreshFrame !== null) return;
+  refreshFrame = requestAnimationFrame(function () { refreshFrame = null; refresh(); });
+}
+pair("sl-spacing", "in-spacing"); pair("sl-offset", "in-offset");
+pair("sl-rotjit", "in-rotjit"); pair("sl-posjit", "in-posjit");
+var rememberedValues = {distance: 5, count: 24};
+var lastMode = "distance";
+function applyMode() {
+  rememberedValues[lastMode] = Math.max(lastMode === "count" ? 2 : 0.5, Number($("in-spacing").value) || rememberedValues[lastMode]);
+  lastMode = $("mode-count").checked ? "count" : "distance";
+  var countMode = lastMode === "count";
+  document.querySelector(".aap-mode-row").dataset.mode = lastMode;
+  $("lbl-spacing").textContent = countMode ? "Number of stations" : "Spacing (ft)";
+  [$("sl-spacing"), $("in-spacing")].forEach(function (el) {
+    el.min = countMode ? "2" : "0.5"; el.max = countMode ? "2000" : "50";
+    el.step = countMode ? "1" : "0.1"; el.value = String(rememberedValues[lastMode]);
+  });
+  ToolMotion.animate($("lbl-spacing"), [{opacity: 0, transform: "translateY(4px)"}, {opacity: 1, transform: "translateY(0)"}]);
+  refresh();
+}
+$("mode-distance").addEventListener("change", applyMode);
+$("mode-count").addEventListener("change", applyMode);
+$("chk-align").addEventListener("change", refresh);
+$("chk-preserve").addEventListener("change", refresh);
+$("btn-reseed").addEventListener("click", function () {
+  S.seed = (Math.random() * 100000) | 0;
+  $("seed-label").textContent = "Seed " + String(S.seed).padStart(5,"0");
+  ToolMotion.animate(document.querySelector(".aap-dice"), [{transform: "rotate(0)"}, {transform: "rotate(180deg)"}], {duration: 380});
+  refresh();
+});
+$("scatter-panel").addEventListener("toggle", function () {
+  if (this.open) ToolMotion.enter(this.querySelectorAll(".aap-scatter-body > *"));
+});
+$("btn-motion").addEventListener("click", ToolMotion.toggle);
+$("btn-fit").addEventListener("click", function () { fitCamera(); render(); });
+$("btn-replay").addEventListener("click", function () {
+  if (!ToolMotion.allowed()) return;
+  var path = $("world").querySelector("path");
+  if (!path) return;
+  var length = path.getTotalLength();
+  ToolMotion.animate(path, [{strokeDasharray: length, strokeDashoffset: length}, {strokeDasharray: length, strokeDashoffset: 0}], {duration: 900});
+  if (S.copyNodes.length <= 150) S.copyNodes.forEach(function (node,index) {
+    ToolMotion.animate(node, [{opacity: 0}, {opacity: 1}], {duration: 250, delay: Math.min(index * 20,650)});
+  });
+});
+$("btn-close").addEventListener("click", function () {
+  if (hosted) window.{{ ns }}.close(); else setState("Browser demo / close this browser tab to exit");
+});
+$("btn-apply").addEventListener("click", function () {
+  if (S.executed || !inputsValid()) return;
+  // Flush any queued slider input before submitting the exact final preview.
+  refresh();
+  var placements = newPlacements();
+  if (!placements.length) return;
+  S.executed = true;
+  document.body.dataset.state = "submitting";
+  $("btn-apply").disabled = true;
+  $("btn-close").disabled = true;
+  $("apply-label").textContent = hosted ? "Submitting" : "Simulating";
+  setState(hosted ? "Submitting preview" : "Simulating placement");
+  var inp = readInputs();
+  var payload = {placements: placements.map(function (p) {
+    return {x:p.x,y:p.y,z:p.z,rot_delta:p.rot_delta,station:p.station};
+  }), settings: {mode:inp.mode,value:inp.value,offset:inp.offset,align:inp.align,
+    preserve:inp.preserve,rot_jit:inp.rotJit,pos_jit:inp.posJit,seed:S.seed}};
+  if (hosted) {
+    window.{{ ns }}.call("execute", payload).then(function (result) {
+      if (!result || !result.accepted) throw new Error("Revit did not accept the plan.");
+      $("action-note").textContent = "Preview submitted. Closing to place copies in Revit.";
+      return window.{{ ns }}.close();
+    }).catch(function (error) {
+      $("apply-label").textContent = "Place copies";
+      fail("Could not submit: " + error.message);
+    });
+  } else {
+    // This is explicitly UI feedback, not evidence of a Revit commit.
+    ToolMotion.enter(S.copyNodes.slice(0,150));
+    setTimeout(function () {
+      $("apply-label").textContent = "Place copies";
+      fail(placements.length + " copies / simulation complete");
+    }, 700);
+  }
+});
+(function resizeRail() {
+  var divider = $("pane-divider"), main = $("main-body"), key = "{{ ns }}.arrayAlongPath.rail";
+  var width = 320;
+  try { width = Number(localStorage.getItem(key)) || 320; } catch (e) {}
+  function setWidth(value, persist) {
+    var max = Math.max(280, Math.min(480, main.clientWidth - 370));
+    width = Math.max(280, Math.min(max, value));
+    main.style.setProperty("--rail-width", width + "px");
+    divider.setAttribute("aria-valuenow", String(Math.round(width)));
+    divider.setAttribute("aria-valuemax", String(Math.round(max)));
+    if (persist) { try { localStorage.setItem(key,String(width)); } catch (e) {} }
+  }
+  setWidth(width);
+  divider.addEventListener("pointerdown", function (e) {
+    if (e.button !== 0) return;
+    divider.setPointerCapture(e.pointerId);
+    function move(event) { setWidth(event.clientX-main.getBoundingClientRect().left,false); }
+    function up(event) {
+      divider.removeEventListener("pointermove",move);
+      divider.removeEventListener("pointerup",up); divider.removeEventListener("pointercancel",up);
+      if (divider.hasPointerCapture(event.pointerId)) divider.releasePointerCapture(event.pointerId);
+      setWidth(width,true);
+    }
+    divider.addEventListener("pointermove",move); divider.addEventListener("pointerup",up); divider.addEventListener("pointercancel",up);
+  });
+  divider.addEventListener("keydown", function (e) {
+    if (["ArrowLeft","ArrowRight","Home"].indexOf(e.key) === -1) return;
+    e.preventDefault(); setWidth(e.key === "Home" ? 320 : width+(e.key === "ArrowLeft" ? -16 : 16),true);
+  });
+  window.addEventListener("resize", function () { if (window.innerWidth > 760) setWidth(width); });
+})();
+$("canvas-wrap").addEventListener("keydown", function (e) {
+  var handled = true;
+  if (e.key === "f" || e.key === "F") fitCamera();
+  else if (e.key === "+" || e.key === "=" || e.key === "-") {
+    var wrap=$("canvas-wrap"), factor=e.key === "-" ? 0.9 : 1.1;
+    S.cam.tx=wrap.clientWidth/2-(wrap.clientWidth/2-S.cam.tx)*factor;
+    S.cam.ty=wrap.clientHeight/2-(wrap.clientHeight/2-S.cam.ty)*factor;
+    S.cam.scale*=factor;
+  } else if (e.key.indexOf("Arrow") === 0) {
+    S.cam.tx += e.key === "ArrowLeft" ? 24 : e.key === "ArrowRight" ? -24 : 0;
+    S.cam.ty += e.key === "ArrowUp" ? 24 : e.key === "ArrowDown" ? -24 : 0;
+  } else if (e.key === "[" || e.key === "]") {
+    S.selectedIdx = Math.max(0, Math.min(S.placements.length-1,(S.selectedIdx === null ? 0 : S.selectedIdx)+(e.key === "[" ? -1 : 1)));
+    if (S.placements[S.selectedIdx]) $("action-note").textContent = "Copy " + (S.selectedIdx+1) + " at " + S.placements[S.selectedIdx].station.toFixed(2) + " ft";
+  } else handled=false;
+  if (handled) { e.preventDefault(); render(); }
+});
+
+function demoData() {
+  // S-curve demo path + a chair-ish plan outline for browser preview.
+  var pts = [];
+  for (var i = 0; i <= 60; i++) {
+    var t = i / 60;
+    pts.push([t * 90, Math.sin(t * Math.PI * 1.6) * 22, 0]);
+  }
+  var outline = [
+    // seat
+    [[-0.9, -0.8], [0.9, -0.8], [0.9, 0.8], [-0.9, 0.8], [-0.9, -0.8]],
+    // back rest
+    [[-0.9, 0.55], [0.9, 0.55]],
+    [[-0.9, 0.8], [-0.9, 0.55]], [[0.9, 0.8], [0.9, 0.55]],
+    // arm rests
+    [[-1.1, -0.6], [-0.9, -0.6]], [[1.1, -0.6], [0.9, -0.6]],
+    [[-1.1, -0.6], [-1.1, 0.55]], [[1.1, -0.6], [1.1, 0.55]]
+  ];
+  return {
+    path: pts,
+    normal: [0, 0, 1],
+    outline: outline,
+    source: {
+      label: "Lounge chair / browser demo",
+      anchor: [0, 3.2, 0],
+      offset_vector: [0, 3.2, 0],
+      offset_distance: 3.2
+    },
+    skipped_curves: 0
+  };
+}
+
+function boot(data) {
+  S.path = data.path || [];
+  S.normal = vnorm(data.normal || [0, 0, 1]);
+  if (vlen(S.normal) < 0.5) S.normal = [0, 0, 1];
+  S.outline = data.outline || [];
+  S.outlineIsBbox = !!data.outline_is_bbox;
+  S.source = data.source || null;
+  buildCumdist();
+  buildOutlineProto();
+
+  if (S.source && S.source.offset_distance > 0.01) {
+    $("chk-preserve").checked = true;
+    $("preserve-note").textContent =
+      "Source sits " + S.source.offset_distance.toFixed(2) +
+      " ft off the path. Uncheck to snap copies onto the path.";
+  } else {
+    $("preserve-note").textContent = "";
+  }
+  if (S.source && S.source.label) {
+    $("source-line").textContent = "Source: " + S.source.label +
+      ". Apply copies it; the original stays put." +
+      (S.outlineIsBbox
+        ? " Preview shows its bounding box — Revit exposes no plan geometry"
+          + " for this family."
+        : "");
+  }
+  if (data.skipped_curves) {
+    setState(data.skipped_curves + " curve(s) skipped");
+  }
+
+  fitCamera();
+  refresh();
+  new ResizeObserver(function () { if (!S.executed) { fitCamera(); render(); } }).observe($("canvas-wrap"));
+  ToolMotion.enter(document.querySelectorAll(".aap-step, .aap-preview-pane, .aap-actions"));
+}
+
+if (hosted) {
+  window.{{ ns }}.call("init_data", {}).then(boot).catch(function (e) {
+    reportClientError("init_data failed: " + e.message, e.pythonTraceback);
+    setState("Could not load model preview");
+    $("action-note").textContent = e.message;
+  });
+} else {
+  document.title += " (browser simulation)";
+  setState("Browser demo / no model changes");
+  boot(demoData());
+}
+
