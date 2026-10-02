@@ -42,6 +42,8 @@ cost and maintainability should decide a later switch.
   user-triggered; nothing runs continuously while the modeler works.
 - Primary-action arrows and registration marks respond to hover and press.
   The label changes on submission, and browser simulation reports itself as such.
+- Orientation checkmarks draw/erase and their square controls briefly compress
+  and settle on change. Native checkbox semantics and keyboard operation remain.
 - Keyboard/pointer pane resizing persists per user; narrow windows stack preview
   and controls. Keyboard users can pan, zoom, fit and inspect the preview.
 

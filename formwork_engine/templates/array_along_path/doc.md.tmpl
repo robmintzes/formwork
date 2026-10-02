@@ -7,6 +7,11 @@ and Undo verification. Ribbon: **{{ tab_display }} / Elements / Array Along Path
    point-located family instance or group. Escape cancels without changing the model.
 2. Adjust spacing or count, tangent alignment, side offset, source offset and
    seeded position/rotation jitter. Pan, zoom, fit, inspect or pin copies.
+   **By count / Copies** places new copies after the path start, including the
+   end. The slider defaults to 1–50; Slider max changes its range up to 2000 and
+   remembers that choice. Typing a larger count expands the slider range.
+   Reducing Slider max also reduces a count above that maximum.
+   Any location overlapping the original is skipped and reported in the footer.
 3. Place copies submits the preview and closes the web window. Python validates
    the plan and source again, then copies and rotates elements in the original
    pyRevit command context, in one transaction. Source-anchor duplicates are
@@ -17,11 +22,15 @@ Revit internal units; non-horizontal paths should be reviewed in Revit. Shared
 nested families and groups contribute source outlines; meshes use a convex hull;
 a bounding box is the last-resort fallback and is disclosed in the source note.
 Disconnected curves are skipped with a visible warning. Maximum 2000 stations.
+The original's outline and **Original** marker stay at its actual anchor location,
+independent of offsets, alignment and scatter; it is excluded from new-copy totals.
 
 The control pane has a draggable/keyboard separator (arrows, Home to reset),
 per-user width persistence, and a stacked layout below 760px. Fit view and motion
 replay are explicit actions. CSS and native Web Animations provide interruptible
 feedback, a moving mode indicator, contextual seed feedback, and station reveal.
+Both Orientation checkboxes draw/erase their checkmarks and respond with a brief
+scale animation while retaining native checkbox keyboard and screen reader behavior.
 Reduced motion removes travel, reveal and stagger by default; Preview motion
 allows an explicit opt-in for this window. Geometry transitions stop
 above 150 stations so large arrays remain responsive. No CDN or npm is needed.

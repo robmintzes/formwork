@@ -152,9 +152,11 @@ function computePlacements() {
       stations.push(Math.min(s, S.totalLen));
     }
   } else {
-    var count = Math.max(2, Math.min(Math.round(inp.value), MAX_COPIES));
-    var stepc = S.totalLen / (count - 1);
-    for (var i = 0; i < count; i++) stations.push(i * stepc);
+    // Count means new copies after the path start, which the original occupies
+    // in the usual workflow. A requested 14 copies produces 14 new locations.
+    var count = Math.max(1, Math.min(Math.round(inp.value), MAX_COPIES));
+    var stepc = S.totalLen / count;
+    for (var i = 1; i <= count; i++) stations.push(i * stepc);
   }
 
   var startTan = evaluatePath(0).tan;
@@ -205,6 +207,13 @@ function fitCamera() {
   var w = wrap.clientWidth || 800, h = wrap.clientHeight || 500;
   var xs = [], ys = [];
   S.path.forEach(function (p) { xs.push(p[0]); ys.push(p[1]); });
+  S.placements.forEach(function (p) { xs.push(p.x); ys.push(p.y); });
+  if (S.source) {
+    xs.push(S.source.anchor[0]); ys.push(S.source.anchor[1]);
+    S.outline.forEach(function (poly) { poly.forEach(function (p) {
+      xs.push(S.source.anchor[0] + p[0]); ys.push(S.source.anchor[1] + p[1]);
+    }); });
+  }
   var minx = Math.min.apply(null, xs), maxx = Math.max.apply(null, xs);
   var miny = Math.min.apply(null, ys), maxy = Math.max.apply(null, ys);
   var spanx = Math.max(maxx - minx, 1), spany = Math.max(maxy - miny, 1);
@@ -347,6 +356,37 @@ function render(animateChange) {
     }
   }
 
+  // Original source is a separate, fixed overlay. It is never a placement,
+  // never jittered/rotated by settings, and never included in the copy count.
+  if (S.source) {
+    var origin = worldToScreen(S.source.anchor);
+    var original = document.createElementNS(SVGNS, "g");
+    original.setAttribute("class", "aap-source-marker");
+    original.setAttribute("data-position", origin[0] + "," + origin[1]);
+    var title = document.createElementNS(SVGNS, "title");
+    title.textContent = "Original source / stays in place";
+    original.appendChild(title);
+    var ring = document.createElementNS(SVGNS, "circle");
+    ring.setAttribute("class", "aap-source-ring");
+    ring.setAttribute("cx", origin[0]); ring.setAttribute("cy", origin[1]); ring.setAttribute("r", "12");
+    original.appendChild(ring);
+    var labelOffset = 24;
+    if (S.outline.length) {
+      var sourceUse = document.createElementNS(SVGNS, "use");
+      sourceUse.setAttribute("href", "#src-outline");
+      sourceUse.setAttribute("transform", "translate(" + origin[0] + " " + origin[1] + ") scale(" + S.cam.scale + ")");
+      original.appendChild(sourceUse);
+      S.outline.forEach(function (poly) { poly.forEach(function (p) {
+        labelOffset = Math.max(labelOffset, p[1] * S.cam.scale + 14);
+      }); });
+    }
+    var label = document.createElementNS(SVGNS, "text");
+    label.setAttribute("x", origin[0]); label.setAttribute("y", origin[1] - labelOffset);
+    label.setAttribute("text-anchor", "middle"); label.textContent = "Original";
+    original.appendChild(label);
+    world.appendChild(original);
+  }
+
   // Re-apply pinned selection after a rebuild (deselect if count shrank).
   if (S.selectedIdx !== null && S.selectedIdx >= S.placements.length) {
     S.selectedIdx = null;
@@ -363,8 +403,8 @@ function updateStats(compute) {
   $("m-length").textContent = S.totalLen.toFixed(2) + " ft";
   $("m-count").textContent = String(S.placements.length) + (compute.capped ? " (capped)" : "");
   var spacing;
-  if (compute.inputs.mode === "count" && S.placements.length > 1) {
-    spacing = S.totalLen / (Math.max(2, Math.round(compute.inputs.value)) - 1);
+  if (compute.inputs.mode === "count") {
+    spacing = S.totalLen / Math.max(1, Math.round(compute.inputs.value));
   } else {
     spacing = compute.inputs.value;
   }
@@ -555,11 +595,17 @@ function updateAction(compute) {
   $("action-note").textContent = compute.capped
     ? "Limited to 2000 stations. Increase spacing to cover the entire path."
     : (hosted ? "One undoable transaction. Your source stays in place." : "Browser demo. Placement is simulated; no Revit model is connected.");
+  if (compute.inputs.mode === "count" && count < Math.round(compute.inputs.value)) {
+    $("action-note").textContent += " " + (Math.round(compute.inputs.value)-count) + " source-overlapping location(s) skipped.";
+  }
 }
 function pair(sliderId, numberId) {
   var sl = $(sliderId), num = $(numberId);
   sl.addEventListener("input", function () { num.value = sl.value; queueRefresh(); });
-  num.addEventListener("input", function () { sl.value = num.value; queueRefresh(); });
+  num.addEventListener("input", function () {
+    if (sliderId === "sl-spacing" && $("mode-count").checked && num.checkValidity()) ensureCountRange(Number(num.value));
+    sl.value = num.value; queueRefresh();
+  });
 }
 var refreshFrame = null;
 function queueRefresh() {
@@ -570,23 +616,50 @@ pair("sl-spacing", "in-spacing"); pair("sl-offset", "in-offset");
 pair("sl-rotjit", "in-rotjit"); pair("sl-posjit", "in-posjit");
 var rememberedValues = {distance: 5, count: 24};
 var lastMode = "distance";
+var countRangeKey = "{{ ns }}.arrayAlongPath.countMax";
+function ensureCountRange(value) {
+  var range = $("in-count-max");
+  if (value > Number(range.value)) {
+    var choices = Array.prototype.map.call(range.options, function (option) { return Number(option.value); });
+    range.value = String(choices.find(function (max) { return max >= value; }) || MAX_COPIES);
+  }
+  $("sl-spacing").max = range.value;
+  try { localStorage.setItem(countRangeKey, range.value); } catch (e) {}
+}
+try {
+  var savedRange = localStorage.getItem(countRangeKey);
+  if (Array.prototype.some.call($("in-count-max").options, function (option) { return option.value === savedRange; })) $("in-count-max").value = savedRange;
+} catch (e) {}
+$("in-count-max").addEventListener("change", function () {
+  rememberedValues.count = Math.max(1, Math.min(Number(this.value), Number($("in-spacing").value) || rememberedValues.count));
+  $("in-spacing").value = String(rememberedValues.count);
+  $("sl-spacing").value = String(rememberedValues.count);
+  ensureCountRange(rememberedValues.count);
+  refresh();
+});
 function applyMode() {
-  rememberedValues[lastMode] = Math.max(lastMode === "count" ? 2 : 0.5, Number($("in-spacing").value) || rememberedValues[lastMode]);
+  rememberedValues[lastMode] = Math.max(lastMode === "count" ? 1 : 0.5, Number($("in-spacing").value) || rememberedValues[lastMode]);
   lastMode = $("mode-count").checked ? "count" : "distance";
   var countMode = lastMode === "count";
   document.querySelector(".aap-mode-row").dataset.mode = lastMode;
-  $("lbl-spacing").textContent = countMode ? "Number of stations" : "Spacing (ft)";
+  $("lbl-spacing").textContent = countMode ? "Copies" : "Spacing (ft)";
+  $("count-range").hidden = !countMode;
   [$("sl-spacing"), $("in-spacing")].forEach(function (el) {
-    el.min = countMode ? "2" : "0.5"; el.max = countMode ? "2000" : "50";
+    el.min = countMode ? "1" : "0.5"; el.max = countMode ? "2000" : "50";
     el.step = countMode ? "1" : "0.1"; el.value = String(rememberedValues[lastMode]);
   });
+  if (countMode) ensureCountRange(rememberedValues.count);
   ToolMotion.animate($("lbl-spacing"), [{opacity: 0, transform: "translateY(4px)"}, {opacity: 1, transform: "translateY(0)"}]);
   refresh();
 }
 $("mode-distance").addEventListener("change", applyMode);
 $("mode-count").addEventListener("change", applyMode);
-$("chk-align").addEventListener("change", refresh);
-$("chk-preserve").addEventListener("change", refresh);
+["chk-align", "chk-preserve"].forEach(function (id) {
+  $(id).addEventListener("change", function () {
+    ToolMotion.animate(this.nextElementSibling, [{transform: "scale(.85)"}, {transform: "scale(1.12)", offset: .55}, {transform: "scale(1)"}], {duration: 260});
+    refresh();
+  });
+});
 $("btn-reseed").addEventListener("click", function () {
   S.seed = (Math.random() * 100000) | 0;
   $("seed-label").textContent = "Seed " + String(S.seed).padStart(5,"0");
@@ -754,7 +827,7 @@ function boot(data) {
   }
   if (data.skipped_curves) {
     setState(data.skipped_curves + " curve(s) skipped");
-  }
+  } else if (hosted) setState("Preview ready");
 
   fitCamera();
   refresh();

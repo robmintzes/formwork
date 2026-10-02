@@ -16,6 +16,10 @@ Draft PR: [#10](https://github.com/robmintzes/formwork/pull/10).
   `.logs/array-motion-live-firm-before.json`. pyRevit Reload remains a human step.
 - HTML controls and preview use CSS/native Web Animations, with bounded stagger,
   mode-indicator travel, field reveal, re-roll feedback and explicit path tracing.
+  Markup revision: compact title/header with logo at upper right; adjacent Close
+  and Place copies actions; animated Orientation checkmarks; original outline
+  and label fixed at its actual anchor. By count now means new copies after the
+  path start; slider default 1–50 with adjustable, persisted maximum up to 2000.
   The ribbon launcher uses static 32px light/dark icons. `docs/design/motion.md`
   explains the platform boundary and Motion/GSAP recommendations.
 - Browser callbacks only accept plain placement data. The HTML closes before
@@ -73,3 +77,11 @@ Draft PR: [#10](https://github.com/robmintzes/formwork/pull/10).
   reran the 9 focused tests, sandbox validation and browser checks. Committed
   responsive screenshots in `docs/verification/array-along-path/`; the local
   demonstration video is `output/playwright/array-along-path-motion.webm`.
+- 2026-10-02: Applied Rob's two screenshot markups. Removed the extra tagline,
+  moved the logo/title/Close, added a fixed Original overlay and animated native
+  checkboxes. Changed count distribution to new copies after the path start;
+  range selector, typed-count expansion, persistence and overlap reporting.
+  Updated math checks passed (9 focused tests); Edge review passed at 1280/768/390,
+  including 2000 copies, keyboard operation and reduced motion. Refreshed evidence;
+  new local video `output/playwright/array-markups-motion.webm`. Sandbox regenerated.
+  User screenshots establish preview review, not successful placement/rollback/Undo.

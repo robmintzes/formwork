@@ -11,15 +11,11 @@
 </head>
 <body class="aap-shell" data-state="ready">
 <header class="aap-header">
+  <div class="aap-titlebar"><p class="aap-kicker">Precision, with a little possibility.</p><h1>Array Along Path<span class="aap-title-dot" aria-hidden="true">.</span></h1></div>
+  <div class="aap-header-tools"><span class="aap-status" id="tool-state" role="status">Loading preview</span>
+    <button class="aap-icon-button" id="btn-motion" type="button" aria-pressed="true" title="Toggle interface motion">Motion on</button></div>
   <img class="aap-wordmark" src="wordmark.svg" alt="{{ logo_alt }}">
-  <span class="aap-kicker">Elements / Geometry</span>
-  <span class="aap-status" id="tool-state" role="status">Loading preview</span>
-  <button class="aap-icon-button" id="btn-motion" type="button" aria-pressed="true" title="Toggle interface motion">Motion on</button>
 </header>
-<div class="aap-titlebar">
-  <div><p class="aap-kicker">Precision, with a little possibility.</p><h1>Array Along Path<span class="aap-title-dot" aria-hidden="true">.</span></h1></div>
-  <p class="aap-intro">One source. A connected path.<br>A whole new rhythm.</p>
-</div>
 <main id="main-body">
   <aside class="aap-controls" id="control-rail" aria-label="Placement controls">
     <div class="aap-control-scroll">
@@ -32,6 +28,7 @@
         </div>
         <div class="aap-field"><label for="in-spacing" id="lbl-spacing">Spacing (ft)</label>
           <div class="aap-slider-row"><input type="range" id="sl-spacing" min="0.5" max="50" step="0.1" value="5" aria-labelledby="lbl-spacing"><input type="number" id="in-spacing" min="0.5" max="50" step="0.1" value="5"></div>
+          <div class="aap-count-range" id="count-range" hidden><label for="in-count-max">Slider max</label><select id="in-count-max"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option><option value="250">250</option><option value="500">500</option><option value="1000">1000</option><option value="2000">2000</option></select><span>copies</span></div>
         </div>
         <div class="aap-field"><label for="in-offset" id="lbl-offset">Side offset (ft)</label>
           <div class="aap-slider-row"><input type="range" id="sl-offset" min="-20" max="20" step="0.5" value="0" aria-labelledby="lbl-offset"><input type="number" id="in-offset" min="-20" max="20" step="0.5" value="0"></div>
@@ -39,8 +36,8 @@
       </section>
       <section class="aap-step" aria-labelledby="step-orientation">
         <h2 id="step-orientation"><span class="aap-step-index">02</span> Orientation</h2>
-        <label class="aap-check"><input type="checkbox" id="chk-align" checked><span>Follow the path tangent</span></label>
-        <label class="aap-check"><input type="checkbox" id="chk-preserve"><span>Keep the source offset</span></label>
+        <label class="aap-check"><input type="checkbox" id="chk-align" checked><span class="aap-check-box" aria-hidden="true"><svg viewBox="0 0 20 20"><polyline points="4,10 8,14 16,5"></polyline></svg></span><span>Follow the path tangent</span></label>
+        <label class="aap-check"><input type="checkbox" id="chk-preserve"><span class="aap-check-box" aria-hidden="true"><svg viewBox="0 0 20 20"><polyline points="4,10 8,14 16,5"></polyline></svg></span><span>Keep the source offset</span></label>
         <p class="aap-note" id="preserve-note"></p>
       </section>
       <section class="aap-step" aria-labelledby="step-scatter">
@@ -67,7 +64,7 @@
       <div class="aap-preview-tools"><button id="btn-replay" class="aap-icon-button" type="button">Trace path ↗</button><button id="btn-fit" class="aap-icon-button" type="button">Fit view ⤢</button></div>
     </div>
     <div class="aap-canvas-wrap" id="canvas-wrap" tabindex="0" aria-label="Plan preview. Plus or minus to zoom, arrow keys to pan, F to fit, brackets to inspect copies.">
-      <svg id="canvas" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Previewed source copies along the selected path"><defs id="outline-defs"></defs><g id="grid"></g><g id="world"></g></svg>
+      <svg id="canvas" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Original source and previewed copies along the selected path"><defs id="outline-defs"></defs><g id="grid"></g><g id="world"></g></svg>
       <span class="aap-canvas-corner" aria-hidden="true">XY / FEET</span>
       <div class="aap-grid-label" id="grid-label" aria-hidden="true"></div>
       <div class="aap-inspector" id="inspector" aria-hidden="true"></div>
@@ -82,8 +79,8 @@
   </section>
 </main>
 <footer class="aap-actions">
-  <button class="btn btn--secondary" id="btn-close" type="button">Close</button>
   <p id="action-note" role="status">Preview only. Your source stays in place.</p>
+  <button class="btn btn--secondary" id="btn-close" type="button">Close</button>
   <button class="btn btn--primary aap-apply" id="btn-apply" type="button" disabled><span class="aap-apply-icon" aria-hidden="true">↗</span><span id="apply-label">Place copies</span> <span class="aap-apply-count" id="apply-count">0</span></button>
 </footer>
 <script src="bridge.js"></script><script src="motion.js"></script><script src="tool.js"></script>

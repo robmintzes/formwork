@@ -239,6 +239,8 @@ the source. Written into `formwork_engine/adapters/web_host.py` and
   changes reject a stale preview. A bounded Python plan validator rejects
   non-finite coordinates and excessive counts. Actual copied source IDs are
   identified among dependents. The preview excludes source-anchor duplicates.
+  The markup revision counts new copies after the path start, displays the original
+  at its fixed actual anchor, and supports an adjustable count-slider maximum.
 - **New:** opt-in generator adapter, default BIMxBert activation, generated
   Elements panel spec, original 32px icons, independent tool guide, CSP without
   inline scripts/styles, generated firm theme/assets, responsive/resizable panes,
