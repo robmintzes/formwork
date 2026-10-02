@@ -1,0 +1,75 @@
+# -*- coding: utf-8 -*-
+"""Bounded placement payload validation, independent of Revit (Python 2/3)."""
+from __future__ import absolute_import
+import math
+
+__author__ = {{ author_literal }}
+MAX_COPIES = 2000
+
+
+def validate_plan(placements):
+    if not isinstance(placements, list) or not 1 <= len(placements) <= MAX_COPIES:
+        raise ValueError("Provide between 1 and 2000 preview placements.")
+    clean = []
+    for row in placements:
+        if not isinstance(row, dict):
+            raise ValueError("Each placement must be an object.")
+        item = {}
+        for key in ("x", "y", "z", "rot_delta", "station"):
+            value = row.get(key)
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError("Placement {} must be numeric.".format(key))
+            value = float(value)
+            if math.isnan(value) or math.isinf(value):
+                raise ValueError("Placement {} must be finite.".format(key))
+            if key in ("x", "y", "z") and abs(value) > 1000000:
+                raise ValueError("Placement exceeds the supported coordinate range.")
+            if key == "station" and value < 0:
+                raise ValueError("Station cannot be negative.")
+            if key == "rot_delta" and abs(value) > 360:
+                raise ValueError("Rotation exceeds the supported range.")
+            item[key] = value
+        clean.append(item)
+    return clean
+
+
+def _number(value, default=0.0):
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return default
+    value = float(value)
+    return default if math.isnan(value) or math.isinf(value) else value
+
+
+def result_description(source_label, placed, skipped, settings, path_length=0):
+    """Human-readable execution evidence; never serialize internal settings."""
+    settings = settings if isinstance(settings, dict) else {}
+    length = _number(path_length)
+    summary = "{} copies placed".format(placed)
+    lines = ["Source: " + source_label]
+    if length > 0:
+        summary += " along {:.2f} ft".format(length)
+        lines.append("Path length: {:.2f} ft".format(length))
+    if settings.get("mode") == "count":
+        lines.append("Distribution: {} copies, evenly spaced".format(int(_number(settings.get("value")))))
+    elif settings.get("mode") == "distance":
+        lines.append("Distribution: {:.2f} ft spacing".format(_number(settings.get("value"))))
+    else:
+        lines.append("Distribution: as previewed")
+    lines.extend([
+        "Side offset: {:.2f} ft".format(_number(settings.get("offset"))),
+        "Follow path tangent: " + ("On" if settings.get("align") else "Off"),
+        "Include original placement offset: " + ("On" if settings.get("preserve") else "Off"),
+    ])
+    rotation = _number(settings.get("rot_jit"))
+    position = _number(settings.get("pos_jit")) / 2.0
+    if rotation > 0:
+        lines.append("Rotation variation: up to {:.2f} degrees".format(rotation))
+    if position > 0:
+        lines.append("Position variation: up to {:.2f} ft in each direction".format(position))
+    if rotation > 0 or position > 0:
+        lines.append("Random pattern: {}".format(int(_number(settings.get("seed")))))
+    lines.append("Copies placed: {}".format(placed))
+    if skipped:
+        lines.append("Skipped on top of the source: {}".format(skipped))
+    lines.extend(["Original source unchanged.", "Undo removes this array in one step."])
+    return summary, lines

@@ -34,8 +34,8 @@ ADAPTER_ID = "ui-kit"
 TOOLTIP = "Shows the generated UI kit: a chooser, a searchable selector over view names, and a result dialog. Read-only."
 
 PURE_MODULES = ("result_model.py",)
-THEMED_MODULES = ("bootstrap.py", "result_dialog.py", "chooser_dialog.py", "selection_dialog.py")
-DIALOG_XAML = ("ResultDialog.xaml", "ChooserDialog.xaml", "SelectionDialog.xaml")
+THEMED_MODULES = ("bootstrap.py", "result_dialog.py", "chooser_dialog.py", "selection_dialog.py", "selection_guide.py")
+DIALOG_XAML = ("ResultDialog.xaml", "ChooserDialog.xaml", "SelectionDialog.xaml", "SelectionGuide.xaml")
 
 
 def _font_folder(font: FontSpec) -> str:
@@ -72,6 +72,7 @@ def _dialog_xaml(profile: Profile, name: str) -> str:
     template = "ui_kit/{}.tmpl".format(name)
     values = _dialog_values(profile)
     used = {
+        "SelectionGuide.xaml": ("ns", "logo_alt"),
         "ResultDialog.xaml": ("ns", "logo_alt", "label_copy_log", "label_close", "label_continue"),
         "ChooserDialog.xaml": ("ns", "logo_alt", "label_cancel", "label_continue"),
         "SelectionDialog.xaml": (
@@ -95,6 +96,8 @@ def _python_module(profile: Profile, name: str) -> str:
         return render_file("ui_kit/__init__.py.tmpl", {"package": values["package"]})
     if name == "result_model.py":
         return render_file("ui_kit/result_model.py.tmpl", {})
+    if name == "selection_guide.py":
+        return render_file("ui_kit/selection_guide.py.tmpl", dict(values, author_literal=py_string(profile.config.identity.author)))
     if name == "bootstrap.py":
         upper_badge = a.badge_label_case == "uppercase"
         return render_file(
@@ -208,6 +211,9 @@ def render(profile: Profile) -> RenderResult:
         )
     _, symbol = profile.asset("symbol", "inverse", "png")
     add(binary_file(package_dir + "/assets/symbol-inverse.png", symbol, ADAPTER_ID))
+    for variant in ("light", "inverse"):
+        _, wordmark = profile.asset("wordmark", variant, "png")
+        add(binary_file(package_dir + "/assets/wordmark-" + variant + ".png", wordmark, ADAPTER_ID))
 
     add(
         text_file(

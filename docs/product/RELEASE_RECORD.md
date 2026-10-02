@@ -1,7 +1,7 @@
 # Release record - imported material
 
 Every item that entered this repository from outside its own authored code.
-Updated September 30, 2026 (America/New_York). See
+Updated October 2, 2026 (America/New_York). See
 [ADR 0005](../decisions/0005-source-extraction-and-assets.md).
 
 ## R01 - BIMxBert marks (profiles/bimxbert/assets/*.svg)
@@ -218,9 +218,76 @@ the source. Written into `formwork_engine/adapters/web_host.py` and
   class has not been imported under IronPython, and the IronPython delegate conversions
   and the WebView2 policy handlers are unverified there.
 
-## Not imported
+## R07 - Array Along Path and native motion pilot (2026-10-02)
 
-Rockwell Group `design-technology` repository: beyond R05 and R06, reference only
+- **Authorization:** Rob explicitly requested this tool's port and BIMxBert
+  reskin on 2026-10-02; scoped source permission remains ADR 0005.
+- **Source checkout:** `design-technology`, commit
+  `538006ac3747d65ffdcd773cb7466ec229c36f61`; tool path
+  `RG Tools/RG_Tools.extension/RG_Tools.tab/Elements.panel/Array Along Path.pushbutton`.
+  The RG Tools_TEST copies had identical hashes at extraction.
+- **Source files / SHA-256:**
+  - `script.py`: `84025e2fdfd54e5d96b097130a48f0f021a6d5dc165ba24988f083a8a5b3c398`
+  - `array_along_path_ui.html`: `3cbd30c0d4205e17aebedceb6b36fa7c643b24ec3a854dcb967028b0a0c370e1`
+- **Kept:** curve chaining/reversal/tessellation, plan outline extraction,
+  mesh hulls, nested geometry collection, seeded preview math, camera/grid,
+  source-relative rotation, hover/pin inspector, synthetic chair demo.
+- **Rewritten:** selection uses local Revit selection filters and silent Escape;
+  geometry is read before the HTML opens; browser callbacks submit plain data
+  only. Copy/rotate runs after window closure, checks transaction start/commit
+  status, rolls back on errors, and uses a failure preprocessor. Source/context
+  changes reject a stale preview. A bounded Python plan validator rejects
+  non-finite coordinates and excessive counts. Actual copied source IDs are
+  identified among dependents. The preview excludes source-anchor duplicates.
+  The markup revision counts new copies, displays the original at its fixed
+  actual anchor, and supports an adjustable count-slider maximum. Count mode
+  includes the first offset copy; only actual source overlaps are excluded.
+  Result text reports readable placement settings instead of an internal dictionary.
+- **New:** opt-in generator adapter, default BIMxBert activation, generated
+  Elements panel spec, original 32px icons, independent tool guide, CSP without
+  inline scripts/styles, generated firm theme/assets, responsive/resizable panes,
+  keyboard inspection, motion toggle, contextual animations and native path reveal.
+- **Excluded:** source icons, commercial fonts, marks, internal deployment
+  bootstrap, `rg_select`, `rgdt_web`, `rgdt_ui`, vendor binaries and npm packages.
+  The existing generated WebView2 host supplies the WPF window and bridge.
+- **Verification:** `tests/test_array_along_path.py` covers two-profile generation,
+  workspace/spec alignment, repeat render, dependency validation, seeded preview
+  math/count cap/anchor exclusion, bounded payloads, commit and rollback with mocks.
+  Real Edge browser review at 1280/768/390 covers controls, invalid input, scatter,
+  simulation, keyboard pane sizing, motion and reduced motion. Local BIMxBert
+  sandbox generated and statically validated. Rob's subsequent screenshots show
+  live committed runs; the revised count/guide behavior and Undo still require
+  live verification. See the [handoff](../handoffs/array-along-path-motion-2026-10-02.md).
+
+## R08 - Shared canvas selection guide (2026-10-02)
+
+- **Authorization:** Rob requested the source guide-banner behavior for all
+  relevant tools, styled to the target brand; scoped reuse remains ADR 0005.
+- **Source checkout:** `design-technology`, commit
+  `91fe7c7a3eaf4a5f5f6a02871dd166d91a4015df`.
+- **References / SHA-256:**
+  - `RG Tools/RGDT.lib/rg_select/banner.py`:
+    `D119EC6B045EA3AF478F55A8E1AC0F944F314CE21D537FD19277C51CD930C73A`
+  - `RG Tools/RGDT.lib/rg_select/banner.xaml`:
+    `AE22BE09C3E5B77F85AA506582C699BD0C4BAE23CA06688F13961732DA2B35C0`
+- **Adapted:** active-UIView rectangle docking and physical-pixel/DIP conversion.
+  The source helper library is not a runtime dependency.
+- **Rewritten:** firm-local XAML, packaged wordmark/font/token resources,
+  light/inverse contrast against the canvas, lazy context-managed steps,
+  Finish/Esc guidance, stock prompt-bar fallback and guaranteed cleanup on exit.
+  Array Along Path wraps both native picks; generated authoring guidance requires
+  the shared component for subsequent tools with native picks.
+- **Excluded:** source marks, commercial fonts, theme values, deployment paths
+  and unrelated picking helpers. Code is MIT with the repository; brand assets
+  retain their existing notices.
+- **Verification:** two-profile generation/resource checks and mocked lifecycle,
+  cancellation, fallback, active-view and mixed-DPI docking tests. Native WPF
+  screenshot execution was blocked by Cylance's PowerShell script policy.
+  No native appearance or live Revit docking verification is claimed.
+
+## Not imported (remaining material)
+
+Rockwell Group `design-technology` repository: beyond R05, R06, R07 and R08, reference only
 (ADR 0005). From the BIMxBert ZIP: React/JSX components,
 provisional XAML, uploads (RGDT sources), PDFs, exploratory boards, and
 `support.js`.

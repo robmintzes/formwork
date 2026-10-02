@@ -30,6 +30,7 @@ This repository uses a structured memory layer to govern human and AI developmen
 ## 3. Revit API Safety Guidelines
 
 - **Context Validation First:** Verify the active document context (e.g., project, family, sheet) and user selection at the very start of the script, before prompting the user with dialogs or initiating database transactions.
+- **Canvas Selection Guidance:** All tools that prompt for native canvas picks use the generated UI kit's `selection_guide.SelectionGuide` context, with a clear step, instruction, and Finish/Esc hint. Close it before dialogs or transactions; use firm resources. See `docs/design/selection-guidance.md`.
 - **Transaction Safety:** 
   - Keep transactions as short and narrow as possible.
   - Never hold a transaction open while waiting for user input or displaying a UI dialog.

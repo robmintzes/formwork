@@ -126,6 +126,7 @@
     "mcp-bridge",
     "ui-kit",
     "web-host",
+    "array-along-path",
     "revit-addin",
     "python-app",
     "web-app"

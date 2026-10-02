@@ -1,0 +1,26 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        WindowStyle="None" ResizeMode="NoResize" ShowInTaskbar="False"
+        ShowActivated="False" Topmost="True" Height="56"
+        Background="{DynamicResource {{ ns }}.Color.Surface.Inverse}"
+        TextOptions.TextFormattingMode="Display" UseLayoutRounding="True">
+  <Border BorderBrush="{DynamicResource {{ ns }}.Color.Accent.Default}" BorderThickness="0,2,0,1" Padding="18,5">
+    <Grid>
+      <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+      <StackPanel VerticalAlignment="Center">
+        <TextBlock x:Name="StepBlock" FontFamily="{DynamicResource {{ ns }}.Font.Label}" FontSize="10.5"
+                   Foreground="{DynamicResource {{ ns }}.Color.Text.Inverse}" Opacity="0.85" Margin="0,0,0,2"/>
+        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+          <TextBlock x:Name="InstructionBlock" FontFamily="{DynamicResource {{ ns }}.Font.Body}" FontSize="13.5"
+                     FontWeight="SemiBold" Foreground="{DynamicResource {{ ns }}.Color.Text.Inverse}"/>
+          <TextBlock x:Name="HintBlock" Grid.Column="1" FontFamily="{DynamicResource {{ ns }}.Font.Body}" FontSize="12"
+                     Foreground="{DynamicResource {{ ns }}.Color.Text.Inverse}" Opacity="0.8" Margin="14,1,0,0" TextTrimming="CharacterEllipsis"/>
+        </Grid>
+      </StackPanel>
+      <TextBlock x:Name="DotsBlock" Grid.Column="1" VerticalAlignment="Center" Margin="18,0"
+                 FontFamily="{DynamicResource {{ ns }}.Font.Label}" FontSize="12" Foreground="{DynamicResource {{ ns }}.Color.Text.Inverse}"/>
+      <Image x:Name="BrandMark" Grid.Column="2" Width="116" Height="36" VerticalAlignment="Center"
+             RenderOptions.BitmapScalingMode="HighQuality" AutomationProperties.Name="{{ logo_alt }}"/>
+    </Grid>
+  </Border>
+</Window>

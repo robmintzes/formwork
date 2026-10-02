@@ -1,0 +1,592 @@
+# -*- coding: utf-8 -*-
+"""Array Along Path: preview first, model changes after the window closes.
+
+Geometry adapted from the Rob-authored Array Along Path tool; provenance R07.
+"""
+from __future__ import absolute_import, print_function
+import math
+import os
+from pyrevit import DB, forms, revit, script
+from Autodesk.Revit.DB import (XYZ, Transaction, TransactionStatus, ElementTransformUtils, Line,
+    Options, GeometryInstance, Solid, Curve, Mesh, ViewDetailLevel)
+from Autodesk.Revit.UI.Selection import ISelectionFilter, ObjectType
+from Autodesk.Revit.Exceptions import OperationCanceledException
+from {{ package }}.host import WebToolWindow, WebView2HostError
+from {{ package }}.bridge import expose
+from {{ package }}.compat import eid_int
+from {{ package }}.log import log
+from {{ ns }}_array_plan import validate_plan, result_description
+from {{ ui_package }}.selection_guide import SelectionGuide
+
+__author__ = {{ author_literal }}
+__title__ = "Array Along Path"
+HERE = os.path.dirname(os.path.abspath(__file__))
+ANCHOR_SKIP_TOL = 0.01  # feet
+
+def _safe_normal(normal):
+    try:
+        if normal and normal.GetLength() > 1e-9:
+            return normal.Normalize()
+    except Exception:
+        pass
+    return XYZ.BasisZ
+
+
+class TessellatedPath(object):
+    """Flatten the picked curves into one ordered polyline."""
+
+    def __init__(self, curves, normal=None):
+        self.points = []
+        self.total_len = 0.0
+        self.normal = _safe_normal(normal)
+        self.skipped_curves = 0
+        self._build(curves)
+
+    def _build(self, curves):
+        ordered = self._chain_curves(curves)
+        if not ordered:
+            return
+        current = 0.0
+        self.points.append(ordered[0].GetEndPoint(0))
+        for crv in ordered:
+            try:
+                for pt in list(crv.Tessellate())[1:]:
+                    dist = pt.DistanceTo(self.points[-1])
+                    if dist < 0.001:
+                        continue
+                    current += dist
+                    self.points.append(pt)
+            except Exception:
+                pass
+        self.total_len = current
+
+    def _chain_curves(self, curves):
+        """Order picked curves into a connected chain, reversing segments as
+        needed. Disconnected curves are dropped (counted in skipped_curves) --
+        leaving them in would create a phantom long-jump segment that inflates
+        total length and skews spacing."""
+        if not curves:
+            return []
+
+        TOL = 0.001  # feet -- endpoint snap tolerance
+
+        def _reverse_or_keep(crv):
+            try:
+                return crv.CreateReversed()
+            except Exception:
+                return crv
+
+        remaining = list(curves)
+        ordered = [remaining.pop(0)]
+
+        progress = True
+        while remaining and progress:
+            progress = False
+            end = ordered[-1].GetEndPoint(1)
+            for i, crv in enumerate(remaining):
+                if crv.GetEndPoint(0).DistanceTo(end) < TOL:
+                    ordered.append(crv)
+                    remaining.pop(i)
+                    progress = True
+                    break
+                if crv.GetEndPoint(1).DistanceTo(end) < TOL:
+                    ordered.append(_reverse_or_keep(crv))
+                    remaining.pop(i)
+                    progress = True
+                    break
+
+        progress = True
+        while remaining and progress:
+            progress = False
+            start = ordered[0].GetEndPoint(0)
+            for i, crv in enumerate(remaining):
+                if crv.GetEndPoint(1).DistanceTo(start) < TOL:
+                    ordered.insert(0, crv)
+                    remaining.pop(i)
+                    progress = True
+                    break
+                if crv.GetEndPoint(0).DistanceTo(start) < TOL:
+                    ordered.insert(0, _reverse_or_keep(crv))
+                    remaining.pop(i)
+                    progress = True
+                    break
+
+        self.skipped_curves = len(remaining)
+        return ordered
+
+    def closest_point_data(self, xyz_pt):
+        """Return (closest point, distance) from xyz_pt to the polyline."""
+        if len(self.points) < 2:
+            p = self.points[0] if self.points else XYZ.Zero
+            return p, p.DistanceTo(xyz_pt)
+        best_pt = self.points[0]
+        best_dist = 1e9
+        for i in range(len(self.points) - 1):
+            p0 = self.points[i]
+            p1 = self.points[i + 1]
+            seg = p1 - p0
+            seg_len = seg.GetLength()
+            if seg_len < 1e-9:
+                continue
+            t = (xyz_pt - p0).DotProduct(seg) / (seg_len * seg_len)
+            t = max(0.0, min(1.0, t))
+            candidate = p0 + (seg * t)
+            dist = candidate.DistanceTo(xyz_pt)
+            if dist < best_dist:
+                best_pt = candidate
+                best_dist = dist
+        return best_pt, best_dist
+
+
+def get_curve_element_normal(curve_elements):
+    """Sketch/work-plane normal for path rotation; world Z is the fallback."""
+    for element in curve_elements:
+        try:
+            sketch_plane = element.SketchPlane
+            if sketch_plane:
+                plane = sketch_plane.GetPlane()
+                return _safe_normal(plane.Normal)
+        except Exception:
+            pass
+    return XYZ.BasisZ
+
+
+OUTLINE_MAX_POINTS = 1500    # cap on total preview outline vertices
+OUTLINE_MAX_SEG_PTS = 32     # per-curve tessellation cap (decimated above this)
+OUTLINE_MIN_SPAN = 0.02      # feet -- drop curves that project to ~a point
+
+# Geometry is requested at an explicit detail level, cheapest-useful first.
+# Options.DetailLevel defaults to Undefined, which leaves the resolved level
+# up to Revit; naming it makes the preview deterministic. Medium is what most
+# working views show; Fine and Coarse are fallbacks for families whose
+# geometry is only modeled at one level.
+OUTLINE_DETAIL_LEVELS = (
+    ("medium", ViewDetailLevel.Medium),
+    ("fine", ViewDetailLevel.Fine),
+    ("coarse", ViewDetailLevel.Coarse),
+)
+
+
+def _plan_hull(points):
+    """Convex hull (monotone chain) of 2D points, closed. Used for meshes:
+    an imported/mesh family has no edge topology worth drawing -- thousands of
+    triangle edges read as mush -- so its silhouette is the faithful shape."""
+    pts = sorted(set((round(p[0], 4), round(p[1], 4)) for p in points))
+    if len(pts) < 3:
+        return None
+
+    def cross(o, a, b):
+        return ((a[0] - o[0]) * (b[1] - o[1]) -
+                (a[1] - o[1]) * (b[0] - o[0]))
+
+    lower = []
+    for p in pts:
+        while len(lower) >= 2 and cross(lower[-2], lower[-1], p) <= 0:
+            lower.pop()
+        lower.append(p)
+    upper = []
+    for p in reversed(pts):
+        while len(upper) >= 2 and cross(upper[-2], upper[-1], p) <= 0:
+            upper.pop()
+        upper.append(p)
+    hull = lower[:-1] + upper[:-1]
+    if len(hull) < 3:
+        return None
+    hull.append(hull[0])
+    return [[p[0], p[1]] for p in hull]
+
+
+def _bbox_rect_outline(element, anchor):
+    """Bounding-box rectangle relative to the anchor -- the fallback shape."""
+    try:
+        bbox = element.get_BoundingBox(None)
+    except Exception:
+        bbox = None
+    if not bbox:
+        return []
+    x0 = bbox.Min.X - anchor.X
+    y0 = bbox.Min.Y - anchor.Y
+    x1 = bbox.Max.X - anchor.X
+    y1 = bbox.Max.Y - anchor.Y
+    return [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]]
+
+
+OUTLINE_MAX_SUB_DEPTH = 4    # container-nesting depth for sub-components
+
+
+def _collect_geometry_sources(element, depth=0):
+    """The element plus its sub-component / group-member elements, recursively.
+
+    A container family carries NO geometry of its own when its parts are
+    SHARED nested families -- those are independent elements in the document,
+    reachable only through FamilyInstance.GetSubComponentIds(). Asking the
+    container for geometry yields one empty GeometryInstance, which is exactly
+    how "FN-Dining Round Table with 2 Seats" degraded to a bounding box
+    (instances=1 solids=0 meshes=0 curves=0). Groups expose their parts as
+    GetMemberIds(); both are found duck-typed so FamilyInstance, Group, and
+    AssemblyInstance are handled without importing each type."""
+    out = [element]
+    if depth >= OUTLINE_MAX_SUB_DEPTH:
+        return out
+
+    ids = None
+    for getter in ("GetSubComponentIds", "GetMemberIds"):
+        fn = getattr(element, getter, None)
+        if fn is None:
+            continue
+        try:
+            ids = list(fn())
+        except Exception:
+            ids = None
+        if ids:
+            break
+    if not ids:
+        return out
+
+    try:
+        doc = element.Document
+    except Exception:
+        return out
+    for sub_id in ids:
+        try:
+            sub = doc.GetElement(sub_id)
+        except Exception:
+            sub = None
+        if sub is not None:
+            out.extend(_collect_geometry_sources(sub, depth + 1))
+    return out
+
+
+def _outline_at_detail(elements, anchor, detail_level):
+    """Collect plan polylines for one detail level. Returns (polylines, stats).
+
+    `elements` is the source element plus its sub-components. Walks nested
+    geometry recursively (a family whose content is non-shared nested families
+    arrives as GeometryInstance inside GeometryInstance), tessellates solid
+    edges, hulls meshes, drops curves that project to a point, dedups
+    coincident plan projections, and caps total vertices."""
+    polylines = []
+    seen = set()
+    total = [0]
+    stats = {"elements": len(elements), "instances": 0, "solids": 0,
+             "meshes": 0, "curves": 0, "errors": 0}
+
+    def add_points(pts):
+        """pts: list of XYZ in model coordinates."""
+        if total[0] >= OUTLINE_MAX_POINTS or len(pts) < 2:
+            return
+        if len(pts) > OUTLINE_MAX_SEG_PTS:
+            step = (len(pts) - 1) // (OUTLINE_MAX_SEG_PTS - 1) + 1
+            pts = pts[::step] + [pts[-1]]
+        poly = [[p.X - anchor.X, p.Y - anchor.Y] for p in pts]
+        xs = [p[0] for p in poly]
+        ys = [p[1] for p in poly]
+        if (max(xs) - min(xs)) < OUTLINE_MIN_SPAN and \
+           (max(ys) - min(ys)) < OUTLINE_MIN_SPAN:
+            return  # vertical edge: projects to a point in plan
+        sig = tuple((round(p[0], 2), round(p[1], 2)) for p in poly)
+        if sig in seen or tuple(reversed(sig)) in seen:
+            return  # coincident plan projection (e.g. top/bottom box edges)
+        seen.add(sig)
+        total[0] += len(poly)
+        polylines.append(poly)
+
+    def add_hull(poly):
+        if poly is None or total[0] >= OUTLINE_MAX_POINTS:
+            return
+        sig = tuple((round(p[0], 2), round(p[1], 2)) for p in poly)
+        if sig in seen:
+            return
+        seen.add(sig)
+        total[0] += len(poly)
+        polylines.append(poly)
+
+    def walk(geo, depth):
+        if depth > 8:
+            return  # pathological nesting guard
+        for obj in geo:
+            if total[0] >= OUTLINE_MAX_POINTS:
+                return
+            try:
+                if isinstance(obj, GeometryInstance):
+                    stats["instances"] += 1
+                    walk(obj.GetInstanceGeometry(), depth + 1)
+                elif isinstance(obj, Solid):
+                    if obj.Edges.Size == 0:
+                        continue  # empty solid: nothing to draw
+                    stats["solids"] += 1
+                    for edge in obj.Edges:
+                        # Edge.Tessellate is defined for every edge type;
+                        # AsCurve can come back null and silently drop it.
+                        add_points(list(edge.Tessellate()))
+                elif isinstance(obj, Mesh):
+                    # Imported / mesh-based families (common in manufacturer
+                    # content) carry no solids at all -- this branch is why a
+                    # nested dining table read as a bare bounding box before.
+                    stats["meshes"] += 1
+                    add_hull(_plan_hull(
+                        [[v.X - anchor.X, v.Y - anchor.Y]
+                         for v in obj.Vertices]))
+                elif isinstance(obj, Curve):
+                    stats["curves"] += 1
+                    add_points(list(obj.Tessellate()))
+            except Exception:
+                stats["errors"] += 1
+
+    for elem in elements:
+        if total[0] >= OUTLINE_MAX_POINTS:
+            break
+        try:
+            opts = Options()
+            opts.DetailLevel = detail_level
+            geo = elem.get_Geometry(opts)
+            if geo is not None:
+                walk(geo, 0)
+        except Exception as exc:
+            stats["errors"] += 1
+            log("Array Along Path outline: geometry request failed ({})", exc)
+
+    return polylines, stats
+
+
+def get_source_outline(element, anchor):
+    """Plan-projected wireframe of the source element, as
+    (polylines, used_bbox_fallback). Polylines are in feet relative to the
+    element's anchor point.
+
+    Tries each detail level in turn and takes the first that yields geometry;
+    falls back to the bounding-box rectangle (logged) when Revit exposes
+    nothing usable -- e.g. annotation/detail families, whose 3d geometry is
+    documented as null."""
+    sources = _collect_geometry_sources(element)
+    for label, level in OUTLINE_DETAIL_LEVELS:
+        polylines, stats = _outline_at_detail(sources, anchor, level)
+        if polylines:
+            log("Array Along Path outline: {} polyline(s) at {} detail "
+                "(elements={} instances={} solids={} meshes={} curves={} "
+                "errors={})",
+                len(polylines), label, stats["elements"], stats["instances"],
+                stats["solids"], stats["meshes"], stats["curves"],
+                stats["errors"])
+            return polylines, False
+        log("Array Along Path outline: nothing usable at {} detail "
+            "(elements={} instances={} solids={} meshes={} curves={} "
+            "errors={})",
+            label, stats["elements"], stats["instances"], stats["solids"],
+            stats["meshes"], stats["curves"], stats["errors"])
+
+    log("Array Along Path outline: no geometry at any detail level; "
+        "falling back to the bounding box")
+    return _bbox_rect_outline(element, anchor), True
+
+
+def element_label(element):
+    parts = []
+    try:
+        if element.Category:
+            parts.append(element.Category.Name)
+    except Exception:
+        pass
+    try:
+        name = element.Name
+        if name:
+            parts.append(name)
+    except Exception:
+        pass
+    return " - ".join(parts) if parts else "Element {}".format(eid_int(element.Id))
+
+
+
+class PathFilter(ISelectionFilter):
+    def AllowElement(self, element):
+        return isinstance(element, DB.CurveElement)
+    def AllowReference(self, reference, point):
+        return False
+
+
+class SourceFilter(ISelectionFilter):
+    def AllowElement(self, element):
+        return (isinstance(element, (DB.FamilyInstance, DB.Group))
+                and isinstance(element.Location, DB.LocationPoint))
+    def AllowReference(self, reference, point):
+        return False
+
+
+class ArrayAlongPathWindow(WebToolWindow):
+    html_file = os.path.join(HERE, "tool.html")
+    title = "Array Along Path"
+
+    def __init__(self, data):
+        self.data = data  # Only plain data is read by browser callbacks.
+        self.pending_plan = None
+        WebToolWindow.__init__(self)
+        self.Width = 1240
+        self.Height = 840
+        self.MinWidth = 390
+        self.MinHeight = 620
+
+    @expose
+    def init_data(self):
+        return self.data
+
+    @expose
+    def client_error(self, message="", stack=""):
+        log("Array Along Path client error: {}", message)
+        if stack:
+            log("Array Along Path client stack: {}", stack)
+        return {"logged": True}
+
+    @expose
+    def execute(self, placements=None, settings=None):
+        if self.pending_plan is not None:
+            raise ValueError("A placement plan has already been submitted.")
+        if settings is not None and not isinstance(settings, dict):
+            raise ValueError("Placement settings must be an object.")
+        settings = dict(settings or {})
+        skipped = settings.get("skipped_at_source", 0)
+        if isinstance(skipped, bool) or not isinstance(skipped, int) or not 0 <= skipped <= 2001:
+            raise ValueError("Skipped source count is invalid.")
+        self.pending_plan = {"placements": validate_plan(placements), "settings": settings,
+                             "path_length": self.data["path_length"]}
+        return {"accepted": True}
+
+
+def place_copies(doc, source, anchor, normal, plan):
+    """Called after the window closes, in the original pyRevit command context."""
+    placements = validate_plan(plan["placements"])
+    tx = Transaction(doc, "Array Along Path")
+    items, skipped = [], 0
+    try:
+        if tx.Start() != TransactionStatus.Started:
+            raise RuntimeError("Revit could not start the placement transaction.")
+        for row in placements:
+            target = XYZ(row["x"], row["y"], row["z"])
+            movement = target - anchor
+            if movement.GetLength() < ANCHOR_SKIP_TOL:
+                skipped += 1
+                continue
+            ids = list(ElementTransformUtils.CopyElement(doc, source.Id, movement))
+            if not ids:
+                raise RuntimeError("Revit did not return a copied element.")
+            # CopyElement can also return dependent IDs. Find the actual copy
+            # by class/category rather than assuming the first ID is the source.
+            copies = [doc.GetElement(eid) for eid in ids]
+            primary = [e for e in copies if e is not None
+                       and e.GetType() == source.GetType()
+                       and e.GetTypeId() == source.GetTypeId()
+                       and e.Category is not None and source.Category is not None
+                       and e.Category.Id == source.Category.Id]
+            if len(primary) != 1:
+                raise RuntimeError("Could not uniquely identify the copied source.")
+            copied = primary[0]
+            if abs(row["rot_delta"]) > 1e-6:
+                ElementTransformUtils.RotateElement(doc, copied.Id,
+                    Line.CreateBound(target, target + normal), math.radians(row["rot_delta"]))
+            items.append({"id": eid_int(copied.Id), "status": "ok",
+                          "label": "Station {:.2f} ft".format(row["station"])})
+        # A pending failure dialog is also unsafe to label as a committed run.
+        # Force rollback for errors rather than retaining an unresolved Pending tx.
+        options = tx.GetFailureHandlingOptions()
+        options.SetFailuresPreprocessor(RollbackOnError())
+        options.SetClearAfterRollback(True)
+        options.SetForcedModalHandling(True)
+        tx.SetFailureHandlingOptions(options)
+        if tx.Commit() != TransactionStatus.Committed:
+            raise RuntimeError("Revit did not commit the placement transaction.")
+    except Exception as exc:
+        if tx.HasStarted() and not tx.HasEnded():
+            tx.RollBack()
+        return {"status": "failed", "summary": "Array failed; no copies were kept",
+                "counts": {"ok": 0, "warn": 0, "fail": len(placements)},
+                "items": [], "log": [str(exc)]}
+    skipped += plan["settings"].get("skipped_at_source", 0)
+    summary, lines = result_description(element_label(source), len(items), skipped,
+                                         plan["settings"], plan.get("path_length", 0))
+    return {"status": "success", "summary": summary,
+            "counts": {"ok": len(items), "warn": skipped, "fail": 0}, "items": items, "log": lines}
+
+
+class RollbackOnError(DB.IFailuresPreprocessor):
+    def PreprocessFailures(self, accessor):
+        for failure in accessor.GetFailureMessages():
+            if failure.GetSeverity() == DB.FailureSeverity.Error:
+                return DB.FailureProcessingResult.ProceedWithRollBack
+        return DB.FailureProcessingResult.Continue
+
+
+def show_result(result):
+    try:
+        from {{ ui_package }}.result_dialog import ResultDialog
+        ResultDialog.show_result(result, "Array Along Path", eyebrow="Elements / Geometry", usage="one-time")
+    except ImportError:
+        forms.alert(result["summary"] + "\n\n" + "\n".join(result.get("log", [])), title="Array Along Path")
+
+
+def main():
+    doc, uidoc = revit.doc, revit.uidoc
+    if doc is None or uidoc is None:
+        print("Array Along Path requires an open project document.")
+        return
+    if doc.IsFamilyDocument or doc.IsReadOnly or doc.IsModifiable:
+        forms.alert("Open an editable project with no active transaction.", title="Array Along Path")
+        return
+    selected = [doc.GetElement(eid) for eid in uidoc.Selection.GetElementIds()]
+    curves = [e for e in selected if isinstance(e, DB.CurveElement)]
+    try:
+        with SelectionGuide("Array Along Path", steps=2, uidoc=uidoc) as guide:
+            if not curves or len(curves) != len(selected):
+                guide.step(1, "Select the path curves", multi=True)
+                refs = uidoc.Selection.PickObjects(ObjectType.Element, PathFilter(), "Select connected path curves; Finish to continue")
+                curves = [doc.GetElement(ref.ElementId) for ref in refs]
+            if not curves:
+                return
+            guide.step(2, "Select the family instance or group to copy")
+            ref = uidoc.Selection.PickObject(ObjectType.Element, SourceFilter(), "Select a point-located family instance or group to copy")
+            source = doc.GetElement(ref.ElementId)
+    except OperationCanceledException:
+        return
+    if source is None or not SourceFilter().AllowElement(source):
+        forms.alert("Select a family instance or group with a point location.", title="Array Along Path")
+        return
+    path = TessellatedPath([e.GeometryCurve for e in curves], get_curve_element_normal(curves))
+    if len(path.points) < 2 or path.total_len < 0.01:
+        forms.alert("The selected curves do not form a usable path.", title="Array Along Path")
+        return
+    anchor = source.Location.Point
+    rotation = source.Location.Rotation
+    closest, distance = path.closest_point_data(anchor)
+    offset = anchor - closest
+    outline, bbox = get_source_outline(source, anchor)
+    data = {"path": [[p.X,p.Y,p.Z] for p in path.points], "path_length": path.total_len,
+            "normal": [path.normal.X,path.normal.Y,path.normal.Z], "outline": outline,
+            "outline_is_bbox": bbox, "skipped_curves": path.skipped_curves,
+            "source": {"label": element_label(source), "anchor": [anchor.X,anchor.Y,anchor.Z],
+                       "offset_vector": [offset.X,offset.Y,offset.Z], "offset_distance": distance}}
+    changed = [False]
+    def on_changed(sender, args):
+        if args.GetDocument().Equals(doc):
+            changed[0] = True
+    win = None
+    try:
+        win = ArrayAlongPathWindow(data)
+        doc.Application.DocumentChanged += on_changed
+        try:
+            win.show()
+        finally:
+            doc.Application.DocumentChanged -= on_changed
+    except WebView2HostError as exc:
+        forms.alert(str(exc), title="Array Along Path")
+        return
+    if win is None or win.pending_plan is None:
+        return
+    if (revit.doc is None or not revit.doc.Equals(doc) or not doc.IsValidObject
+            or doc.IsReadOnly or doc.IsModifiable or changed[0]
+            or not source.IsValidObject or source.Location.Point.DistanceTo(anchor) > 0.001
+            or abs(source.Location.Rotation - rotation) > 1e-6):
+        forms.alert("The project or source changed while the preview was open. Run the tool again to refresh it.", title="Array Along Path")
+        return
+    show_result(place_copies(doc, source, anchor, path.normal, win.pending_plan))
+
+
+if __name__ == "__main__":
+    main()

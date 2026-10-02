@@ -40,6 +40,9 @@ except Exception as exc:
 ```
 
 - Catch `Autodesk.Revit.Exceptions.OperationCanceledException` for picks.
+- Wrap native canvas picks in the UI kit's `SelectionGuide` context. Show the
+  step, selection instruction, and Finish/Esc hint; close the guide before
+  dialogs or transactions. Enable `ui-kit` for this shared branded component.
 - Linked documents are read-only.
 - Use no f-strings, annotations, or walrus operators: pyRevit's default engine is IronPython 2.7.
 

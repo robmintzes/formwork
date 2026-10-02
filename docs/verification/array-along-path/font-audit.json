@@ -1,0 +1,112 @@
+{
+  "date": "2026-10-02",
+  "surface": "BIMxBert Array Along Path browser simulation",
+  "browser": "Microsoft Edge, inspected with Chromium rendered-font data",
+  "roles": {
+    "title": {
+      "declared": "\"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "rendered": [
+        {
+          "familyName": "Barlow Condensed",
+          "postScriptName": "BarlowCondensed-SemiBold",
+          "isCustomFont": true,
+          "glyphCount": 16
+        }
+      ]
+    },
+    "sectionHeading": {
+      "declared": "\"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "rendered": [
+        {
+          "familyName": "Barlow Condensed",
+          "postScriptName": "BarlowCondensed-SemiBold",
+          "isCustomFont": true,
+          "glyphCount": 12
+        },
+        {
+          "familyName": "Geist Mono",
+          "postScriptName": "GeistMono-Regular",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ]
+    },
+    "bodyHelp": {
+      "declared": "Geist, \"Segoe UI\", sans-serif",
+      "rendered": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 97
+        }
+      ]
+    },
+    "button": {
+      "declared": "Geist, \"Segoe UI\", sans-serif",
+      "rendered": [
+        {
+          "familyName": "Geist Medium",
+          "postScriptName": "Geist-Medium",
+          "isCustomFont": true,
+          "glyphCount": 9
+        }
+      ]
+    },
+    "action": {
+      "declared": "Geist, \"Segoe UI\", sans-serif",
+      "rendered": [
+        {
+          "familyName": "Geist SemiBold",
+          "postScriptName": "Geist-SemiBold",
+          "isCustomFont": true,
+          "glyphCount": 12
+        }
+      ]
+    },
+    "checkbox": {
+      "declared": "Geist, \"Segoe UI\", sans-serif",
+      "rendered": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 32
+        }
+      ]
+    },
+    "metadata": {
+      "declared": "\"Geist Mono\", \"Cascadia Mono\", Consolas, monospace",
+      "rendered": [
+        {
+          "familyName": "Geist Mono",
+          "postScriptName": "GeistMono-Regular",
+          "isCustomFont": true,
+          "glyphCount": 31
+        }
+      ]
+    },
+    "number": {
+      "declared": "\"Barlow Condensed\", \"Arial Narrow\", sans-serif",
+      "rendered": [
+        {
+          "familyName": "Barlow Condensed",
+          "postScriptName": "BarlowCondensed-Medium",
+          "isCustomFont": true,
+          "glyphCount": 2
+        }
+      ]
+    },
+    "mode": {
+      "declared": "Geist, \"Segoe UI\", sans-serif",
+      "rendered": [
+        {
+          "familyName": "Geist",
+          "postScriptName": "Geist-Regular",
+          "isCustomFont": true,
+          "glyphCount": 10
+        }
+      ]
+    }
+  }
+}

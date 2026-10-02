@@ -9,4 +9,6 @@ Import what you need explicitly; importing the package does not load WPF, so
 
 Modules: ``bootstrap`` (theme and window setup), ``result_model`` (ToolResult),
 ``result_dialog`` (M1), ``chooser_dialog`` (M0), ``selection_dialog`` (M2-lite).
+``selection_guide.SelectionGuide`` supplies branded guidance for native canvas
+picks; use its context manager around every tool's PickObject/PickObjects flow.
 """

@@ -262,7 +262,9 @@ class StaticRuntimeTests(unittest.TestCase):
 
     def test_bridge_never_opens_a_revit_transaction(self):
         token = "Trans" + "action("
-        offenders = [p.name for p in self._runtime_files() if token in p.read_text(encoding="utf-8")]
+        # Other toolbar tools may write; the MCP bridge and its startup may not.
+        files = [EXTENSION_ROOT / "startup.py"] + sorted(BRIDGE_ROOT.rglob("*.py"))
+        offenders = [str(p.relative_to(EXTENSION_ROOT)) for p in files if token in p.read_text(encoding="utf-8")]
         self.assertEqual([], offenders)
 
     def test_project_handlers_reject_family_documents_before_queries(self):

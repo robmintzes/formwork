@@ -1,0 +1,66 @@
+# Array Along Path
+
+Generated `array-along-path` surface. Medium risk; sandbox until live placement
+and Undo verification. Ribbon: **{{ tab_display }} / Elements / Array Along Path**.
+
+1. Open an editable project. Pick connected model or detail curves, then a
+   point-located family instance or group. Escape cancels without changing the model.
+   A branded guide above the active canvas shows the current selection step,
+   what to pick and Finish/Esc guidance; it closes before the preview opens.
+2. Adjust spacing or count, tangent alignment, side offset, original placement offset and
+   seeded position/rotation jitter. Pan, zoom, fit, inspect or pin copies.
+   **By count / Copies** includes the path start when offset or scatter makes
+   it a new location. Otherwise that position stays reserved for the original.
+   The requested number of new copies covers the path, including the end when
+   there is more than one position. The slider defaults to 1–50; Slider max changes its range up to 2000 and
+   remembers that choice. Typing a larger count expands the slider range.
+   Reducing Slider max also reduces a count above that maximum.
+   Any location overlapping the original is skipped and reported in the footer.
+3. Place copies submits the preview and closes the web window. Python validates
+   the plan and source again, then copies and rotates elements in the original
+   pyRevit command context, in one transaction. Source-anchor duplicates are
+   excluded from both the placement count and execution. Undo restores the model.
+   The result lists path length, distribution, offsets, orientation, variation
+   when used, copies placed and skipped source overlaps in readable terms.
+
+The preview is a tessellated **plan projection**, not a full 3D model. Feet are
+Revit internal units; non-horizontal paths should be reviewed in Revit. Shared
+nested families and groups contribute source outlines; meshes use a convex hull;
+a bounding box is the last-resort fallback and is disclosed in the source note.
+Disconnected curves are skipped with a visible warning. Maximum 2000 stations.
+The original's outline and **Original** marker stay at its actual anchor location,
+independent of offsets, alignment and scatter; it is excluded from new-copy totals.
+
+**Side offset** is measured sideways from the path at each copy. **Include original
+placement offset**, beside Side offset in Distribution, additionally carries the
+original's displacement from its nearest path point into every copy as a fixed
+shift in model coordinates. That shift does not turn with the curve. Unchecking
+it removes only that original displacement; Side offset and position variation
+still apply. Both states place copies by their insertion points: a family's
+placement point or a group's origin, rather than the visible geometry's center.
+With the checkbox off and Side offset/position variation at zero, those insertion
+points lie directly on the path. The original stays in place.
+
+The control pane has a draggable/keyboard separator (arrows, Home to reset),
+per-user width persistence, and a stacked layout below 760px. Fit view and motion
+replay are explicit actions. CSS and native Web Animations provide interruptible
+feedback, a moving mode indicator, contextual seed feedback, and station reveal.
+Both placement and orientation checkboxes draw/erase their checkmarks and respond with a brief
+scale animation while retaining native checkbox keyboard and screen reader behavior.
+Reduced motion removes travel, reveal and stagger by default; Preview motion
+allows an explicit opt-in for this window. Geometry transitions stop
+above 150 stations so large arrays remain responsive. No CDN or npm is needed.
+The Motion control has no outer button border. Its sliding switch uses a solid
+brand-blue track and white thumb when on, and a muted gray track when off.
+On/off text and native pressed-state semantics remain; pointer and keyboard
+activation use the same reduced-motion rules, with a visible keyboard focus ring.
+
+Open `tool.html` in a browser for a labeled demo using synthetic geometry; Apply
+only simulates there. The same local assets and fonts load inside WebView2.
+Code is adapted from Rob's Array Along Path tool (source recorded in Formwork
+release record R07). Source marks, commercial fonts and library bootstrap were
+replaced with generated firm assets. Web host: `{{ package }}`.
+
+Live gate: path picks/cancellation; family/group copies; source unchanged;
+spacing/count/offset/jitter match the preview; pinned/hosted sources fail with
+complete rollback; Undo; Revit transaction errors; close/Escape; light/dark icons.

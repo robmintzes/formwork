@@ -4,6 +4,7 @@ This index maps active handoff files for long-running, multi-session tasks.
 
 | File | Feature / Slug | Date | Status |
 |---|---|---|---|
+| [array-along-path-motion-2026-10-02.md](array-along-path-motion-2026-10-02.md) | BIMxBert Array Along Path and native motion pilot | 2026-10-02 | Sandbox revised with readable results, offset count and shared guide; live guide and Undo checks outstanding |
 | [mcp-bridge-onboarding-2026-06-19.md](mcp-bridge-onboarding-2026-06-19.md) | Framework Expansion & MCP Server Bridge | 2026-08-04 | Awaiting live Windows verification; stabilization PR #2 |
 | [branch-policy-audit-2026-09-30.md](branch-policy-audit-2026-09-30.md) | Branch policy & repository assessment | 2026-09-30 | Policy active; merge and live verification outstanding |
 | [foundation-charter-2026-09-30.md](foundation-charter-2026-09-30.md) | BIMxBert foundation charter & first milestone | 2026-09-30 | Draft for scope review; depends on policy PR #3 |

@@ -52,6 +52,7 @@ Maintainers:
 ## 5. Revit safety
 
 - Validate the document context (none, family, project) and the selection before showing UI or starting a transaction.
+- For native canvas picks, use `selection_guide.SelectionGuide` from the generated UI kit. Show a step, instruction and Finish/Esc guidance; close the guide before dialogs or transactions. Enable `ui-kit` when a tool needs this shared component. List/chooser dialogs need no canvas banner.
 - Keep transactions narrow. Never wait for user input inside one. Commit or roll back explicitly in `try`/`except`.
 - Linked documents are read-only: read from them, write results into the host document.
 - New tools default to read-only. Write operations need `risk` and `requires_confirmation` set correctly in the toolbar spec.

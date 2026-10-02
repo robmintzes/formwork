@@ -80,14 +80,15 @@ def apply_theme(scope):
         merged.Add(_load_dictionary(file_name))
 
 
-def set_brand_mark(window):
+def set_brand_mark(window, path=None):
     """Show the firm symbol in the titlebar when the window has a BrandMark image."""
     mark = getattr(window, "BrandMark", None)
-    if mark is None or not os.path.isfile(BRAND_MARK_PATH):
+    path = path or BRAND_MARK_PATH
+    if mark is None or not os.path.isfile(path):
         return
     image = BitmapImage()
     image.BeginInit()
-    image.UriSource = Uri(BRAND_MARK_PATH, UriKind.Absolute)
+    image.UriSource = Uri(path, UriKind.Absolute)
     image.CacheOption = BitmapCacheOption.OnLoad
     image.EndInit()
     mark.Source = image

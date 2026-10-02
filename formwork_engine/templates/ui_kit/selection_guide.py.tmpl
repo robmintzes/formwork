@@ -1,0 +1,139 @@
+# -*- coding: utf-8 -*-
+"""Shared, non-modal guidance for native Revit canvas picks.
+
+Adapted active-view/DPI docking from the source selection banner (record R08).
+Use a SelectionGuide context around all native picks. It closes before any
+input/result dialog or transaction, including when Escape or an error unwinds.
+"""
+from __future__ import absolute_import, print_function
+import os
+from pyrevit import forms, HOST_APP, script, revit
+from {{ package }} import bootstrap
+
+__author__ = {{ author_literal }}
+HERE = os.path.dirname(os.path.abspath(__file__))
+LOGGER = script.get_logger()
+_PromptBar = getattr(forms, "TemplatePromptBar", forms.WPFWindow)
+
+
+def canvas_is_dark():
+    try:
+        from Autodesk.Revit.UI import UIThemeManager, UITheme
+        return UIThemeManager.CurrentCanvasTheme == UITheme.Dark
+    except Exception:
+        try:
+            from Autodesk.Revit.UI import UIThemeManager, UITheme
+            return UIThemeManager.CurrentTheme == UITheme.Dark
+        except Exception:
+            return False
+
+
+class SelectionBanner(_PromptBar):
+    def __init__(self, uidoc):
+        # TemplatePromptBar hardcodes the stock XAML folder; load ours instead.
+        forms.WPFWindow.__init__(self, os.path.join(HERE, "SelectionGuide.xaml"))
+        self.user_height = 56
+        self._uidoc = uidoc
+        bootstrap.apply_theme(self)
+        dark = canvas_is_dark()
+        if dark:
+            self.SetResourceReference(self.BackgroundProperty, "{{ ns }}.Color.Surface.Default")
+            for block in (self.StepBlock, self.InstructionBlock, self.HintBlock, self.DotsBlock):
+                block.SetResourceReference(block.ForegroundProperty, "{{ ns }}.Color.Text.Primary")
+        variant = "light" if dark else "inverse"
+        bootstrap.set_brand_mark(self, os.path.join(HERE, "assets", "wordmark-" + variant + ".png"))
+        self.update_window()
+
+    def update_window(self):
+        rect = None
+        try:
+            active = self._uidoc.ActiveView.Id
+            for view in self._uidoc.GetOpenUIViews():
+                if view.ViewId == active:
+                    rect = view.GetWindowRectangle()
+                    break
+        except Exception:
+            pass
+        if rect is not None:
+            scale = 1.0 / (float(HOST_APP.proc_screen_scalefactor) or 1.0)
+            self.Top, self.Left = rect.Top * scale, rect.Left * scale
+            self.Width, self.Height = (rect.Right - rect.Left) * scale, self.user_height
+        elif hasattr(forms, "TemplatePromptBar"):
+            forms.TemplatePromptBar.update_window(self)
+        else:
+            raise RuntimeError("The active Revit view rectangle is unavailable.")
+
+    def set_step(self, eyebrow, instruction, hint, dots):
+        self.update_window()
+        self.StepBlock.Text, self.InstructionBlock.Text = eyebrow, instruction
+        self.HintBlock.Text, self.DotsBlock.Text = hint, dots
+
+
+class WarningGuide(object):
+    """Stock guidance fallback if a branded window cannot be loaded."""
+    def __init__(self):
+        self.bar = forms.WarningBar(title="")
+    def set_step(self, eyebrow, instruction, hint, dots):
+        self.bar.message_tb.Text = u"{0}: {1}  ({2})".format(eyebrow, instruction, hint)
+    def Show(self):
+        self.bar.Show()
+    def Close(self):
+        self.bar.Close()
+
+
+def create_banner(uidoc):
+    try:
+        return SelectionBanner(uidoc)
+    except Exception as exc:
+        LOGGER.warning("Branded selection guide unavailable: {0}".format(exc))
+    try:
+        return WarningGuide()
+    except Exception as exc:
+        LOGGER.warning("Selection guide unavailable; use Revit's status prompt: {0}".format(exc))
+        return None
+
+
+class SelectionGuide(object):
+    def __init__(self, tool_name, steps=1, uidoc=None):
+        self.tool_name, self.steps = tool_name, max(1, int(steps))
+        self.uidoc = uidoc if uidoc is not None else revit.uidoc
+        self.banner = None
+        self.visible = False
+
+    def __enter__(self):
+        return self
+
+    def step(self, index, instruction, multi=False, hint=None):
+        if not 1 <= index <= self.steps:
+            raise ValueError("Selection step is outside the configured range.")
+        eyebrow = bootstrap.badge_text(u"{0} / Step {1} of {2}".format(self.tool_name, index, self.steps))
+        hint = hint or ("Click Finish (top left) when done / Esc to cancel" if multi else "Click an element / Esc to cancel")
+        dots = u" ".join(u"\u25cf" if n == index else u"\u25cb" for n in range(1,self.steps+1))
+        if self.banner is None:
+            self.banner = create_banner(self.uidoc)
+        if self.banner is not None:
+            try:
+                self.banner.set_step(eyebrow, instruction, hint, dots)
+                if not self.visible:
+                    self.banner.Show()
+                    self.visible = True
+            except Exception as exc:
+                self.close()
+                LOGGER.warning("Selection guide failed; use Revit's status prompt: {0}".format(exc))
+
+    def close(self):
+        if self.banner is not None:
+            try:
+                self.banner.Close()
+            except Exception as exc:
+                try:
+                    self.banner.Hide()
+                except Exception:
+                    pass
+                LOGGER.warning("Could not close selection guide: {0}".format(exc))
+            self.banner = None
+        self.visible = False
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.close()
+        return False
