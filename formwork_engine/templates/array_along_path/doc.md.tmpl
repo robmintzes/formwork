@@ -47,9 +47,10 @@ scale animation while retaining native checkbox keyboard and screen reader behav
 Reduced motion removes travel, reveal and stagger by default; Preview motion
 allows an explicit opt-in for this window. Geometry transitions stop
 above 150 stations so large arrays remain responsive. No CDN or npm is needed.
-The Motion control is an outlined button with a sliding state indicator,
-on/off text and a native pressed state. Its border remains visible when motion
-is off; pointer and keyboard activation use the same reduced-motion rules.
+The Motion control has no outer button border. Its sliding switch uses a solid
+brand-blue track and white thumb when on, and a muted gray track when off.
+On/off text and native pressed-state semantics remain; pointer and keyboard
+activation use the same reduced-motion rules, with a visible keyboard focus ring.
 
 Open `tool.html` in a browser for a labeled demo using synthetic geometry; Apply
 only simulates there. The same local assets and fonts load inside WebView2.

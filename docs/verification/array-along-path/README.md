@@ -49,8 +49,9 @@ still needs live verification.
   shift from the path-relative side offset. The title has no trailing period.
   Ten focused tests and Edge checks passed for helper updates, keyboard Space,
   unchanged original/side offset and responsive layout. Images below are refreshed.
-- Motion-button revision: visible outline, themed active fill, sliding indicator,
-  persistent on/off text and a 148 x 34 px target. Edge checks cover pointer,
+- Motion-control revision: no outer button border; solid brand-blue switch track
+  with a white thumb when on, gray track when off, persistent on/off text and a
+  148 x 34 px target. Edge checks cover pointer,
   keyboard Space, retained indicator, system reduced motion and explicit opt-in;
   button fits at 390px without horizontal overflow. Ten focused tests passed.
 - Font audit: actual rendered fonts match the BIMxBert profile in the sampled
@@ -68,6 +69,8 @@ still needs live verification.
 | Metadata and technical text | Geist Mono Regular (400) |
 
 ![Motion toggle](motion-toggle.png)
+
+![Motion off](motion-toggle-off.png)
 
 ![Count with starting offset copy](count-offset.png)
 

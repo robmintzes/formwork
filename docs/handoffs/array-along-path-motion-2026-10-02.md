@@ -130,3 +130,7 @@ Draft PR: [#10](https://github.com/robmintzes/formwork/pull/10).
   actual rendered fonts: packaged Barlow Condensed, Geist and Geist Mono match the
   current BIMxBert profile in sampled roles; recorded evidence in font-audit.json.
   Ten focused tests pass. Sandbox and browser preview refreshed.
+- 2026-10-02: Removed Motion's outer button border per Rob's visual preference.
+  Enlarged the switch to 32 x 18 px with a solid brand-blue track/white thumb when
+  on and a muted gray track when off. Retained the full click target, text states,
+  keyboard focus ring and reduced-motion behavior. Refreshed preview/sandbox.
