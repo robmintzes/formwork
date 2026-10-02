@@ -49,6 +49,25 @@ still needs live verification.
   shift from the path-relative side offset. The title has no trailing period.
   Ten focused tests and Edge checks passed for helper updates, keyboard Space,
   unchanged original/side offset and responsive layout. Images below are refreshed.
+- Motion-button revision: visible outline, themed active fill, sliding indicator,
+  persistent on/off text and a 148 x 34 px target. Edge checks cover pointer,
+  keyboard Space, retained indicator, system reduced motion and explicit opt-in;
+  button fits at 390px without horizontal overflow. Ten focused tests passed.
+- Font audit: actual rendered fonts match the BIMxBert profile in the sampled
+  title, section heading, help text, checkbox, motion/action buttons, mode control,
+  metadata and large metric. All sampled faces come from packaged web fonts.
+  [Rendered-font evidence](font-audit.json) distinguishes actual faces from CSS
+  fallback declarations. This checks the browser workspace, not native Revit UI.
+
+| Role | BIMxBert font |
+| --- | --- |
+| Title and section headings | Barlow Condensed SemiBold (600) |
+| Large preview metrics | Barlow Condensed Medium (500) |
+| Body/help and control text | Geist Regular (400) |
+| Motion button / primary action | Geist Medium (500) / SemiBold (600) |
+| Metadata and technical text | Geist Mono Regular (400) |
+
+![Motion toggle](motion-toggle.png)
 
 ![Count with starting offset copy](count-offset.png)
 

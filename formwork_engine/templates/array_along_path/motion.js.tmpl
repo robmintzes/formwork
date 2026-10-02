@@ -27,7 +27,7 @@
   function reflect() {
     document.body.dataset.motion = allowed() ? "on" : "off";
     var button = document.getElementById("btn-motion");
-    button.textContent = preference.matches && !manualOverride ? "Preview motion" : (enabled ? "Motion on" : "Motion off");
+    document.getElementById("motion-label").textContent = preference.matches && !manualOverride ? "Preview motion" : (enabled ? "Motion on" : "Motion off");
     button.setAttribute("aria-pressed", String(allowed()));
     button.title = preference.matches && !manualOverride ? "Reduced motion is active. Click to explicitly preview animations in this tool." : "Toggle interface motion";
     if (!allowed()) cancelAll();

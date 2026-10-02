@@ -124,3 +124,9 @@ Draft PR: [#10](https://github.com/robmintzes/formwork/pull/10).
   matching result wording. Removed the period after the tool title. Ten focused
   tests pass; Edge checks cover on/off helper text, Space operation, fixed source,
   preserved side offset and responsive layout without horizontal overflow.
+- 2026-10-02: Gave Motion a visible themed button outline, active fill and sliding
+  state indicator, retaining text/pressed-state keyboard semantics and system
+  reduced-motion opt-in. Checked pointer/Space, on/off and 390px layout. Audited
+  actual rendered fonts: packaged Barlow Condensed, Geist and Geist Mono match the
+  current BIMxBert profile in sampled roles; recorded evidence in font-audit.json.
+  Ten focused tests pass. Sandbox and browser preview refreshed.
