@@ -36,7 +36,10 @@ placement offset**, beside Side offset in Distribution, additionally carries the
 original's displacement from its nearest path point into every copy as a fixed
 shift in model coordinates. That shift does not turn with the curve. Unchecking
 it removes only that original displacement; Side offset and position variation
-still apply. Copies lie on the path when all those position offsets are zero.
+still apply. Both states place copies by their insertion points: a family's
+placement point or a group's origin, rather than the visible geometry's center.
+With the checkbox off and Side offset/position variation at zero, those insertion
+points lie directly on the path. The original stays in place.
 
 The control pane has a draggable/keyboard separator (arrows, Home to reset),
 per-user width persistence, and a stacked layout below 760px. Fit view and motion

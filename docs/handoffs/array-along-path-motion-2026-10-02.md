@@ -134,3 +134,8 @@ Draft PR: [#10](https://github.com/robmintzes/formwork/pull/10).
   Enlarged the switch to 32 x 18 px with a solid brand-blue track/white thumb when
   on and a muted gray track when off. Retained the full click target, text states,
   keyboard focus ring and reduced-motion behavior. Refreshed preview/sandbox.
+- 2026-10-02: Made the placement-offset helper explicit about insertion points
+  in both states. Off text says to ignore the original's measured offset while
+  keeping Side offset/position variation. Tool documentation distinguishes the
+  family placement point/group origin from visible geometry center. Placement
+  math is unchanged; browser on/off text and responsive checks passed.

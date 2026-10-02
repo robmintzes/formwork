@@ -412,8 +412,8 @@ function updateOffsetNote() {
   if (!S.source) { $("preserve-note").textContent = ""; return; }
   var distance = S.source.offset_distance.toFixed(2);
   $("preserve-note").textContent = $("chk-preserve").checked
-    ? "Adds the original's " + distance + " ft placement shift to Side offset. The shift stays fixed as the path bends."
-    : "Excludes the original's " + distance + " ft placement shift. Side offset and position variation still apply.";
+    ? "Place copies by their insertion points, plus the original's " + distance + " ft offset from the path. Side offset and position variation also apply. The original shift stays fixed as the path bends."
+    : "Place copies by their insertion points. Ignore the original's " + distance + " ft offset from the path. Side offset and position variation still apply.";
 }
 
 function refresh() {

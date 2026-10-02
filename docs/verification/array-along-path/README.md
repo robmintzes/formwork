@@ -54,6 +54,10 @@ still needs live verification.
   148 x 34 px target. Edge checks cover pointer,
   keyboard Space, retained indicator, system reduced motion and explicit opt-in;
   button fits at 390px without horizontal overflow. Ten focused tests passed.
+- Insertion-point wording: both checkbox states explicitly say copies use their
+  insertion points. Off text identifies the ignored original offset and retains
+  Side offset/position variation. Browser checks cover on/off text and responsive
+  layout; placement math is unchanged.
 - Font audit: actual rendered fonts match the BIMxBert profile in the sampled
   title, section heading, help text, checkbox, motion/action buttons, mode control,
   metadata and large metric. All sampled faces come from packaged web fonts.
