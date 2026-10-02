@@ -23,7 +23,7 @@ PACKAGE_DIR = os.path.join(LIB, PACKAGE)
 KEY = "{http://schemas.microsoft.com/winfx/2006/xaml}Key"
 REFERENCE = re.compile(r"\{(?:Dynamic|Static)Resource\s+([^}\s]+)\}")
 DICTIONARIES = ("Theme.xaml", "Controls.xaml", "Icons.xaml")
-DIALOGS = ("ResultDialog.xaml", "ChooserDialog.xaml", "SelectionDialog.xaml")
+DIALOGS = ("ResultDialog.xaml", "ChooserDialog.xaml", "SelectionDialog.xaml", "SelectionGuide.xaml")
 KIT_KEY = re.compile(r"^{{ ns }}\.[A-Za-z0-9.]+$")
 
 if LIB not in sys.path:
@@ -92,6 +92,7 @@ class XamlContract(unittest.TestCase):
 
     def test_dialog_names_used_by_code_exist(self):
         wanted = {
+            "SelectionGuide.xaml": ("StepBlock", "InstructionBlock", "HintBlock", "DotsBlock", "BrandMark"),
             "ResultDialog.xaml": ("TitlebarBorder", "TitlebarTextBlock", "CloseXBtn", "CopyLogBtn", "CloseBtn", "ActionBtn", "StatusHeadingBlock", "SummaryBlock", "LogBox", "EyebrowBlock", "UsageBadgePanel", "UsageLabel", "UsageIcon", "BrandMark"),
             "ChooserDialog.xaml": ("TitlebarBorder", "TitlebarTextBlock", "CloseXBtn", "CancelBtn", "ConfirmBtn", "HeadingBlock", "PromptBlock", "EyebrowBlock", "OptionPanel", "UsageBadgePanel", "UsageLabel", "UsageIcon", "BrandMark"),
             "SelectionDialog.xaml": ("TitlebarBorder", "TitlebarTextBlock", "CloseXBtn", "CancelBtn", "PrimaryBtn", "HeadingBlock", "InstructionBlock", "EyebrowBlock", "SearchBox", "ChoiceList", "CountBlock", "MultiActions", "CheckAllBtn", "ClearAllBtn", "UsageBadgePanel", "UsageLabel", "UsageIcon", "BrandMark"),

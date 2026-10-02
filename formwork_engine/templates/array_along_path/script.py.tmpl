@@ -15,7 +15,8 @@ from {{ package }}.host import WebToolWindow, WebView2HostError
 from {{ package }}.bridge import expose
 from {{ package }}.compat import eid_int
 from {{ package }}.log import log
-from {{ ns }}_array_plan import validate_plan
+from {{ ns }}_array_plan import validate_plan, result_description
+from {{ ui_package }}.selection_guide import SelectionGuide
 
 __author__ = {{ author_literal }}
 __title__ = "Array Along Path"
@@ -439,7 +440,14 @@ class ArrayAlongPathWindow(WebToolWindow):
     def execute(self, placements=None, settings=None):
         if self.pending_plan is not None:
             raise ValueError("A placement plan has already been submitted.")
-        self.pending_plan = {"placements": validate_plan(placements), "settings": settings or {}}
+        if settings is not None and not isinstance(settings, dict):
+            raise ValueError("Placement settings must be an object.")
+        settings = dict(settings or {})
+        skipped = settings.get("skipped_at_source", 0)
+        if isinstance(skipped, bool) or not isinstance(skipped, int) or not 0 <= skipped <= 2001:
+            raise ValueError("Skipped source count is invalid.")
+        self.pending_plan = {"placements": validate_plan(placements), "settings": settings,
+                             "path_length": self.data["path_length"]}
         return {"accepted": True}
 
 
@@ -491,10 +499,11 @@ def place_copies(doc, source, anchor, normal, plan):
         return {"status": "failed", "summary": "Array failed; no copies were kept",
                 "counts": {"ok": 0, "warn": 0, "fail": len(placements)},
                 "items": [], "log": [str(exc)]}
-    return {"status": "success", "summary": "{} copies placed".format(len(items)),
-            "counts": {"ok": len(items), "warn": skipped, "fail": 0}, "items": items,
-            "log": ["Source: " + element_label(source), "Skipped at source anchor: {}".format(skipped),
-                    "Undo restores the model in one step.", "Settings: {}".format(plan["settings"])]}
+    skipped += plan["settings"].get("skipped_at_source", 0)
+    summary, lines = result_description(element_label(source), len(items), skipped,
+                                         plan["settings"], plan.get("path_length", 0))
+    return {"status": "success", "summary": summary,
+            "counts": {"ok": len(items), "warn": skipped, "fail": 0}, "items": items, "log": lines}
 
 
 class RollbackOnError(DB.IFailuresPreprocessor):
@@ -524,13 +533,16 @@ def main():
     selected = [doc.GetElement(eid) for eid in uidoc.Selection.GetElementIds()]
     curves = [e for e in selected if isinstance(e, DB.CurveElement)]
     try:
-        if not curves or len(curves) != len(selected):
-            refs = uidoc.Selection.PickObjects(ObjectType.Element, PathFilter(), "Select connected path curves; Finish to continue")
-            curves = [doc.GetElement(ref.ElementId) for ref in refs]
-        if not curves:
-            return
-        ref = uidoc.Selection.PickObject(ObjectType.Element, SourceFilter(), "Select a point-located family instance or group to copy")
-        source = doc.GetElement(ref.ElementId)
+        with SelectionGuide("Array Along Path", steps=2, uidoc=uidoc) as guide:
+            if not curves or len(curves) != len(selected):
+                guide.step(1, "Select the path curves", multi=True)
+                refs = uidoc.Selection.PickObjects(ObjectType.Element, PathFilter(), "Select connected path curves; Finish to continue")
+                curves = [doc.GetElement(ref.ElementId) for ref in refs]
+            if not curves:
+                return
+            guide.step(2, "Select the family instance or group to copy")
+            ref = uidoc.Selection.PickObject(ObjectType.Element, SourceFilter(), "Select a point-located family instance or group to copy")
+            source = doc.GetElement(ref.ElementId)
     except OperationCanceledException:
         return
     if source is None or not SourceFilter().AllowElement(source):
@@ -545,7 +557,7 @@ def main():
     closest, distance = path.closest_point_data(anchor)
     offset = anchor - closest
     outline, bbox = get_source_outline(source, anchor)
-    data = {"path": [[p.X,p.Y,p.Z] for p in path.points],
+    data = {"path": [[p.X,p.Y,p.Z] for p in path.points], "path_length": path.total_len,
             "normal": [path.normal.X,path.normal.Y,path.normal.Z], "outline": outline,
             "outline_is_bbox": bbox, "skipped_curves": path.skipped_curves,
             "source": {"label": element_label(source), "anchor": [anchor.X,anchor.Y,anchor.Z],

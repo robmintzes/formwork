@@ -44,6 +44,7 @@ XAML_KEY = "{http://schemas.microsoft.com/winfx/2006/xaml}Key"
 REFERENCE = re.compile(r"\{(?:Dynamic|Static)Resource\s+([^}\s]+)\}")
 DICTIONARIES = ("Theme.xaml", "Controls.xaml", "Icons.xaml")
 DIALOGS = ("ResultDialog.xaml", "ChooserDialog.xaml", "SelectionDialog.xaml")
+GUIDES = ("SelectionGuide.xaml",)
 FORBIDDEN = re.compile(r"rgdt|rockwell|robmintzes", re.IGNORECASE)
 PYTHON_MODULES = ("__init__", "bootstrap", "result_model", "result_dialog", "chooser_dialog", "selection_dialog")
 
@@ -72,7 +73,7 @@ def unresolved_keys(package: Path) -> list[tuple[str, str]]:
     for name in DICTIONARIES:
         defined.update(xaml_keys(ElementTree.parse(package / name).getroot()))
     problems = []
-    for name in DICTIONARIES + DIALOGS:
+    for name in DICTIONARIES + DIALOGS + GUIDES:
         for key in xaml_references(ElementTree.parse(package / name).getroot()):
             if key not in defined:
                 problems.append((name, key))

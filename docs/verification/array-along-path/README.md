@@ -3,7 +3,9 @@
 Date: 2026-10-02. Browser: Microsoft Edge driven by Playwright.
 
 This evidence covers the new tool's browser simulation and generated files.
-It does **not** establish live Revit placement or Undo behavior.
+It does **not** establish live Revit Undo behavior. Rob's later screenshots show
+committed runs of the preceding version; the revised result/count/guide behavior
+still needs live verification.
 
 - Initial port: 319 repository tests passed. The 9 Array Along Path tests were
   rerun after the markup revision, including 1/3/2000 new-copy counts.
@@ -28,6 +30,22 @@ It does **not** establish live Revit placement or Undo behavior.
   Both animated Orientation checkboxes passed pointer, Space-key and reduced-motion
   checks. Original position/rotation remained fixed while those settings changed.
   Refreshed images below show this revision. Live placement/Undo remains unverified.
+- Live-run revision: count mode includes the same first offset position as spacing.
+  Edge checked 1/24/2000 copies with/without side offset, fixed original, and no
+  console errors/warnings. Result formatting is tested against path length, count,
+  spacing, offset, orientation, variation, source overlap and Undo wording.
+- Shared guide tests cover step changes, Escape/error cleanup, preselection,
+  fallback, active-view docking, negative monitor coordinates and DPI scaling.
+  Both profile resource contracts include the guide and its packaged wordmarks.
+  Native WPF screenshot execution was blocked by Cylance's PowerShell policy;
+  no native guide appearance capture is claimed.
+- Current revision: all 325 repository tests passed. After correcting the MCP
+  test's scope, 32 Array/guide/MCP tests and all 23 generated extension tests passed.
+  Integration coverage allows writes in the ribbon tool and still rejects an
+  injected transaction in the MCP bridge. Root validators, US English and diff
+  checks passed. The sandbox matches its inputs and passes static validation.
+
+![Count with starting offset copy](count-offset.png)
 
 ![Desktop preview](desktop.png)
 

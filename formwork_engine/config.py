@@ -16,7 +16,7 @@ from formwork_engine.paths import check_relative_path, is_reserved_name
 
 SURFACES = ("pyrevit-sample", "wpf-specimen", "html-guide", "governance", "mcp-bridge", "ui-kit", "web-host", "array-along-path", "revit-addin", "python-app", "web-app")
 # Surfaces that only make sense inside another surface's output.
-SURFACE_REQUIRES = {"mcp-bridge": ("pyrevit-sample",), "ui-kit": ("pyrevit-sample",), "web-host": ("pyrevit-sample",), "array-along-path": ("pyrevit-sample", "web-host")}
+SURFACE_REQUIRES = {"mcp-bridge": ("pyrevit-sample",), "ui-kit": ("pyrevit-sample",), "web-host": ("pyrevit-sample",), "array-along-path": ("pyrevit-sample", "web-host", "ui-kit")}
 ASSET_SLOTS = ("wordmark", "symbol")
 ASSET_VARIANTS = ("light", "inverse")
 ASSET_FORMATS = ("svg", "png")

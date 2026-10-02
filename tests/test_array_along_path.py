@@ -7,6 +7,7 @@ import math
 from pathlib import Path
 import shutil
 import subprocess
+import sys
 import tempfile
 import types
 import unittest
@@ -40,6 +41,19 @@ def plan_module():
 
 
 class PlanTests(unittest.TestCase):
+    def test_success_description_is_user_readable_and_keeps_run_evidence(self):
+        settings = {"mode":"count", "value":19, "offset":2.5, "align":True,
+                    "preserve":True, "rot_jit":91, "pos_jit":2, "seed":59071}
+        summary, lines = plan_module().result_description("Furniture - Standard",19,1,settings,112.53)
+        self.assertEqual(summary,"19 copies placed along 112.53 ft")
+        for expected in ("Path length: 112.53 ft", "Distribution: 19 copies, evenly spaced",
+                         "Side offset: 2.50 ft", "Follow path tangent: On", "Keep source offset: On",
+                         "Copies placed: 19", "Skipped on top of the source: 1"):
+            self.assertIn(expected,lines)
+        self.assertNotIn("rot_jit", "\n".join(lines))
+        self.assertNotIn("Settings:", "\n".join(lines))
+        settings.update(mode="distance", value=5)
+        self.assertIn("Distribution: 5.00 ft spacing",plan_module().result_description("Chair",22,0,settings,112.53)[1])
     def test_rejects_bad_payloads_and_accepts_boundary(self):
         validate = plan_module().validate_plan
         row = {"x": 0, "y": 2, "z": 0, "rot_delta": 0, "station": 1}
@@ -85,6 +99,17 @@ class GenerationTests(unittest.TestCase):
             manifest = json.loads((workspace / ".formwork/manifest.json").read_text())
             folder = array_along_path.button_dir(profile("bimxbert"))
             self.assertEqual(manifest["files"][folder + "/script.py"]["adapter"], "array-along-path")
+            # A write-capable ribbon tool must coexist with the read-only MCP bridge.
+            tests = workspace / "extensions/BIMxBert.extension/tests"
+            command = [sys.executable, "-m", "unittest", "discover", "-s", str(tests), "-q"]
+            run = subprocess.run(command, cwd=workspace, capture_output=True, text=True)
+            self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+            bridge = workspace / "extensions/BIMxBert.extension/lib/revit_mcp_bridge/response.py"
+            bridge.write_text(bridge.read_text(encoding="utf-8") + '\ndef forbidden_write(doc):\n    return DB.Transaction(doc, "Write")\n', encoding="utf-8")
+            rejected = subprocess.run(command + ["-k", "test_bridge_never_opens_a_revit_transaction"],
+                                      cwd=workspace, capture_output=True, text=True)
+            self.assertNotEqual(rejected.returncode, 0)
+            self.assertIn("response.py", rejected.stderr)
 
     def test_missing_web_host_dependency_is_rejected(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -123,6 +148,16 @@ assert.deepEqual(S.placements.map(p=>p.x),[20]);
 fields['in-spacing'].value='2000'; computePlacements();
 assert.equal(S.placements.length,2000);
 fields['in-spacing'].value='3';
+fields['in-offset'].value='4.5'; computePlacements();
+assert.equal(S.placements.length,3);
+assert.deepEqual(S.placements.map(p=>p.x),[0,10,20]);
+assert.ok(S.placements.every(p=>p.y===4.5));
+assert.equal(S.skippedAtSource,0);
+fields['mode-count'].checked=false; fields['in-spacing'].value='10'; computePlacements();
+const spacedOffset=JSON.stringify(S.placements);
+fields['mode-count'].checked=true; fields['in-spacing'].value='3'; computePlacements();
+assert.equal(JSON.stringify(S.placements),spacedOffset);
+fields['in-offset'].value='0';
 fields['chk-preserve'].checked=true; fields['in-rotjit'].value='30'; fields['in-posjit'].value='2';
 S.seed=42; computePlacements(); const first=JSON.stringify(S.placements); computePlacements();
 assert.equal(JSON.stringify(S.placements),first); S.seed=43; computePlacements();
@@ -170,7 +205,8 @@ class TransactionTests(unittest.TestCase):
                "TransactionStatus":types.SimpleNamespace(Started="Started",Committed="Committed"),
                "XYZ":Vector,"ANCHOR_SKIP_TOL":0.01,"math":math,"RollbackOnError":lambda:None,
                "ElementTransformUtils":types.SimpleNamespace(CopyElement=copy),
-               "eid_int":lambda x:x,"element_label":lambda x:"Source"}
+               "eid_int":lambda x:x,"element_label":lambda x:"Source",
+               "result_description":plan_module().result_description}
         exec(compile(ast.Module(body=[fn], type_ignores=[]),"transaction","exec"),env)
         rows = [{"x":x,"y":0,"z":0,"station":x,"rot_delta":0} for x in (0,5,10)]
         result = env["place_copies"](types.SimpleNamespace(GetElement=lambda eid:element),element,

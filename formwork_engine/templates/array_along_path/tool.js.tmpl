@@ -32,6 +32,7 @@ var S = {
   source: null,        // {anchor:[x,y,z], offset_vector:[x,y,z], offset_distance}
   seed: 1,
   placements: [],      // computed preview rows
+  skippedAtSource: 0,
   copyNodes: [],       // SVG group per placement (same index)
   hoveredIdx: null,
   selectedIdx: null,   // click-pinned copy; survives re-renders by index
@@ -144,48 +145,49 @@ function computePlacements() {
   var rng = mulberry32(S.seed);
   var stations = [];
   var capped = false;
+  var startTan = evaluatePath(0).tan;
+
+  function placementAt(st, index, random) {
+    var ev = evaluatePath(st), pt = ev.pt, tan = ev.tan;
+    if (inp.offset !== 0) pt = vadd(pt, vscale(perpToTangent(tan, S.normal), inp.offset));
+    if (inp.preserve && S.source) pt = vadd(pt, S.source.offset_vector);
+    var jx = (random() - 0.5) * inp.posJit, jy = (random() - 0.5) * inp.posJit;
+    pt = vadd(pt, [jx, jy, 0]);
+    var jr = (random() - 0.5) * 2 * inp.rotJit;
+    return { x: pt[0], y: pt[1], z: pt[2],
+      rot: (inp.align ? Math.atan2(tan[1], tan[0]) * 180 / Math.PI : 0) + jr,
+      rot_delta: (inp.align ? signedAngleDeg(startTan, tan, S.normal) : 0) + jr,
+      station: st, index: index };
+  }
+  function overlapsSource(p) {
+    return S.source && vlen(vsub([p.x,p.y,p.z], S.source.anchor)) < 0.01;
+  }
+  var effectiveSpacing;
 
   if (inp.mode === "distance") {
     var step = Math.max(inp.value, 0.01);
+    effectiveSpacing = step;
     for (var s = 0; s <= S.totalLen + 1e-9; s += step) {
       if (stations.length >= MAX_COPIES) { capped = true; break; }
       stations.push(Math.min(s, S.totalLen));
     }
   } else {
-    // Count means new copies after the path start, which the original occupies
-    // in the usual workflow. A requested 14 copies produces 14 new locations.
+    // Count includes the start whenever offset/scatter makes it a new location.
+    // Otherwise reserve that position for the original, preserving N new copies.
     var count = Math.max(1, Math.min(Math.round(inp.value), MAX_COPIES));
-    var stepc = S.totalLen / count;
-    for (var i = 1; i <= count; i++) stations.push(i * stepc);
+    var slots = count + (overlapsSource(placementAt(0,0,mulberry32(S.seed))) ? 1 : 0);
+    var stepc = slots > 1 ? S.totalLen / (slots - 1) : 0;
+    effectiveSpacing = slots > 1 ? stepc : null;
+    for (var i = 0; i < slots; i++) stations.push(i * stepc);
   }
 
-  var startTan = evaluatePath(0).tan;
   var out = [];
   for (var k = 0; k < stations.length; k++) {
-    var st = stations[k];
-    var ev = evaluatePath(st);
-    var pt = ev.pt, tan = ev.tan;
-
-    if (inp.offset !== 0) {
-      pt = vadd(pt, vscale(perpToTangent(tan, S.normal), inp.offset));
-    }
-    if (inp.preserve && S.source) {
-      pt = vadd(pt, S.source.offset_vector);
-    }
-    var jx = (rng() - 0.5) * inp.posJit;
-    var jy = (rng() - 0.5) * inp.posJit;
-    pt = vadd(pt, [jx, jy, 0]);
-
-    var jr = (rng() - 0.5) * 2 * inp.rotJit;
-    var rotAbs = (inp.align ? Math.atan2(tan[1], tan[0]) * 180 / Math.PI : 0) + jr;
-    var rotDelta = (inp.align ? signedAngleDeg(startTan, tan, S.normal) : 0) + jr;
-
-    out.push({ x: pt[0], y: pt[1], z: pt[2], rot: rotAbs, rot_delta: rotDelta, station: st, index: k });
+    out.push(placementAt(stations[k], k, rng));
   }
-  S.placements = out.filter(function (p) {
-    return !S.source || vlen(vsub([p.x,p.y,p.z], S.source.anchor)) >= 0.01;
-  });
-  return { inputs: inp, capped: capped };
+  S.placements = out.filter(function (p) { return !overlapsSource(p); });
+  S.skippedAtSource = out.length - S.placements.length;
+  return { inputs: inp, capped: capped, spacing: effectiveSpacing };
 }
 
 /* ================================================================
@@ -402,13 +404,7 @@ function render(animateChange) {
 function updateStats(compute) {
   $("m-length").textContent = S.totalLen.toFixed(2) + " ft";
   $("m-count").textContent = String(S.placements.length) + (compute.capped ? " (capped)" : "");
-  var spacing;
-  if (compute.inputs.mode === "count") {
-    spacing = S.totalLen / Math.max(1, Math.round(compute.inputs.value));
-  } else {
-    spacing = compute.inputs.value;
-  }
-  $("m-spacing").textContent = spacing.toFixed(2) + " ft";
+  $("m-spacing").textContent = compute.spacing === null ? "—" : compute.spacing.toFixed(2) + " ft";
   $("m-mode").textContent = compute.inputs.mode === "count" ? "Count" : "Spacing";
 }
 
@@ -700,7 +696,8 @@ $("btn-apply").addEventListener("click", function () {
   var payload = {placements: placements.map(function (p) {
     return {x:p.x,y:p.y,z:p.z,rot_delta:p.rot_delta,station:p.station};
   }), settings: {mode:inp.mode,value:inp.value,offset:inp.offset,align:inp.align,
-    preserve:inp.preserve,rot_jit:inp.rotJit,pos_jit:inp.posJit,seed:S.seed}};
+    preserve:inp.preserve,rot_jit:inp.rotJit,pos_jit:inp.posJit,seed:S.seed,
+    skipped_at_source:S.skippedAtSource}};
   if (hosted) {
     window.{{ ns }}.call("execute", payload).then(function (result) {
       if (!result || !result.accepted) throw new Error("Revit did not accept the plan.");
@@ -819,7 +816,7 @@ function boot(data) {
   }
   if (S.source && S.source.label) {
     $("source-line").textContent = "Source: " + S.source.label +
-      ". Apply copies it; the original stays put." +
+      ". Copies use this source; the original stays put." +
       (S.outlineIsBbox
         ? " Preview shows its bounding box — Revit exposes no plan geometry"
           + " for this family."

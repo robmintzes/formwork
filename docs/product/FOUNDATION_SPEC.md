@@ -79,7 +79,7 @@ The adapter interface (section 6) is shared, so each later surface is an additio
 Further surfaces are tracked in the [backlog](BACKLOG.md).
 
 The opt-in `array-along-path` surface adds a sandbox geometry tool to the firm's
-Elements panel. It requires `pyrevit-sample` and `web-host`; BIMxBert enables it
+Elements panel. It requires `pyrevit-sample`, `web-host` and `ui-kit`; BIMxBert enables it
 by default. The tool previews connected-curve distribution with seeded jitter,
 then submits a validated plan and closes the web window before Python performs
 one transaction in the original command context. It generates a separate spec

@@ -5,10 +5,14 @@ and Undo verification. Ribbon: **{{ tab_display }} / Elements / Array Along Path
 
 1. Open an editable project. Pick connected model or detail curves, then a
    point-located family instance or group. Escape cancels without changing the model.
+   A branded guide above the active canvas shows the current selection step,
+   what to pick and Finish/Esc guidance; it closes before the preview opens.
 2. Adjust spacing or count, tangent alignment, side offset, source offset and
    seeded position/rotation jitter. Pan, zoom, fit, inspect or pin copies.
-   **By count / Copies** places new copies after the path start, including the
-   end. The slider defaults to 1–50; Slider max changes its range up to 2000 and
+   **By count / Copies** includes the path start when offset or scatter makes
+   it a new location. Otherwise that position stays reserved for the original.
+   The requested number of new copies covers the path, including the end when
+   there is more than one position. The slider defaults to 1–50; Slider max changes its range up to 2000 and
    remembers that choice. Typing a larger count expands the slider range.
    Reducing Slider max also reduces a count above that maximum.
    Any location overlapping the original is skipped and reported in the footer.
@@ -16,6 +20,8 @@ and Undo verification. Ribbon: **{{ tab_display }} / Elements / Array Along Path
    the plan and source again, then copies and rotates elements in the original
    pyRevit command context, in one transaction. Source-anchor duplicates are
    excluded from both the placement count and execution. Undo restores the model.
+   The result lists path length, distribution, offsets, orientation, variation
+   when used, copies placed and skipped source overlaps in readable terms.
 
 The preview is a tessellated **plan projection**, not a full 3D model. Feet are
 Revit internal units; non-horizontal paths should be reviewed in Revit. Shared

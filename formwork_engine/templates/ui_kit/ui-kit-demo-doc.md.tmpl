@@ -33,6 +33,30 @@ failure, then show the result dialog after the Transaction has finished. Never
 leave a Transaction open while a dialog is on screen. This demo has no
 Transaction at all.
 
+## Native canvas selection guidance
+
+All tools using native `PickObject`/`PickObjects` prompts use
+`{{ package }}.selection_guide.SelectionGuide`. The shared component docks to
+the active drawing view below the ribbon/tabs, scales physical coordinates to
+WPF units, uses firm colors/fonts/wordmark, and closes on cancellation or error.
+Use one context around the selection flow, call `guide.step()` before each pick,
+then exit the context before opening dialogs or transactions. List/chooser
+dialogs need no canvas banner. This demo has no native canvas picks.
+
+```python
+from {{ package }}.selection_guide import SelectionGuide
+with SelectionGuide("Tool name", steps=2, uidoc=revit.uidoc) as guide:
+    guide.step(1, "Select the path curves", multi=True)
+    # PickObjects(...)
+    guide.step(2, "Select the source")
+    # PickObject(...)
+```
+
+If the branded guide cannot load, it falls back to stock pyRevit guidance; if
+that is unavailable, the native status prompt remains and the failure is logged.
+Active-view docking and theme contrast need a live check on each target Revit
+version; a WPF rendering harness does not establish placement inside Revit.
+
 ## Risk and transactions
 
 - **Risk classification:** Low / read-only

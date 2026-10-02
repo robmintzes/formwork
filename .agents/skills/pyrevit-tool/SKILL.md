@@ -62,6 +62,11 @@ except Exception as e:
 ```
 
 ### Selection and Cancellation
+
+For native canvas picks, use the generated UI kit's `SelectionGuide` context.
+Show the current step, what to select, and Finish/Esc guidance. Use its shared
+firm theme and active-view docking; close the guide before dialogs or transactions.
+See `docs/design/selection-guidance.md`. List/chooser dialogs need no canvas banner.
 When picking elements, catch cancellations cleanly rather than throwing raw .NET tracebacks.
 ```python
 from Autodesk.Revit.Exceptions import OperationCanceledException

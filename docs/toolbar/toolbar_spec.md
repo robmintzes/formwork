@@ -37,7 +37,7 @@ tools:
 
 The opt-in `array-along-path` surface registers `array-along-path` (Array Along
 Path, PushButton, geometry, Medium risk, sandbox) in the generated firm's
-**Elements** panel. It requires `web-host` and `pyrevit-sample`. Its source
+**Elements** panel. It requires `web-host`, `ui-kit` and `pyrevit-sample`. Its source
 templates are `formwork_engine/templates/array_along_path/`; its generated
 bundle is `extensions/<extension>.extension/<tab>.tab/Elements.panel/ArrayAlongPath.pushbutton`.
 The adapter emits `docs/toolbar/spec.d/array-along-path.md` with the concrete
