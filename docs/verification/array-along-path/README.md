@@ -44,6 +44,11 @@ still needs live verification.
   Integration coverage allows writes in the ribbon tool and still rejects an
   injected transaction in the MCP bridge. Root validators, US English and diff
   checks passed. The sandbox matches its inputs and passes static validation.
+- Offset clarity revision: Include original placement offset sits beside Side
+  offset in Distribution. On/off helper text distinguishes the fixed original
+  shift from the path-relative side offset. The title has no trailing period.
+  Ten focused tests and Edge checks passed for helper updates, keyboard Space,
+  unchanged original/side offset and responsive layout. Images below are refreshed.
 
 ![Count with starting offset copy](count-offset.png)
 

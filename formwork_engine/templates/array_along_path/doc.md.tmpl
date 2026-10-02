@@ -7,7 +7,7 @@ and Undo verification. Ribbon: **{{ tab_display }} / Elements / Array Along Path
    point-located family instance or group. Escape cancels without changing the model.
    A branded guide above the active canvas shows the current selection step,
    what to pick and Finish/Esc guidance; it closes before the preview opens.
-2. Adjust spacing or count, tangent alignment, side offset, source offset and
+2. Adjust spacing or count, tangent alignment, side offset, original placement offset and
    seeded position/rotation jitter. Pan, zoom, fit, inspect or pin copies.
    **By count / Copies** includes the path start when offset or scatter makes
    it a new location. Otherwise that position stays reserved for the original.
@@ -31,11 +31,18 @@ Disconnected curves are skipped with a visible warning. Maximum 2000 stations.
 The original's outline and **Original** marker stay at its actual anchor location,
 independent of offsets, alignment and scatter; it is excluded from new-copy totals.
 
+**Side offset** is measured sideways from the path at each copy. **Include original
+placement offset**, beside Side offset in Distribution, additionally carries the
+original's displacement from its nearest path point into every copy as a fixed
+shift in model coordinates. That shift does not turn with the curve. Unchecking
+it removes only that original displacement; Side offset and position variation
+still apply. Copies lie on the path when all those position offsets are zero.
+
 The control pane has a draggable/keyboard separator (arrows, Home to reset),
 per-user width persistence, and a stacked layout below 760px. Fit view and motion
 replay are explicit actions. CSS and native Web Animations provide interruptible
 feedback, a moving mode indicator, contextual seed feedback, and station reveal.
-Both Orientation checkboxes draw/erase their checkmarks and respond with a brief
+Both placement and orientation checkboxes draw/erase their checkmarks and respond with a brief
 scale animation while retaining native checkbox keyboard and screen reader behavior.
 Reduced motion removes travel, reveal and stagger by default; Preview motion
 allows an explicit opt-in for this window. Geometry transitions stop

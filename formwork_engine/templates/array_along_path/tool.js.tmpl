@@ -408,7 +408,16 @@ function updateStats(compute) {
   $("m-mode").textContent = compute.inputs.mode === "count" ? "Count" : "Spacing";
 }
 
+function updateOffsetNote() {
+  if (!S.source) { $("preserve-note").textContent = ""; return; }
+  var distance = S.source.offset_distance.toFixed(2);
+  $("preserve-note").textContent = $("chk-preserve").checked
+    ? "Adds the original's " + distance + " ft placement shift to Side offset. The shift stays fixed as the path bends."
+    : "Excludes the original's " + distance + " ft placement shift. Side offset and position variation still apply.";
+}
+
 function refresh() {
+  updateOffsetNote();
   if (S.path.length < 2 || S.executed) return;
   if (!inputsValid()) {
     $("btn-apply").disabled = true;
@@ -808,11 +817,6 @@ function boot(data) {
 
   if (S.source && S.source.offset_distance > 0.01) {
     $("chk-preserve").checked = true;
-    $("preserve-note").textContent =
-      "Source sits " + S.source.offset_distance.toFixed(2) +
-      " ft off the path. Uncheck to snap copies onto the path.";
-  } else {
-    $("preserve-note").textContent = "";
   }
   if (S.source && S.source.label) {
     $("source-line").textContent = "Source: " + S.source.label +

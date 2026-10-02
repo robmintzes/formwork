@@ -117,3 +117,10 @@ Draft PR: [#10](https://github.com/robmintzes/formwork/pull/10).
   check that scanned all toolbar tools. Restricted it to bridge/startup code;
   added combined Array/bridge coverage and a negative injected-bridge-transaction
   case. All 32 Array/guide/MCP tests and 23 generated extension tests pass.
+- 2026-10-02: Renamed the offset checkbox to Include original placement offset
+  and moved it beside Side offset in Distribution. Helper text describes the
+  measured fixed shift when included and makes clear that side offset/position
+  variation still apply when excluded. Added accessible helper associations and
+  matching result wording. Removed the period after the tool title. Ten focused
+  tests pass; Edge checks cover on/off helper text, Space operation, fixed source,
+  preserved side offset and responsive layout without horizontal overflow.

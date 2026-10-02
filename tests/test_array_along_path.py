@@ -47,7 +47,7 @@ class PlanTests(unittest.TestCase):
         summary, lines = plan_module().result_description("Furniture - Standard",19,1,settings,112.53)
         self.assertEqual(summary,"19 copies placed along 112.53 ft")
         for expected in ("Path length: 112.53 ft", "Distribution: 19 copies, evenly spaced",
-                         "Side offset: 2.50 ft", "Follow path tangent: On", "Keep source offset: On",
+                         "Side offset: 2.50 ft", "Follow path tangent: On", "Include original placement offset: On",
                          "Copies placed: 19", "Skipped on top of the source: 1"):
             self.assertIn(expected,lines)
         self.assertNotIn("rot_jit", "\n".join(lines))

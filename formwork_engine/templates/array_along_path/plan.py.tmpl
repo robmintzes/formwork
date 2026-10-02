@@ -58,7 +58,7 @@ def result_description(source_label, placed, skipped, settings, path_length=0):
     lines.extend([
         "Side offset: {:.2f} ft".format(_number(settings.get("offset"))),
         "Follow path tangent: " + ("On" if settings.get("align") else "Off"),
-        "Keep source offset: " + ("On" if settings.get("preserve") else "Off"),
+        "Include original placement offset: " + ("On" if settings.get("preserve") else "Off"),
     ])
     rotation = _number(settings.get("rot_jit"))
     position = _number(settings.get("pos_jit")) / 2.0

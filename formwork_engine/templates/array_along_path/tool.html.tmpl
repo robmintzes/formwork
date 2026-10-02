@@ -11,7 +11,7 @@
 </head>
 <body class="aap-shell" data-state="ready">
 <header class="aap-header">
-  <div class="aap-titlebar"><p class="aap-kicker">Precision, with a little possibility.</p><h1>Array Along Path<span class="aap-title-dot" aria-hidden="true">.</span></h1></div>
+  <div class="aap-titlebar"><p class="aap-kicker">Precision, with a little possibility.</p><h1>Array Along Path</h1></div>
   <div class="aap-header-tools"><span class="aap-status" id="tool-state" role="status">Loading preview</span>
     <button class="aap-icon-button" id="btn-motion" type="button" aria-pressed="true" title="Toggle interface motion">Motion on</button></div>
   <img class="aap-wordmark" src="wordmark.svg" alt="{{ logo_alt }}">
@@ -31,14 +31,15 @@
           <div class="aap-count-range" id="count-range" hidden><label for="in-count-max">Slider max</label><select id="in-count-max"><option value="25">25</option><option value="50" selected>50</option><option value="100">100</option><option value="250">250</option><option value="500">500</option><option value="1000">1000</option><option value="2000">2000</option></select><span>copies</span></div>
         </div>
         <div class="aap-field"><label for="in-offset" id="lbl-offset">Side offset (ft)</label>
-          <div class="aap-slider-row"><input type="range" id="sl-offset" min="-20" max="20" step="0.5" value="0" aria-labelledby="lbl-offset"><input type="number" id="in-offset" min="-20" max="20" step="0.5" value="0"></div>
+          <div class="aap-slider-row"><input type="range" id="sl-offset" min="-20" max="20" step="0.5" value="0" aria-labelledby="lbl-offset" aria-describedby="side-offset-note"><input type="number" id="in-offset" min="-20" max="20" step="0.5" value="0" aria-describedby="side-offset-note"></div>
+          <p class="aap-note" id="side-offset-note">Measured sideways from the path at each copy.</p>
         </div>
+        <label class="aap-check"><input type="checkbox" id="chk-preserve" aria-describedby="preserve-note"><span class="aap-check-box" aria-hidden="true"><svg viewBox="0 0 20 20"><polyline points="4,10 8,14 16,5"></polyline></svg></span><span>Include original placement offset</span></label>
+        <p class="aap-note" id="preserve-note"></p>
       </section>
       <section class="aap-step" aria-labelledby="step-orientation">
         <h2 id="step-orientation"><span class="aap-step-index">02</span> Orientation</h2>
         <label class="aap-check"><input type="checkbox" id="chk-align" checked><span class="aap-check-box" aria-hidden="true"><svg viewBox="0 0 20 20"><polyline points="4,10 8,14 16,5"></polyline></svg></span><span>Follow the path tangent</span></label>
-        <label class="aap-check"><input type="checkbox" id="chk-preserve"><span class="aap-check-box" aria-hidden="true"><svg viewBox="0 0 20 20"><polyline points="4,10 8,14 16,5"></polyline></svg></span><span>Keep the source offset</span></label>
-        <p class="aap-note" id="preserve-note"></p>
       </section>
       <section class="aap-step" aria-labelledby="step-scatter">
         <details id="scatter-panel">
